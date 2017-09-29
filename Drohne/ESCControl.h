@@ -12,6 +12,22 @@
 #include <avr/io.h>
 #include <math.h> // for round()
 #include "config.h"
+
+/*	MOTOR LAYOUT
+
+|----|        |----|
+| M1 |        | M2 |
+|----|        |----|
+
+
+
+|----|        |----|
+| M3 |        | M4 |
+|----|        |----|
+
+ */
+
+
 /*
  *
  *	Configures the 4 ESC pins as output and
@@ -48,19 +64,5 @@ void esc_set_m3(int16_t speed);
  */
 void esc_set_m4(int16_t speed);
 
-
-/*	MOTOR LAYOUT
-
-|----|        |----|
-| M1 |        | M2 |
-|----|        |----|
-
-
-
-|----|        |----|
-| M3 |        | M4 |
-|----|        |----|
-
- */
 
 #endif /* ESCCONTROL_H_ */

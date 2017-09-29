@@ -129,31 +129,19 @@
     <Compile Include="ESCControl.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="HelperFunctions.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="HelperFunctions.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="I2C.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="I2C.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="main.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="RCReader.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="RCReader.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="UART0.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="UART0.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UARTCOM.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UARTCOM.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

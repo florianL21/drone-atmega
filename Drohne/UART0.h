@@ -10,10 +10,10 @@
 #define UART0_H_
 
 #include <avr/io.h>
-#include "config.h"
 #include <avr/interrupt.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "config.h"
 
 typedef void (*UART_RECV_CALLBACK)(uint8_t recivedChar);
 
@@ -41,6 +41,12 @@ void uart0_putc(uint8_t character);
  *	Register a callback function which gets called when a char is received
  */
 void uart0_register_recived_callback(UART_RECV_CALLBACK callBack);
+
+
+/*
+ *	Sends a String over UART, strictly meant for debug messages
+ */
+void uart0_puts(char* Data);
 
 
 #endif /* UART0_H_ */

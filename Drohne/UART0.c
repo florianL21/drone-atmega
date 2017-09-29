@@ -32,6 +32,15 @@ bool uart0_buffer_has_space() // returns true if buffer has space
 	return bufferSpace != 0;
 }
 
+void uart0_puts(char* Data)
+{
+	uint8_t Length = sizeof(Data)/sizeof(Data[0]);
+	for (uint8_t i = 0; i < Length; i++)
+	{
+		uart0_putc(Data[i]);
+	}
+}
+
 uint16_t get_write_index()
 {
 	static uint16_t writeIndex = 0;
