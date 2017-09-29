@@ -135,6 +135,12 @@
     <Compile Include="HelperFunctions.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="I2C.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="I2C.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>

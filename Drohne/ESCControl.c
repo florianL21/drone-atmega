@@ -32,9 +32,9 @@ void esc_init()
 
 void esc_set_m1(int16_t speed) // PIN 2
 {
-	if(speed > ESC_MaxLimit)
+	if(speed > ESC_MAX_POWER)
 	{
-		speed = ESC_MaxLimit;
+		speed = ESC_MAX_POWER;
 	}
 	else if(speed <= 0)
 	{
@@ -43,15 +43,15 @@ void esc_set_m1(int16_t speed) // PIN 2
 	}
 	else
 	{
-		OCR3B = round((2000 + speed + ESC_Offset_M1) + (((float)speed) * ESC_SlopeComp_M1));
+		OCR3B = round((2000 + speed + ESC_OFFSET_M1) + (((float)speed) * ESC_SLOPE_COMP_M1));
 	}
 }
 
 void esc_set_m2(int16_t speed) // PIN 3
 {
-	if(speed > ESC_MaxLimit)
+	if(speed > ESC_MAX_POWER)
 	{
-		speed = ESC_MaxLimit;
+		speed = ESC_MAX_POWER;
 	}
 	else if(speed <= 0)
 	{
@@ -60,15 +60,15 @@ void esc_set_m2(int16_t speed) // PIN 3
 	}
 	else
 	{
-		OCR3C = round((2000 + speed + ESC_Offset_M2) + (((float)speed) * ESC_SlopeComp_M2));
+		OCR3C = round((2000 + speed + ESC_OFFSET_M2) + (((float)speed) * ESC_SLOPE_COMP_M2));
 	}
 }
 
 void esc_set_m3(int16_t speed) // PIN 5
 {
-	if(speed > ESC_MaxLimit)
+	if(speed > ESC_MAX_POWER)
 	{
-		speed = ESC_MaxLimit;
+		speed = ESC_MAX_POWER;
 	}
 	else if(speed <= 0)
 	{
@@ -77,15 +77,15 @@ void esc_set_m3(int16_t speed) // PIN 5
 	}
 	else
 	{
-		OCR3A = round((2000 + speed + ESC_Offset_M3) + (((float)speed) * ESC_SlopeComp_M3));
+		OCR3A = round((2000 + speed + ESC_OFFSET_M3) + (((float)speed) * ESC_SLOPE_COMP_M3));
 	}
 }
 
 void esc_set_m4(int16_t speed) // PIN 6
 {
-	if(speed > ESC_MaxLimit)
+	if(speed > ESC_MAX_POWER)
 	{
-		speed = ESC_MaxLimit;
+		speed = ESC_MAX_POWER;
 	}
 	else if(speed <= 0)
 	{
@@ -94,6 +94,6 @@ void esc_set_m4(int16_t speed) // PIN 6
 	}
 	else
 	{
-		OCR4A = round((2000 + speed + ESC_Offset_M4) + (((float)speed) * ESC_SlopeComp_M4));
+		OCR4A = round((2000 + speed + ESC_OFFSET_M4) + (((float)speed) * ESC_SLOPE_COMP_M4));
 	}
 }
