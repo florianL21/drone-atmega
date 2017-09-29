@@ -10,10 +10,14 @@
 #define RCREADER_H_
 
 #include <avr/io.h>
+#include <avr/interrupt.h>
+#include "config.h"
+#include "HelperFunctions.h"
 
 /*
  *	Configures the Timer 5 with a 4us tick time for
- *	RC PWM input measuring
+ *	RC PWM input measuring and the appropriate pins
+ *	for the PWM input
  */
 void rc_init();
 

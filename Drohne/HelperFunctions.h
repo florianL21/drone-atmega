@@ -9,6 +9,8 @@
 #ifndef HELPERFUNCTIONS_H_
 #define HELPERFUNCTIONS_H_
 
+#include <avr/io.h>
+
 /*
  *	Maps the value x from an input range to an output range
  *	Parameters:
