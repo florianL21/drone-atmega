@@ -33,6 +33,9 @@
 // M4 ESC Slope Compensation Factor
 #define ESC_SlopeComp_M4 0
 
+// Maximum ESC Speed
+#define ESC_MaxLimit 960 // half of maximum motor power
+
 
 
 #endif /* CONFIG_H_ */

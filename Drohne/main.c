@@ -10,7 +10,6 @@
 
 int main(void)
 {
-	es
     /* Replace with your application code */
     while (1) 
     {
