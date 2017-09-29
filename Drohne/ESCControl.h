@@ -9,6 +9,9 @@
 #ifndef ESCCONTROL_H_
 #define ESCCONTROL_H_
 
+#include <avr/io.h>
+#include <math.h> // for round()
+#include "config.h"
 
 /*	MOTOR LAYOUT
 

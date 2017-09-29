@@ -5,9 +5,7 @@
  *  Author: Markus Lorenz
  */ 
 
-#include <avr/io.h>
-#include <math.h> // for round()
-#include "config.h"
+
 #include "ESCControl.h"
 
 void esc_init()

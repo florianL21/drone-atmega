@@ -11,6 +11,18 @@
 
 /*
  *
+ *	General Configuration
+ *
+ */
+
+// CPU frequency
+#define F_CPU 16000000
+// activate UART debugging?
+//#define DEBUG
+
+
+/*
+ *
  *	ESC Configuration
  *
  */
@@ -37,5 +49,14 @@
 #define ESC_MaxLimit 960 // half of maximum motor power
 
 
+
+/*
+ *
+ *	UART Configuration
+ *
+ */
+
+// Maximum amount of chars for the send buffer
+#define MAX_UART_SEND_BUFFER 270
 
 #endif /* CONFIG_H_ */
