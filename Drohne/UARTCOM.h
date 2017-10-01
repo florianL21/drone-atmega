@@ -30,4 +30,14 @@ struct transmissionData
 typedef struct transmissionData transmissionData;
 
 
+#define LENGTH(x)  (sizeof(x) / sizeof((x)[0]))
+
+void uart_recived_char(uint8_t recvChar);
+void UARTCOM_init(uint32_t BaudRate);
+bool UARTCOM_ready_to_send(transmissionData Data);
+void UARTCOM_transmit_block(transmissionData Data);
+transmissionData UARTCOM_get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
+
+
+
 #endif /* UARTCOM_H_ */

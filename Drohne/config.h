@@ -18,7 +18,9 @@
 // CPU frequency
 #define F_CPU 16000000
 // activate UART debugging?
-//#define DEBUG
+#ifndef DEBUG
+	#define DEBUG
+#endif
 
 
 /*
