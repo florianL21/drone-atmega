@@ -12,7 +12,6 @@ The controller program and the different modules are written in C in Atmel Studi
   - UARTCOM (WIP) - Creates an interface for PC-Drone communication with a custom protocol
   - BNOCOM (TBD) - Creates an interface to read data from the BNO055 sensor
   - more modules might come...
-  - 
  
 
 Powered by...
