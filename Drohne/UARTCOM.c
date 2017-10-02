@@ -7,7 +7,7 @@
 #include "UARTCOM.h"
 
 bool readyToSend = true;
-
+transmissionData tempData = NULL; 
 
 
 void parseRecvData(transmissionData recvData)
@@ -15,9 +15,13 @@ void parseRecvData(transmissionData recvData)
 	if(recvData.Type == ACK_CHAR && recvData.Length == 0)
 	{
 		readyToSend = true;
+		tempData = NULL;
 	}else if(recvData.Type == NACK_CHAR && recvData.Length == 0)
 	{
-		//TODO: handle retransmission
+		if(tempData != NULL)
+		{
+			transmit_block(tempData);
+		}
 	}
 }
 
@@ -73,12 +77,12 @@ void UARTCOM_init(uint32_t BaudRate)
 	uart0_register_recived_callback(uart_recived_char);
 }
 
-bool UARTCOM_ready_to_send(transmissionData Data)
+bool UARTCOM_ready_to_send(uint8_t dataLength)
 {
-	return readyToSend && (sizeof(Data.Data)/sizeof(Data.Data[0]) + 8) < uart0_get_buffer_space();;
+	return readyToSend && (dataLength + 8) < uart0_get_buffer_space();;
 }
 
-void UARTCOM_transmit_ack()
+void transmit_ack()
 {
 	uart0_putc(START_CHAR); //Start of Text
 	uart0_putc(ACK_CHAR);	//Type
@@ -90,7 +94,7 @@ void UARTCOM_transmit_ack()
 	uart0_putc(STOP_CHAR); //End of transmission
 }
 
-void UARTCOM_transmit_nack()
+void transmit_nack()
 {
 	uart0_putc(START_CHAR);	//Start
 	uart0_putc(NACK_CHAR);	//Type
@@ -102,28 +106,25 @@ void UARTCOM_transmit_nack()
 	uart0_putc(STOP_CHAR);	//End
 }
 
-void UARTCOM_transmit_block(transmissionData Data)
+void transmit_block(transmissionData Data)
 {
-	if(UARTCOM_ready_to_send(Data))
+	uart0_putc(START_CHAR);			//Start
+	uart0_putc(Data.Type);			//Type
+	//Data.Length = sizeof(Data.Data)/sizeof(Data.Data[0]);
+	uart0_putc(Data.Length);		//Length
+	for(uint8_t i = 0; i < Data.Length; i++)
 	{
-		uart0_putc(START_CHAR);			//Start
-		uart0_putc(Data.Type);			//Type
-		//Data.Length = sizeof(Data.Data)/sizeof(Data.Data[0]);
-		uart0_putc(Data.Length);		//Length
-		for(uint8_t i = 0; i < Data.Length; i++)
-		{
-			uart0_putc(Data.Data[i]);	//Transmit Data
-		}
-		for (uint8_t i = 0; i < 4; i++)
-		{
-			uart0_putc(Data.CRC[i]);	//CRC
-		}
-		uart0_putc(STOP_CHAR);			//End
-		readyToSend = false;
+		uart0_putc(Data.Data[i]);	//Transmit Data
 	}
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		uart0_putc(Data.CRC[i]);	//CRC
+	}
+	uart0_putc(STOP_CHAR);			//End
+	readyToSend = false;
 }
 
-transmissionData UARTCOM_get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
+transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
 {
 	transmissionData tranData;
 	tranData.Length = Length;
@@ -138,4 +139,17 @@ transmissionData UARTCOM_get_data_block(uint8_t Type, const uint8_t Data[], uint
 	tranData.CRC[2] = 0;
 	tranData.CRC[3] = 0;
 	return tranData;
+}
+
+transmissionData UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
+{
+	transmissionData Data;
+	Data = get_data_block(Type,Data,Length);
+	if(UARTCOM_ready_to_send(Data.Length))
+	{
+		tempData = Data;			//Store data for retransmission
+		transmit_block(Data);
+		return Data;
+	}
+	return NULL;
 }
