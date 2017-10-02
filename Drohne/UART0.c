@@ -37,9 +37,9 @@ uint8_t uart0_get_buffer_space()
 	return bufferSpace;
 }
 
-void uart0_puts(char* Data)
+void uart0_puts(char Data[])
 {
-	uint8_t Length = sizeof(Data)/sizeof(Data[0]);
+	uint8_t Length = strlen(Data);
 	for (uint8_t i = 0; i < Length; i++)
 	{
 		uart0_putc(Data[i]);

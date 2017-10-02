@@ -19,7 +19,7 @@
 #define F_CPU 16000000
 // activate UART debugging?
 #ifndef DEBUG
-	#define DEBUG
+	//#define DEBUG
 #endif
 
 

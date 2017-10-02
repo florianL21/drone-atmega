@@ -11,18 +11,16 @@
 
 int main(void)
 {
-	uint8_t DataArray[] = {0,1,2,3};
-	transmissionData sendData;
-	sendData = UARTCOM_get_data_block(23,DataArray,LENGTH(DataArray));
+	uint8_t dataArray[] = {0,1,2,8};
 	UARTCOM_init(57600);
 	sei();
+	sendDebug("START");
     while (1) 
     {
-		if(UARTCOM_ready_to_send(sendData))
+		if(UARTCOM_ready_to_send(LENGTH(dataArray)))
 		{
-			DataArray[3]++;
-			sendData = UARTCOM_get_data_block(23,DataArray,LENGTH(DataArray));
-			UARTCOM_transmit_block(sendData);
+			dataArray[3]++;
+			UARTCOM_transmit_block(23,DATADEF(dataArray));
 		}
 		
     }

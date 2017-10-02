@@ -13,6 +13,7 @@
 #include <avr/interrupt.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include "config.h"
 
 typedef void (*UART_RECV_CALLBACK)(uint8_t recivedChar);
