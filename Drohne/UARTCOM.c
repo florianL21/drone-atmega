@@ -16,6 +16,7 @@ void transmit_nack();
 void transmit_block(transmissionData Data);
 transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
 bool enough_buffer_space(uint8_t dataLength);
+void sendDebug_n(uint8_t Number);
 
 
 void parseRecvData(transmissionData recvData)
@@ -35,38 +36,38 @@ void parseRecvData(transmissionData recvData)
 
 void uart_recived_char(uint8_t recvChar)
 {
-	static uint8_t CharCounter = 0;
-	static bool recvInProgress = false;
-	static transmissionData receivedData;
+	volatile static uint8_t CharCounter = 0;
+	volatile static bool recvInProgress = false;
+	volatile static transmissionData receivedData;
 	if(recvInProgress == false && CharCounter == 0 && recvChar == START_CHAR)
 	{
 		recvInProgress = true;
-		CharCounter++;
+		//CharCounter++;
 	}else if(CharCounter == 1)
 	{
 		receivedData.Type = recvChar;
-		CharCounter++;
+		//CharCounter++;
 	}else if(CharCounter == 2)
 	{
 		receivedData.Length = recvChar;
-		CharCounter++;
+		//CharCounter++;
 	}else if(CharCounter == 3)
 	{
 		receivedData.Data = malloc(receivedData.Length*sizeof(uint8_t));
 		receivedData.Data[0] = recvChar;
-		CharCounter++;
+		//CharCounter++;
 	}else if(CharCounter >= 4 && CharCounter <= receivedData.Length + 3)
 	{
 		receivedData.Data[CharCounter - 3] = recvChar;
-		CharCounter++;
+		//CharCounter++;
 	}else if(CharCounter > receivedData.Length + 3 && CharCounter <= receivedData.Length + 7)
 	{
 		receivedData.CRC[CharCounter - receivedData.Length - 3] = recvChar;
-		CharCounter++;
+		//CharCounter++;
 	}else if((CharCounter = (receivedData.Length + 8)) && (recvChar == STOP_CHAR))
 	{
 		//Recv. Sucessful
-		//sendDebug("Recv. SUC");
+		sendDebug("Recv. SUC");
 		parseRecvData(receivedData);
 		CharCounter = 0;
 		recvInProgress = false;
@@ -76,7 +77,8 @@ void uart_recived_char(uint8_t recvChar)
 		recvInProgress = false;
 		sendDebug("Recv. ERROR");
 	}
-	//sendDebug("x");
+	sendDebug_n(CharCounter);
+	CharCounter++;
 }
 
 
@@ -87,11 +89,15 @@ void sendDebug(char Text[])
 	transmit_block(get_data_block(1,Text,Length));
 }
 
+void sendDebug_n(uint8_t Number)
+{
+	transmit_block(get_data_block(2,&Number,1));
+}
+
 void UARTCOM_init(uint32_t BaudRate)
 {
 	uart0_init(BaudRate);
 	uart0_register_recived_callback(uart_recived_char);
-	
 }
 
 bool enough_buffer_space(uint8_t dataLength)

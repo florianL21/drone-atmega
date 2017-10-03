@@ -15,6 +15,9 @@ int main(void)
 	UARTCOM_init(57600);
 	sei();
 	sendDebug("START");
+	sendDebug("START1");
+	sendDebug("START2");
+	sendDebug("START3");
     while (1) 
     {
 		if(UARTCOM_ready_to_send(LENGTH(dataArray)))
