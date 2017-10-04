@@ -30,6 +30,17 @@ struct transmissionData
 }; 
 typedef struct transmissionData transmissionData;
 
+typedef enum {
+	BEGIN = 0, 
+	TYPE = 1, 
+	LENGTH = 2, 
+	DATA = 3, 
+	CRC = 4, 
+	END = 5, 
+	ERROR = 6, 
+	TIMEOUT = 7
+} recvStates;
+
 /*
 * returns the Length of an Array
 */
