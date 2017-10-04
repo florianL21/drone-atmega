@@ -32,7 +32,7 @@ bool uart0_buffer_has_space();
 /*
  *	returns the number of free space in the send buffer
  */
-uint8_t uart0_get_buffer_space();
+uint16_t uart0_get_buffer_space();
 
 /*
  *	Add a char to the UART send buffer
