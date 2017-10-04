@@ -6,8 +6,10 @@
  */ 
 #include "UARTCOM.h"
 
-bool readyToSend = true;
-transmissionData tempData; 
+volatile bool readyToSend = true;
+volatile transmissionData tempData; 
+
+volatile recvStates recvState = BEGIN;
 
 void parseRecvData(transmissionData recvData);
 void uart_recived_char(uint8_t recvChar);
@@ -33,7 +35,7 @@ void parseRecvData(transmissionData recvData)
 		}
 	}
 }
-
+/*
 void uart_recived_char(uint8_t recvChar)
 {
 	volatile static uint8_t CharCounter = 0;
@@ -79,13 +81,88 @@ void uart_recived_char(uint8_t recvChar)
 	}
 	sendDebug_n(CharCounter);
 	CharCounter++;
+}*/
+
+void uart_recived_char(uint8_t recvChar)
+{
+	static transmissionData receivedData;
+	static bool recvInProgress = false;
+	static uint8_t CharCounter = 0;
+	switch(recvState)
+	{
+		case BEGIN:
+			if(recvChar == START_CHAR)
+			{
+				recvState = TYPE;
+				recvInProgress = true;
+			} else
+			{
+				//wrong start char
+				recvState = ERROR;
+			}
+			break;
+		case TYPE:
+			receivedData.Type = recvChar;
+			if(receivedData.Type != 0)
+			{
+				recvState = LENGTH;
+			} else
+			{
+				//Type 0 is not allowed
+				recvState = ERROR;
+			}
+			break;
+		case LENGTH:
+			recivedData.Length = recvChar;
+			receivedData.Data = malloc(receivedData.Length*sizeof(uint8_t));
+			recvState = DATA;
+			break;
+		case DATA:
+			receivedData.Data[CharCounter] = recvChar;
+			CharCounter++;
+			if(CharCounter >= recivedData.Length)
+			{
+				CharCounter = 0;
+				recvState = CRC;
+			}
+			break;
+		case CRC:
+			receivedData.CRC[CharCounter] = recvChar;
+			CharCounter++;
+			if(CharCounter >= 4)
+			{
+				CharCounter = 0;
+				recvState = END;
+			}
+			break;
+		case END:
+			if(recvChar == STOP_CHAR)
+			{
+				//RECV. Sucsessful
+				parseRecvData(receivedData);
+				recvInProgress = false;
+			} else 
+			{
+				//ERROR with end char
+			}
+			recvState = START;
+			break;
+		case ERROR:
+				//TODO: Handle errors
+			break;
+		case TIMEOUT:
+				//TODO: Implement timeout timer
+			break;
+		case default:
+				//TODO: Something went horribly wrong
+			break;
+	}
 }
 
 
 void sendDebug(char Text[])
 {
 	uint8_t Length = strlen(Text);
-	//uart0_puts(Text);
 	transmit_block(get_data_block(1,Text,Length));
 }
 
@@ -175,7 +252,7 @@ bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
 {
 	transmissionData tranData;
 	tranData = get_data_block(Type,Data,Length);
-	if(UARTCOM_ready_to_send(tranData.Length) && Type > 1 && Type <= 154)
+	if(UARTCOM_ready_to_send(tranData.Length) && Type > 2 && Type <= 154)
 	{
 		tempData = tranData;			//Store data for retransmission
 		transmit_block(tranData);
