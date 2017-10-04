@@ -32,7 +32,7 @@ bool uart0_buffer_has_space() // returns true if buffer has space
 	return bufferSpace != 0;
 }
 
-uint8_t uart0_get_buffer_space()
+uint16_t uart0_get_buffer_space()
 {
 	return bufferSpace;
 }
