@@ -25,63 +25,21 @@ void parseRecvData(transmissionData recvData)
 {
 	if(recvData.Type == ACK_CHAR && recvData.Length == 0)
 	{
+		//sendDebug("A");
 		readyToSend = true;
 		tempData.Type = 0;
 	}else if(recvData.Type == NACK_CHAR && recvData.Length == 0)
 	{
+		//sendDebug("N");
 		if(tempData.Type != 0)
 		{
 			transmit_block(tempData);
 		}
+	} else
+	{
+		//sendDebug("E");
 	}
 }
-/*
-void uart_recived_char(uint8_t recvChar)
-{
-	volatile static uint8_t CharCounter = 0;
-	volatile static bool recvInProgress = false;
-	volatile static transmissionData receivedData;
-	if(recvInProgress == false && CharCounter == 0 && recvChar == START_CHAR)
-	{
-		recvInProgress = true;
-		//CharCounter++;
-	}else if(CharCounter == 1)
-	{
-		receivedData.Type = recvChar;
-		//CharCounter++;
-	}else if(CharCounter == 2)
-	{
-		receivedData.Length = recvChar;
-		//CharCounter++;
-	}else if(CharCounter == 3)
-	{
-		receivedData.Data = malloc(receivedData.Length*sizeof(uint8_t));
-		receivedData.Data[0] = recvChar;
-		//CharCounter++;
-	}else if(CharCounter >= 4 && CharCounter <= receivedData.Length + 3)
-	{
-		receivedData.Data[CharCounter - 3] = recvChar;
-		//CharCounter++;
-	}else if(CharCounter > receivedData.Length + 3 && CharCounter <= receivedData.Length + 7)
-	{
-		receivedData.CRC[CharCounter - receivedData.Length - 3] = recvChar;
-		//CharCounter++;
-	}else if((CharCounter = (receivedData.Length + 8)) && (recvChar == STOP_CHAR))
-	{
-		//Recv. Sucessful
-		sendDebug("Recv. SUC");
-		parseRecvData(receivedData);
-		CharCounter = 0;
-		recvInProgress = false;
-	}else
-	{
-		CharCounter = 0;
-		recvInProgress = false;
-		sendDebug("Recv. ERROR");
-	}
-	sendDebug_n(CharCounter);
-	CharCounter++;
-}*/
 
 void uart_recived_char(uint8_t recvChar)
 {
@@ -113,14 +71,21 @@ void uart_recived_char(uint8_t recvChar)
 			}
 			break;
 		case LENGTH:
-			recivedData.Length = recvChar;
+			receivedData.Length = recvChar;
 			receivedData.Data = malloc(receivedData.Length*sizeof(uint8_t));
-			recvState = DATA;
+			if(receivedData.Length != 0)
+			{
+				recvState = DATA;
+			}
+			else
+			{
+				recvState = CRC;
+			}
 			break;
 		case DATA:
 			receivedData.Data[CharCounter] = recvChar;
 			CharCounter++;
-			if(CharCounter >= recivedData.Length)
+			if(CharCounter >= receivedData.Length)
 			{
 				CharCounter = 0;
 				recvState = CRC;
@@ -145,16 +110,20 @@ void uart_recived_char(uint8_t recvChar)
 			{
 				//ERROR with end char
 			}
-			recvState = START;
+			recvState = BEGIN;
+			//sendDebug("OK");
 			break;
 		case ERROR:
 				//TODO: Handle errors
+				sendDebug("ERROR");
 			break;
 		case TIMEOUT:
 				//TODO: Implement timeout timer
+				sendDebug("TIMEOUT");
 			break;
-		case default:
+		default:
 				//TODO: Something went horribly wrong
+				sendDebug("FATAL ERROR");
 			break;
 	}
 }
@@ -227,7 +196,7 @@ void transmit_block(transmissionData Data)
 			uart0_putc(Data.CRC[i]);	//CRC
 		}
 		uart0_putc(STOP_CHAR);			//End
-		readyToSend = false;
+		//readyToSend = false;
 	}
 }
 
@@ -256,6 +225,7 @@ bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
 	{
 		tempData = tranData;			//Store data for retransmission
 		transmit_block(tranData);
+		readyToSend = false;
 		return true;
 	}else
 	{
