@@ -11,6 +11,20 @@
 
 /*
  *
+ *	Debugging settings
+ *
+ */
+
+#ifndef DEBUG
+	#define DEBUG
+#endif
+#ifndef DEBUG_UARTCOM
+	#define DEBUG_UARTCOM
+#endif
+
+
+/*
+ *
  *	General Configuration
  *
  */
@@ -18,9 +32,6 @@
 // CPU frequency
 #define F_CPU 16000000
 // activate UART debugging?
-#ifndef DEBUG
-	//#define DEBUG
-#endif
 
 
 /*
@@ -60,5 +71,15 @@
 
 // Maximum amount of chars for the send buffer
 #define MAX_UART_SEND_BUFFER 270
+
+
+/*
+ *
+ *	UARTCOM Configuration
+ *
+ */
+
+// Maximum amount of different reciver types that are used in the program
+#define MAX_RECIVE_TYPES 20
 
 #endif /* CONFIG_H_ */
