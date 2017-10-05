@@ -21,6 +21,8 @@
 #define START_CHAR	2	//Start of text
 #define STOP_CHAR	4	//End of transmission
 
+typedef void (*LISTENER_CALLBACK)(uint8_t Type, uint8_t recivedData[]);
+
 struct transmissionData  
 {
 	uint8_t Type;
@@ -29,6 +31,13 @@ struct transmissionData
 	uint8_t CRC[4];
 }; 
 typedef struct transmissionData transmissionData;
+
+struct listenHandlerData  
+{
+	uint8_t Type;
+	LISTENER_CALLBACK CallBack;
+}; 
+typedef struct listenHandlerData listenHandlerData;
 
 typedef enum {
 	BEGIN = 0, 
@@ -75,9 +84,28 @@ bool UARTCOM_ready_to_send(uint8_t dataLength);
 */
 bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
 
+/*
+* Registers a listener for a specific type and links a callback to that type
+* returns true if the registration was sucessful
+*/
+bool UARTCOM_register_listener(uin8_t Type, LISTENER_CALLBACK callBack);
+
+/*
+* Sends a low level message which doesen't require a ack from the reciver.
+* gets delivered even if another transmission is waiting for the ack.
+*/
+void UARTCOM_sendDebug(char Text[]);
+
+/*
+* Same as sendDebug, but sends a single 8 bit number instead of a string
+*/
+void UARTCOM_sendDebug_n(uint8_t Number);
+
 
 //temporarily public for testing
-void sendDebug(char Text[]);
+
+
+
 
 
 #endif /* UARTCOM_H_ */
