@@ -11,6 +11,9 @@ volatile transmissionData tempData;
 
 volatile recvStates recvState = BEGIN;
 
+volatile listenHandlerData reciveListeners[MAX_RECIVE_TYPES];
+volatile uint8_t numReciveListeners = 0;
+
 void parseRecvData(transmissionData recvData);
 void uart_recived_char(uint8_t recvChar);
 void transmit_ack();
@@ -18,26 +21,68 @@ void transmit_nack();
 void transmit_block(transmissionData Data);
 transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
 bool enough_buffer_space(uint8_t dataLength);
-void sendDebug_n(uint8_t Number);
 
+bool checkCRC(transmissionData tranData)
+{
+	return true;
+}
+
+uint8_t* generateCRC(transmissionData tranData)
+{
+	static uint8_t CRC[4] = {0};
+	return CRC;
+}
 
 void parseRecvData(transmissionData recvData)
 {
-	if(recvData.Type == ACK_CHAR && recvData.Length == 0)
+	if(checkCRC(recvData))
 	{
-		//sendDebug("A");
-		readyToSend = true;
-		tempData.Type = 0;
-	}else if(recvData.Type == NACK_CHAR && recvData.Length == 0)
-	{
-		//sendDebug("N");
-		if(tempData.Type != 0)
+		if(recvData.Type == ACK_CHAR && recvData.Length == 0)
 		{
-			transmit_block(tempData);
+			#ifdef DEBUG_UARTCOM
+				UARTCOM_sendDebug("GOT ACK");
+			#endif
+			readyToSend = true;
+			tempData.Type = 0;
+		}else if(recvData.Type == NACK_CHAR && recvData.Length == 0)
+		{
+			#ifdef DEBUG_UARTCOM
+				UARTCOM_sendDebug("GOT NACK");
+			#endif
+			if(tempData.Type != 0)
+			{
+				transmit_block(tempData);
+			}
+		} else if (recvData.Type != 0)
+		{
+			bool gotMatch = false;
+			for(uint8_t i = 0; i < numReciveListeners; i++)
+			{
+				if(reciveListeners[i].Type == recvData.Type)
+				{
+					gotMatch = true;
+					reciveListeners[i].CallBack(recvData.Type, recvData.Data);
+					break;
+				}
+			}
+			if(gotMatch == false)
+			{
+				#ifdef DEBUG_UARTCOM
+					UARTCOM_sendDebug("Type Missmatch");
+				#endif
+			}
+
+		}else
+		{
+			#ifdef DEBUG_UARTCOM
+				UARTCOM_sendDebug("Type was NULL");
+			#endif
 		}
 	} else
 	{
-		//sendDebug("E");
+		#ifdef DEBUG_UARTCOM
+			UARTCOM_sendDebug("CRC Check Error");
+		#endif
 	}
 }
 
@@ -111,31 +156,54 @@ void uart_recived_char(uint8_t recvChar)
 				//ERROR with end char
 			}
 			recvState = BEGIN;
-			//sendDebug("OK");
+			#ifdef DEBUG_UARTCOM
+				UARTCOM_sendDebug("RECV. OK");
+			#endif
 			break;
 		case ERROR:
 				//TODO: Handle errors
-				sendDebug("ERROR");
+				#ifdef DEBUG_UARTCOM
+					UARTCOM_sendDebug("ERROR");
+				#endif
 			break;
 		case TIMEOUT:
 				//TODO: Implement timeout timer
-				sendDebug("TIMEOUT");
+				#ifdef DEBUG_UARTCOM
+					UARTCOM_sendDebug("TIMEOUT");
+				#endif
 			break;
 		default:
 				//TODO: Something went horribly wrong
-				sendDebug("FATAL ERROR");
+				#ifdef DEBUG_UARTCOM
+					UARTCOM_sendDebug("FATAL ERROR");
+				#endif
 			break;
 	}
 }
 
+bool UARTCOM_register_listener(uin8_t Type, LISTENER_CALLBACK callBack)
+{
+	listenHandlerData ListenHandler;
+	ListenHandler.Type = Type;
+	ListenHandler.CallBack = callBack;
+	for(uint8_t i = 0; i < numReciveListeners; i++)
+	{
+		if(Type == reciveListeners[i])
+		{
+			return false;
+		}
+	}
+	reciveListeners[numReciveListeners++] = ListenHandler;
+	return true;
+}
 
-void sendDebug(char Text[])
+void UARTCOM_sendDebug(char Text[])
 {
 	uint8_t Length = strlen(Text);
 	transmit_block(get_data_block(1,Text,Length));
 }
 
-void sendDebug_n(uint8_t Number)
+void UARTCOM_sendDebug_n(uint8_t Number)
 {
 	transmit_block(get_data_block(2,&Number,1));
 }
@@ -210,10 +278,7 @@ transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Leng
 	{
 		tranData.Data[i] = Data[i];
 	}
-	tranData.CRC[0] = 0;
-	tranData.CRC[1] = 0;
-	tranData.CRC[2] = 0;
-	tranData.CRC[3] = 0;
+	tranData.CRC = generateCRC(tranData);
 	return tranData;
 }
 
