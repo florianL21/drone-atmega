@@ -88,7 +88,7 @@ bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
 * Registers a listener for a specific type and links a callback to that type
 * returns true if the registration was sucessful
 */
-bool UARTCOM_register_listener(uin8_t Type, LISTENER_CALLBACK callBack);
+bool UARTCOM_register_listener(uint8_t Type, LISTENER_CALLBACK callBack);
 
 /*
 * Sends a low level message which doesen't require a ack from the reciver.

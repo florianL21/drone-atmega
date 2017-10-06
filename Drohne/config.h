@@ -16,10 +16,10 @@
  */
 
 #ifndef DEBUG
-	#define DEBUG
+	//#define DEBUG
 #endif
 #ifndef DEBUG_UARTCOM
-	#define DEBUG_UARTCOM
+	//#define DEBUG_UARTCOM
 #endif
 
 

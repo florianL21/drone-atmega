@@ -27,10 +27,12 @@ bool checkCRC(transmissionData tranData)
 	return true;
 }
 
-uint8_t* generateCRC(transmissionData tranData)
+void generateCRC(transmissionData tranData, uint8_t* CRC)
 {
-	static uint8_t CRC[4] = {0};
-	return CRC;
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		CRC[i] = 0;
+	}
 }
 
 void parseRecvData(transmissionData recvData)
@@ -89,7 +91,7 @@ void parseRecvData(transmissionData recvData)
 void uart_recived_char(uint8_t recvChar)
 {
 	static transmissionData receivedData;
-	static bool recvInProgress = false;
+	//static bool recvInProgress = false;
 	static uint8_t CharCounter = 0;
 	switch(recvState)
 	{
@@ -97,7 +99,7 @@ void uart_recived_char(uint8_t recvChar)
 			if(recvChar == START_CHAR)
 			{
 				recvState = TYPE;
-				recvInProgress = true;
+				//recvInProgress = true;
 			} else
 			{
 				//wrong start char
@@ -150,7 +152,7 @@ void uart_recived_char(uint8_t recvChar)
 			{
 				//RECV. Sucsessful
 				parseRecvData(receivedData);
-				recvInProgress = false;
+				//recvInProgress = false;
 			} else 
 			{
 				//ERROR with end char
@@ -181,14 +183,14 @@ void uart_recived_char(uint8_t recvChar)
 	}
 }
 
-bool UARTCOM_register_listener(uin8_t Type, LISTENER_CALLBACK callBack)
+bool UARTCOM_register_listener(uint8_t Type, LISTENER_CALLBACK callBack)
 {
 	listenHandlerData ListenHandler;
 	ListenHandler.Type = Type;
 	ListenHandler.CallBack = callBack;
 	for(uint8_t i = 0; i < numReciveListeners; i++)
 	{
-		if(Type == reciveListeners[i])
+		if(Type == reciveListeners[i].Type)
 		{
 			return false;
 		}
@@ -278,7 +280,7 @@ transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Leng
 	{
 		tranData.Data[i] = Data[i];
 	}
-	tranData.CRC = generateCRC(tranData);
+	generateCRC(tranData, tranData.CRC);
 	return tranData;
 }
 
