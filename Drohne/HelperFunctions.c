@@ -94,7 +94,7 @@ bool queue_write(Queue* writeQueue, uint8_t writeWalue)
   }
 }
 
-uint8_t queue_get_item_count(Queue* queue)
+uint16_t queue_get_item_count(Queue* queue)
 {
   if(queue != NULL)
     return queue->elementCount;
