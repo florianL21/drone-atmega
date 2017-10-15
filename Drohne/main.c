@@ -18,10 +18,10 @@ int main(void)
 	UARTCOM_sendDebug("START");
     while (1) 
     {
-		if(UARTCOM_ready_to_send(LENGTH(dataArray)))
+		if(UARTCOM_ready_to_send())
 		{
 			dataArray[0]++;
-			if(!UARTCOM_transmit_block('0'+dataArray[1], DATADEF(dataArray)))
+			if(!UARTCOM_transmit_block('0'+dataArray[1],ARRAYDEF(dataArray)))
 			{
 				UARTCOM_sendDebug("STOP");
 			}

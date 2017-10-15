@@ -215,7 +215,7 @@ void UARTCOM_init(uint32_t BaudRate)
 	uart0_register_recived_callback(uart_recived_char);
 }
 
-bool UARTCOM_ready_to_send(uint8_t dataLength)
+bool UARTCOM_ready_to_send()
 {
 	return readyToSend;
 }
