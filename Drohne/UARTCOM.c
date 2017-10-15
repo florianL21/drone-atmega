@@ -20,7 +20,6 @@ void transmit_ack();
 void transmit_nack();
 void transmit_block(transmissionData Data);
 transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
-bool enough_buffer_space(uint8_t dataLength);
 
 bool checkCRC(transmissionData tranData)
 {
@@ -216,14 +215,9 @@ void UARTCOM_init(uint32_t BaudRate)
 	uart0_register_recived_callback(uart_recived_char);
 }
 
-bool enough_buffer_space(uint8_t dataLength)
+bool UARTCOM_ready_to_send()
 {
-	return (dataLength + 8) < uart0_get_buffer_space();
-}
-
-bool UARTCOM_ready_to_send(uint8_t dataLength)
-{
-	return readyToSend && enough_buffer_space(dataLength);
+	return readyToSend;
 }
 
 void transmit_ack()
@@ -252,22 +246,19 @@ void transmit_nack()
 
 void transmit_block(transmissionData Data)
 {
-	if(enough_buffer_space(Data.Length))
+	uart0_putc(START_CHAR);			//Start
+	uart0_putc(Data.Type);			//Type
+	uart0_putc(Data.Length);		//Length
+	for(uint8_t i = 0; i < Data.Length; i++)
 	{
-		uart0_putc(START_CHAR);			//Start
-		uart0_putc(Data.Type);			//Type
-		uart0_putc(Data.Length);		//Length
-		for(uint8_t i = 0; i < Data.Length; i++)
-		{
-			uart0_putc(Data.Data[i]);	//Transmit Data
-		}
-		for (uint8_t i = 0; i < 4; i++)
-		{
-			uart0_putc(Data.CRC[i]);	//CRC
-		}
-		uart0_putc(STOP_CHAR);			//End
-		//readyToSend = false;
+		uart0_putc(Data.Data[i]);	//Transmit Data
 	}
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		uart0_putc(Data.CRC[i]);	//CRC
+	}
+	uart0_putc(STOP_CHAR);			//End
+	//readyToSend = false;
 }
 
 transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length)

@@ -54,7 +54,7 @@ typedef enum {
 * returns the Length of an Array
 */
 #define LENGTH(x)  (sizeof(x) / sizeof((x)[0]))
-#define DATADEF(x)		x,(sizeof(x) / sizeof((x)[0]))
+#define ARRAYDEF(x)		x,(sizeof(x) / sizeof((x)[0]))
 
 /*
 * Initializes everything needed for the UARTCOMM Module
@@ -64,23 +64,17 @@ void UARTCOM_init(uint32_t BaudRate);
 
 
 /*
-* Checks if there is enough space in the send buffer to send the required data
-* Suggested implementation (LENGTH only works if the dataArray is NOT passed by a pointer!): 
-* ...
-* uint8_t dataArray[] = { ... };
-* if( UARTCOMM_ready_to_send(LENGTH(dataArray)) )
-* {
-* 	UARTCOM_transmit_block( ... );
-* }
+* Checks if the last transmission was completed successfully
+* 
 */
-bool UARTCOM_ready_to_send(uint8_t dataLength);
+bool UARTCOM_ready_to_send();
 
 /*
 * Sends data over the UARTCOMM Module after a safety check.
 * Returns true if successful, returns false if unsuccessful
-* Suggested implementation (LENGTH only works if the dataArray is NOT passed by a pointer!): 
+* Suggested implementation (ARRAYDEF only works if the dataArray is NOT passed by a pointer!): 
 * uint8_t dataArray[] = { ... };
-* UARTCOM_transmit_block(0-256, dataArray, LENGTH(dataArray));
+* UARTCOM_transmit_block(0-256, ARRAYDEF(dataArray));
 */
 bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
 

@@ -13,18 +13,16 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-struct Queue_element  
-{
-	uint8_t Data;
-	struct Queue_element* pNext;
-}; 
-typedef struct Queue_element Queue_element;
-struct Queue  
-{
-	Queue_element* start;
-  Queue_element* end;
-  uint16_t elementCount;
-}; 
+struct queue_node {
+	struct queue_node *next;
+	uint8_t data;
+};
+typedef struct queue_node queue_node;
+
+struct Queue {
+	struct queue_node *front;
+	struct queue_node *back;
+};
 typedef struct Queue Queue;
 
 /*

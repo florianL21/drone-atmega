@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
+#include "HelperFunctions.h"
 
 typedef void (*UART_RECV_CALLBACK)(uint8_t recivedChar);
 
@@ -23,16 +24,6 @@ typedef void (*UART_RECV_CALLBACK)(uint8_t recivedChar);
  *
  */
 void uart0_init(uint32_t BaudRate);
-
-/*
- *	returns true if there is space in the send buffer
- */
-bool uart0_buffer_has_space();
-
-/*
- *	returns the number of free space in the send buffer
- */
-uint16_t uart0_get_buffer_space();
 
 /*
  *	Add a char to the UART send buffer
