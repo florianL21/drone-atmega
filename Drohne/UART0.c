@@ -7,9 +7,8 @@
 
 #include "UART0.h"
 
-volatile uint8_t sendBuffer[MAX_UART_SEND_BUFFER] = {0};
 volatile bool sendingActive = false;
-volatile uint16_t bufferSpace = MAX_UART_SEND_BUFFER;
+volatile Queue* uartSendBuffer;
 
 UART_RECV_CALLBACK reciveCallBack = NULL;
 
@@ -25,17 +24,9 @@ void uart0_init(uint32_t BaudRate)
 	
 	UCSR0B |= (1<<TXCIE0); //transmit interrupt
 	UCSR0B |= (1<<RXCIE0); //receive interrupt
+	uartSendBuffer = queue_new();
 }
 
-bool uart0_buffer_has_space() // returns true if buffer has space
-{
-	return bufferSpace != 0;
-}
-
-uint16_t uart0_get_buffer_space()
-{
-	return bufferSpace;
-}
 
 void uart0_puts(char Data[])
 {
@@ -46,46 +37,13 @@ void uart0_puts(char Data[])
 	}
 }
 
-uint16_t get_write_index()
-{
-	static uint16_t writeIndex = 0;
-	if(writeIndex + 1 >= MAX_UART_SEND_BUFFER)
-	{
-		writeIndex = 1;
-		return 0;
-	}else
-	{
-		writeIndex++;
-		return writeIndex-1;
-	}
-}
-
-uint16_t get_read_index()
-{
-	static uint16_t readIndex = 0;
-	if(readIndex + 1 >= MAX_UART_SEND_BUFFER)
-	{
-		readIndex = 1;
-		return 0;
-	}else
-	{
-		readIndex++;
-		return readIndex-1;
-	}
-}
-
 void uart0_putc(uint8_t character)
 {
-	if(uart0_buffer_has_space()) //check if buffer has space, if not simply do nothing
+	queue_write(uartSendBuffer, character);
+	if(sendingActive == false)
 	{
-		sendBuffer[get_write_index()] = character;
-		bufferSpace--;
-		if(sendingActive == false)
-		{
-			UDR0 = sendBuffer[get_read_index()];
-			
-			sendingActive = true;
-		}
+		UDR0 = queue_read(uartSendBuffer);
+		sendingActive = true;
 	}
 }
 
@@ -96,16 +54,14 @@ void uart0_register_recived_callback(UART_RECV_CALLBACK callBack)
 
 ISR(USART0_TX_vect)
 {
-	bufferSpace++;
-	if(bufferSpace == MAX_UART_SEND_BUFFER)
+	if(queue_is_empty(uartSendBuffer))
 	{
 		sendingActive = false;
-	} else 
+	} else
 	{
-		UDR0 = sendBuffer[get_read_index()];
+		UDR0 = queue_read(uartSendBuffer);
 	}
 }
-
 
 ISR(USART0_RX_vect)
 {

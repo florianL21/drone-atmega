@@ -69,9 +69,6 @@
  *
  */
 
-// Maximum amount of chars for the send buffer
-#define MAX_UART_SEND_BUFFER 270
-
 
 /*
  *

@@ -129,6 +129,12 @@
     <Compile Include="ESCControl.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="HelperFunctions.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="HelperFunctions.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
