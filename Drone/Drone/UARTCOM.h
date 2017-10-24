@@ -9,11 +9,11 @@
 #ifndef UARTCOM_H_
 #define UARTCOM_H_
 
-#include <avr/io.h>
+#include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include "config.h"
-#include "UART0.h"
+#include "uart0.h"
 #include <string.h>
 
 #define ACK_CHAR	6	//Acknowledge

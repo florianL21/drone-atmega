@@ -12,6 +12,14 @@ uint16_t map(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uin
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+void _Delay(uint32_t delayCycles)
+{
+	for(uint32_t i = 0; i < delayCycles; i++)
+	{
+		asm("nop");
+	}
+}
+
 bool queue_delete(Queue *queue) {
 	if (queue == NULL) {
 		return false;
@@ -42,21 +50,24 @@ Queue *queue_new(void) {
 	return queue;
 }
 
-uint8_t queue_read(Queue *queue) {
+queue_node queue_read(Queue *queue) {
+	queue_node returnStruct;
+	returnStruct.Length = 0;
 	if (queue == NULL || queue->front == NULL) {
-		return 0;
+		return returnStruct;
 	}
 	struct queue_node *node = queue->front;
-	uint8_t data = node->data;
+	returnStruct.data = node->data;
+	returnStruct.Length = node->Length;
 	queue->front = node->next;
 	if (queue->front == NULL) {
 		queue->back = NULL;
 	}
 	free(node);
-	return data;
+	return returnStruct;
 }
 
-bool queue_write(Queue *queue, uint8_t data) {
+bool queue_write(Queue *queue, uint8_t* data, uint16_t Length) {
 	if (queue == NULL) {
 		return false;
 	}
@@ -65,12 +76,14 @@ bool queue_write(Queue *queue, uint8_t data) {
 		return false;
 	}
 	node->data = data;
+	node->Length = Length;
 	node->next = NULL;
 	if (queue->back == NULL) {
 		queue->front = queue->back = node;
-		} else {
+	} else {
 		queue->back->next = node;
 		queue->back = node;
 	}
 	return true;
 }
+

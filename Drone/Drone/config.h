@@ -15,12 +15,9 @@
  *
  */
 
-#ifndef DEBUG
-	//#define DEBUG
-#endif
-#ifndef DEBUG_UARTCOM
-	//#define DEBUG_UARTCOM
-#endif
+
+//#define DEBUG
+//#define DEBUG_UARTCOM
 
 
 /*
@@ -68,7 +65,10 @@
  *	UART Configuration
  *
  */
-
+//turn queue limit on or off
+#define UART_USE_QUEUE_LIMIT	
+//maximum number of entrys in the send queue (uint16_t)	
+#define UART_QUEUE_MAX_ITEMS	50	
 
 /*
  *
@@ -77,6 +77,6 @@
  */
 
 // Maximum amount of different reciver types that are used in the program
-#define MAX_RECIVE_TYPES 20
+#define UARTCOM_MAX_RECIVE_TYPES 20
 
 #endif /* CONFIG_H_ */

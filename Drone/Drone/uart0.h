@@ -9,8 +9,7 @@
 #ifndef UART0_H_
 #define UART0_H_
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
+#include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +30,7 @@ void uart0_init(uint32_t BaudRate);
  *			  this function. Otherwise the char will be discarded
  *			  if the buffer is full.
  */
-void uart0_putc(uint8_t character);
+//void uart0_putc(uint8_t character);
 
 /*
  *	Register a callback function which gets called when a char is received
@@ -40,9 +39,23 @@ void uart0_register_recived_callback(UART_RECV_CALLBACK callBack);
 
 
 /*
- *	Sends a String over UART, strictly meant for debug messages
+ *	Sends a data array over uart. Strings are also allowed.
+ * IMPORTANT: Check if the buffer has space before calling
+ *			  this function. Otherwise the data will be discarded
+ *			  if the buffer is full.
  */
-void uart0_puts(char* Data);
+void uart0_puts(uint8_t Data[]);
+
+
+/*
+ *	returns true if the uart queue has space
+ */
+#ifdef UART_USE_QUEUE_LIMIT
+	bool uart0_has_space();
+#endif
+
+
+void uart0_putData(uint8_t* sendData, uint16_t Length);
 
 
 #endif /* UART0_H_ */

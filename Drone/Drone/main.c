@@ -6,14 +6,11 @@
  */ 
 
 #include "sam.h"
-
-#include "uart0.h"
-
-#define LEDON (PIOB->PIO_SODR = PIO_PB27)
-#define LEDOFF (PIOB->PIO_CODR = PIO_PB27)
-#define LEDTOGGLE ((PIOB->PIO_ODSR & PIO_PB27) ? LEDOFF : LEDON)
+//#include "uart0.h"
+#include "UARTCOM.h"
 
 
+/*
 
 void configure_tc(void)
 {
@@ -112,42 +109,59 @@ void configure_int(void)
 	NVIC_EnableIRQ(PIOB_IRQn);
 }
 
-
+*/
 void configure_wdt(void)
 {
 	WDT->WDT_MR = 0x00000000; // disable WDT
 }
 
-void _Delay(uint32_t num_time)
-{
-	for (int i = 0; i < num_time; i++)
-		asm("nop");
-}
+
 
 int main(void)
 {
-	/* Initialize the SAM system */
-	SystemInit();
 	//SystemCoreClockUpdate();
 	/*configure_led_io();
 	configure_tc();
 	*/
-	configure_wdt();
-	uart0_init(115200);
-	
+	/* Initialize the SAM system */
+	SystemInit();
 	// Enable IO
 	PIOB->PIO_PER = PIO_PB27;
+	PIOC->PIO_PER = PIO_PC2;
+	PIOC->PIO_PER = PIO_PC1;
+	PIOC->PIO_PER = PIO_PC3 | PIO_PC4;
 	// Set to output
 	PIOB->PIO_OER = PIO_PB27;
+	PIOC->PIO_OER = PIO_PC2;
+	PIOC->PIO_OER = PIO_PC1;
+	PIOC->PIO_OER = PIO_PC3 | PIO_PC4;
 	// Disable pull-up
 	PIOB->PIO_PUDR = PIO_PB27;
-	//configure_int();
+	PIOC->PIO_PUDR = PIO_PC2;
+	PIOC->PIO_PUDR = PIO_PC1;
+	PIOC->PIO_PUDR = PIO_PC3 | PIO_PC4;
 	
+	PIOB->PIO_CODR = PIO_PB27;
+	
+	configure_wdt();
+	//uart0_init(115200);
+	//configure_int();
+	UARTCOM_init(115200);
+	UARTCOM_sendDebug("START!");
+	uint8_t dataArray[] = {0,0};
 	while (1)
 	{
-		LEDON;
-		//uart0_putc('S');
-		//_Delay(1000);
-		//LEDOFF;
+		if(UARTCOM_ready_to_send())
+		{
+			PIOB->PIO_SODR = PIO_PB27;
+			dataArray[0]++;
+			if(!UARTCOM_transmit_block('0'+dataArray[1]+3,ARRAYDEF(dataArray)))
+			{
+				UARTCOM_sendDebug("STOP");
+			}
+			if(dataArray[0] == 255)
+				dataArray[1]++;
+			PIOB->PIO_CODR = PIO_PB27;
+		}
 	}
 }

@@ -141,19 +141,37 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="config.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Device_Startup\startup_sam3xa.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Device_Startup\system_sam3xa.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="HelperFunctions.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="HelperFunctions.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="syscalls.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="uart0.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="uart0.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UARTCOM.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UARTCOM.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

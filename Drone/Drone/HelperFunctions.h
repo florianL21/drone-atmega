@@ -9,13 +9,14 @@
 #ifndef HELPERFUNCTIONS_H_
 #define HELPERFUNCTIONS_H_
 
-#include <avr/io.h>
+#include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
 struct queue_node {
 	struct queue_node *next;
-	uint8_t data;
+	uint8_t* data;
+	uint16_t Length;
 };
 typedef struct queue_node queue_node;
 
@@ -35,6 +36,8 @@ typedef struct Queue Queue;
  *		out_max	- upper bound of output range
  */
 uint16_t map(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max);
+
+void _Delay(uint32_t delayCycles);
 
 /*
  * 
@@ -56,14 +59,14 @@ bool queue_is_empty(Queue* queue);
  * Returns the value from the top of the queue and deletes it
  * returns 0 if an error occures
  */
-uint8_t queue_read(Queue* readQueue);
+queue_node queue_read(Queue* readQueue);
 
 /*
  * 
  * Writes a Value to the top of the queue
  * returns 0 if an error occures
  */
-bool queue_write(Queue* writeQueue, uint8_t writeWalue);
+bool queue_write(Queue* writeQueue, uint8_t* writeWalue, uint16_t Length);
 
 /*
  * 
@@ -78,6 +81,8 @@ uint16_t queue_get_item_count(Queue* queue);
  * 
  */
 bool queue_delete(Queue* queue);
+
+
 
 
 #endif /* HELPERFUNCTIONS_H_ */

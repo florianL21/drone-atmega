@@ -11,7 +11,7 @@ volatile transmissionData tempData;
 
 volatile recvStates recvState = BEGIN;
 
-volatile listenHandlerData reciveListeners[MAX_RECIVE_TYPES];
+volatile listenHandlerData reciveListeners[UARTCOM_MAX_RECIVE_TYPES];
 volatile uint8_t numReciveListeners = 0;
 
 void parseRecvData(transmissionData recvData);
@@ -89,6 +89,7 @@ void parseRecvData(transmissionData recvData)
 
 void uart_recived_char(uint8_t recvChar)
 {
+	
 	static transmissionData receivedData;
 	//static bool recvInProgress = false;
 	static uint8_t CharCounter = 0;
@@ -200,7 +201,7 @@ bool UARTCOM_register_listener(uint8_t Type, LISTENER_CALLBACK callBack)
 
 void UARTCOM_sendDebug(char Text[])
 {
-	uint8_t Length = strlen(Text);
+	uint16_t Length = strlen(Text);
 	transmit_block(get_data_block(1,Text,Length));
 }
 
@@ -217,48 +218,7 @@ void UARTCOM_init(uint32_t BaudRate)
 
 bool UARTCOM_ready_to_send()
 {
-	return readyToSend;
-}
-
-void transmit_ack()
-{
-	uart0_putc(START_CHAR); //Start of Text
-	uart0_putc(ACK_CHAR);	//Type
-	uart0_putc(0);			//length = 0
-	for (uint8_t i = 0; i < 4; i++)
-	{
-		uart0_putc(0);	//CRC
-	}
-	uart0_putc(STOP_CHAR); //End of transmission
-}
-
-void transmit_nack()
-{
-	uart0_putc(START_CHAR);	//Start
-	uart0_putc(NACK_CHAR);	//Type
-	uart0_putc(0);			//length = 0
-	for (uint8_t i = 0; i < 4; i++)
-	{
-		uart0_putc(0);	//CRC
-	}
-	uart0_putc(STOP_CHAR);	//End
-}
-
-void transmit_block(transmissionData Data)
-{
-	uart0_putc(START_CHAR);			//Start
-	uart0_putc(Data.Type);			//Type
-	uart0_putc(Data.Length);		//Length
-	for(uint8_t i = 0; i < Data.Length; i++)
-	{
-		uart0_putc(Data.Data[i]);	//Transmit Data
-	}
-	for (uint8_t i = 0; i < 4; i++)
-	{
-		uart0_putc(Data.CRC[i]);	//CRC
-	}
-	uart0_putc(STOP_CHAR);			//End
-	//readyToSend = false;
+	return readyToSend && uart0_has_space();
 }
 
 transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
@@ -275,6 +235,7 @@ transmissionData get_data_block(uint8_t Type, const uint8_t Data[], uint8_t Leng
 	return tranData;
 }
 
+
 bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
 {
 	transmissionData tranData;
@@ -290,4 +251,50 @@ bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
 		tranData.Type = 0;
 		return false;
 	}
+}
+
+void transmit_ack()
+{
+	if(readyToSend == true)
+	{
+		transmissionData ackData;
+		ackData.Type = ACK_CHAR;
+		ackData.Length = 0;
+		generateCRC(ackData, ackData.CRC);
+		transmit_block(ackData);
+	}
+}
+
+void transmit_nack()
+{
+	if(readyToSend == true)
+	{
+		transmissionData nackData;
+		nackData.Type = NACK_CHAR;
+		nackData.Length = 0;
+		generateCRC(nackData, nackData.CRC);
+		transmit_block(nackData);
+	}
+}
+
+//Functions which interface with the UART module directly are below:
+void transmit_block(transmissionData Data)
+{
+	if(!uart0_has_space())
+		return;
+	uint8_t* rawData = malloc(sizeof(uint8_t)*(Data.Length + 8));
+	rawData[0] = START_CHAR;			//Start
+	rawData[1] = Data.Type;				//Type
+	rawData[2] = Data.Length;			//Length
+	for(uint8_t i = 0; i < Data.Length; i++)
+	{
+		rawData[i + 3] = Data.Data[i];	//Transmit Data
+	}
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		rawData[i + Data.Length + 3] = Data.CRC[i];	//CRC
+	}
+	rawData[Data.Length + 7] = STOP_CHAR;		//End
+	uart0_putData(rawData,Data.Length + 8);
+	//readyToSend = false;
 }
