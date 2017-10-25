@@ -81,6 +81,7 @@ bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
 /*
 * Registers a listener for a specific type and links a callback to that type
 * returns true if the registration was sucessful
+* IMPORTANT: you have to delete the data array yourself when you are done with it!
 */
 bool UARTCOM_register_listener(uint8_t Type, LISTENER_CALLBACK callBack);
 
@@ -88,15 +89,20 @@ bool UARTCOM_register_listener(uint8_t Type, LISTENER_CALLBACK callBack);
 * Sends a low level message which doesen't require a ack from the reciver.
 * gets delivered even if another transmission is waiting for the ack.
 */
-void UARTCOM_sendDebug(char Text[]);
+void UARTCOM_send_debug(char Text[]);
 
 /*
 * Same as sendDebug, but sends a single 8 bit number instead of a string
 */
-void UARTCOM_sendDebug_n(uint8_t Number);
+void UARTCOM_send_debug_n(uint8_t Number);
 
 
 //temporarily public for testing
+
+
+
+
+
 
 
 

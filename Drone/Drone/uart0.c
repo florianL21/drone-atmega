@@ -7,7 +7,7 @@
 
 #include "UART0.h"
 
-volatile bool sendingActive = false;
+bool sendingActive = false;
 Queue* uartSendQueue;
 
 UART_RECV_CALLBACK reciveCallBack = NULL;
@@ -18,7 +18,7 @@ uint8_t TXCHAR;
 	uint16_t queueItemCount = 0;
 #endif
 
-void uart0_putData(uint8_t* sendData, uint16_t Length);
+void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup);
 
 void uart0_init(uint32_t BaudRate)
 {
@@ -40,7 +40,8 @@ void uart0_init(uint32_t BaudRate)
 	// Enable Receive and Transmit
 	UART->UART_CR = UART_CR_TXEN | UART_CR_RXEN;
 	// Enable UART interrupt
-	UART->UART_IER = UART_IER_RXRDY ;//| UART_IER_TXRDY;
+	UART->UART_IER = UART_IER_RXRDY;//| UART_IER_TXRDY;
+	//UART->UART_IDR = UART_IDR_ENDRX|UART_IDR_ENDTX|UART_IDR_TXBUFE|UART_IDR_TXEMPTY|UART_IDR_TXRDY;
 	// Enable UART Interrupt Handling in NVIC
 	NVIC_EnableIRQ(UART_IRQn);
 	// Enable Peripheral DMA Controller Transmission
@@ -50,58 +51,6 @@ void uart0_init(uint32_t BaudRate)
 	uartSendQueue = queue_new();
 }
 
-void uart0_puts(uint8_t Data[])
-{
-	#ifdef UART_USE_QUEUE_LIMIT
-		queueItemCount++;
-		if(!uart0_has_space())
-			return;
-	#endif
-		
-	if(sendingActive == false)
-	{
-		uart0_putData(Data,strlen((char*)Data));
-		sendingActive = true;
-	} else
-	{
-		queue_write(uartSendQueue, Data, strlen((char*)Data));
-	}
-}
-
-void uart0_register_recived_callback(UART_RECV_CALLBACK callBack)
-{
-	reciveCallBack = callBack;
-}
-
-void UART_Handler(void)
-{	
-	if (UART->UART_SR & UART_SR_RXRDY)
-	{
-		uint8_t in = UART->UART_RHR; // Read in received byte		
-		UART->UART_CR = UART_CR_RSTSTA; // Clear receiver errors (if any)
-		if(reciveCallBack != NULL)
-		{
-			reciveCallBack(in);
-		}
-	}else if(UART->UART_SR & UART_SR_TXRDY)	
-	{
-		UART->UART_IDR = UART_IER_TXRDY;		//deactivate transmit done interrupt to keep it from firing constantly...
-		if(queue_is_empty(uartSendQueue))
-		{
-			sendingActive = false;
-		} else
-		{
-			queue_node writeData = queue_read(uartSendQueue);
-			uart0_putData(writeData.data, writeData.Length);
-		}
-		#ifdef UART_USE_QUEUE_LIMIT
-			queueItemCount--;
-		#endif
-	}else
-	{
-		//impossible to reach... but maybe an error should be thrown anyways, who knows...
-	}
-}
 /*
 void uart0_putc(uint8_t Character)
 {
@@ -112,16 +61,74 @@ void uart0_putc(uint8_t Character)
 }
 */
 
-void uart0_putData(uint8_t* sendData, uint16_t Length)
+void uart0_register_recived_callback(UART_RECV_CALLBACK callBack)
 {
-	// copy to buffer - MUST be in SRAM as PDC is not connected to Flash
-	for (uint16_t count = 0; count < Length; count++)
+	reciveCallBack = callBack;
+}
+
+void uart0_puts(uint8_t Data[])
+{
+	#ifdef UART_USE_QUEUE_LIMIT
+		queueItemCount++;
+		if(!uart0_has_space())
+			return;
+	#endif
+	
+	if(sendingActive == false)
 	{
-		TXBUFFER[count] = sendData[count];
+		_put_raw_data(Data,strlen((char*)Data),false);
+		sendingActive = true;
+	} else
+	{
+		queue_write(uartSendQueue, Data, strlen((char*)Data),false);
 	}
-	UART->UART_TPR = (uint32_t)TXBUFFER; 	// set Trasmission pointer in PDC register
-	UART->UART_TCR = Length; 					// set count of characters to be sent; starts transmission (since UART_PTCR_TXTEN is already set)
-	UART->UART_IER = UART_IER_TXRDY;		//activate Transmit done interrupt
+	//free(Data);
+}
+
+void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup)
+{
+	#ifdef UART_USE_QUEUE_LIMIT
+		if(!uart0_has_space())
+			return;
+	#endif
+	if(sendingActive == false)
+	{
+		_put_raw_data(sendData, Length, requiresMemmoryCleanup);
+		sendingActive = true;
+	} else
+	{
+		#ifdef UART_USE_QUEUE_LIMIT
+			queueItemCount++;
+		#endif
+		queue_write(uartSendQueue, sendData, Length, requiresMemmoryCleanup);
+
+		PIOC->PIO_CODR = PIO_PC1;
+		PIOC->PIO_SODR = PIO_PC1;
+	}
+}
+
+void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup)
+{
+	if(sendData!=NULL)
+	{
+		// copy to buffer - MUST be in SRAM as PDC is not connected to Flash
+		for (uint16_t count = 0; count < Length; count++)
+		{
+			TXBUFFER[count] = sendData[count];
+		}
+		if(requiresMemmoryCleanup == true)
+		{
+			if(sendData!=NULL)
+				free(sendData);
+		}
+		UART->UART_TPR = (uint32_t)TXBUFFER; 	// set Trasmission pointer in PDC register
+		UART->UART_TCR = Length; 					// set count of characters to be sent; starts transmission (since UART_PTCR_TXTEN is already set)
+		UART->UART_IER = UART_IER_TXRDY;		//activate Transmit done interrupt
+	} else{
+		#ifdef DEBUG_UART0
+			UARTCOM_send_debug("_put_raw_data: sendData was a NULL pointer");
+		#endif
+	}
 }
 
 #ifdef UART_USE_QUEUE_LIMIT
@@ -130,3 +137,35 @@ void uart0_putData(uint8_t* sendData, uint16_t Length)
 		return queueItemCount < UART_QUEUE_MAX_ITEMS;
 	}
 #endif
+
+
+
+void UART_Handler(void)
+{
+	if (UART->UART_SR & UART_SR_RXRDY)
+	{
+		uint8_t in = UART->UART_RHR; // Read in received byte
+		UART->UART_CR = UART_CR_RSTSTA; // Clear receiver errors (if any)
+		if(reciveCallBack != NULL)
+		{
+			reciveCallBack(in);
+		}
+	}else if(UART->UART_SR & UART_SR_TXRDY)
+	{
+		UART->UART_IDR = UART_IER_TXRDY;		//deactivate transmit done interrupt to keep it from firing constantly...
+		if(queue_is_empty(uartSendQueue))
+		{
+			sendingActive = false;
+		} else
+		{
+			#ifdef UART_USE_QUEUE_LIMIT
+				queueItemCount--;
+			#endif
+			queue_node writeData = queue_read(uartSendQueue);
+			_put_raw_data(writeData.data, writeData.Length, true);
+		}
+	}else
+	{
+		//impossible to reach... but maybe an error should be thrown anyways, who knows...
+	}
+}

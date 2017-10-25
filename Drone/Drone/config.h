@@ -18,6 +18,7 @@
 
 //#define DEBUG
 //#define DEBUG_UARTCOM
+//#define DEBUG_UART0
 
 
 /*
@@ -66,7 +67,7 @@
  *
  */
 //turn queue limit on or off
-#define UART_USE_QUEUE_LIMIT	
+//#define UART_USE_QUEUE_LIMIT	
 //maximum number of entrys in the send queue (uint16_t)	
 #define UART_QUEUE_MAX_ITEMS	50	
 

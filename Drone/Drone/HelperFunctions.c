@@ -25,7 +25,7 @@ bool queue_delete(Queue *queue) {
 		return false;
 	}
 	while (queue->front != NULL) {
-		struct queue_node *node = queue->front;
+		queue_node *node = queue->front;
 		queue->front = node->next;
 		free(node);
 	}
@@ -56,7 +56,7 @@ queue_node queue_read(Queue *queue) {
 	if (queue == NULL || queue->front == NULL) {
 		return returnStruct;
 	}
-	struct queue_node *node = queue->front;
+	queue_node *node = queue->front;
 	returnStruct.data = node->data;
 	returnStruct.Length = node->Length;
 	queue->front = node->next;
@@ -67,15 +67,27 @@ queue_node queue_read(Queue *queue) {
 	return returnStruct;
 }
 
-bool queue_write(Queue *queue, uint8_t* data, uint16_t Length) {
+bool queue_write(Queue *queue, uint8_t* data, uint16_t Length, bool CleanupRequired) {
 	if (queue == NULL) {
 		return false;
 	}
-	struct queue_node *node = malloc(sizeof(*node));
+	queue_node *node = malloc(sizeof(*node));
 	if (node == NULL) {
 		return false;
 	}
-	node->data = data;
+	node->data = malloc(Length * sizeof(uint8_t));
+	if (node->data == NULL) {
+		return false;
+	}
+	for(uint16_t dataIndex = 0; dataIndex < Length; dataIndex++)
+	{
+		node->data[dataIndex] = data[dataIndex];
+	}
+	if(CleanupRequired == true)
+	{
+		if(data!=NULL)
+			free(data);
+	}
 	node->Length = Length;
 	node->next = NULL;
 	if (queue->back == NULL) {
@@ -86,4 +98,3 @@ bool queue_write(Queue *queue, uint8_t* data, uint16_t Length) {
 	}
 	return true;
 }
-

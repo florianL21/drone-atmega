@@ -147,21 +147,44 @@ int main(void)
 	//uart0_init(115200);
 	//configure_int();
 	UARTCOM_init(115200);
-	UARTCOM_sendDebug("START!");
+	
+	UARTCOM_send_debug("START!");
+	
+	PIOB->PIO_SODR = PIO_PB27;
+	//UARTCOM_send_debug("START1!");
+	PIOB->PIO_CODR = PIO_PB27;
 	uint8_t dataArray[] = {0,0};
+	/*uint8_t testData=5;
+	Queue* testQueue = queue_new();
+	queue_node dataOut;
+	queue_write(testQueue, &testData, 1,false);
+	testData = 10;
+	queue_write(testQueue, &testData, 1,false);
+	dataOut=queue_read(testQueue);
+	UARTCOM_send_debug_n(*dataOut.data);
+	dataOut=queue_read(testQueue);
+	UARTCOM_send_debug_n(*dataOut.data);
+	UARTCOM_send_debug("END!");
+	
+	
+	dataOut=queue_read(testQueue);
+	UARTCOM_send_debug_n(*dataOut.data);
+	dataOut=queue_read(testQueue);
+	UARTCOM_send_debug_n(*dataOut.data);*/
 	while (1)
 	{
 		if(UARTCOM_ready_to_send())
 		{
-			PIOB->PIO_SODR = PIO_PB27;
 			dataArray[0]++;
-			if(!UARTCOM_transmit_block('0'+dataArray[1]+3,ARRAYDEF(dataArray)))
+			if(!UARTCOM_transmit_block('5',ARRAYDEF(dataArray)))
 			{
-				UARTCOM_sendDebug("STOP");
+				UARTCOM_send_debug("STOP");
 			}
 			if(dataArray[0] == 255)
 				dataArray[1]++;
-			PIOB->PIO_CODR = PIO_PB27;
+			PIOC->PIO_CODR = PIO_PC1;
+			PIOC->PIO_SODR = PIO_PC1;
 		}
+		
 	}
 }
