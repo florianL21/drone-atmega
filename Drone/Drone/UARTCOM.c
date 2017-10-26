@@ -25,6 +25,30 @@ void _transmit_block(transmissionData* Data, bool DeepMemmoryCleanRequired);
 void _parse_recv_data(transmissionData* recvData);
 void _uart_recived_char(uint8_t recvChar);
 void _clean_up(transmissionData* recvData, bool deepMemmoryCleanRequired);
+void _put_debug(char Text[]);
+void _put_debug_n(uint8_t Number);
+
+void _put_debug(char Text[])
+{
+	#ifdef DEBUG_UARTCOM
+		#ifdef FORCE_UARTCOM_DEBUG
+			UARTCOM_force_send_debug(Text);
+		#else
+			UARTCOM_send_debug(Text);
+		#endif
+	#endif
+}
+
+void _put_debug_n(uint8_t Number)
+{
+	#ifdef DEBUG_UARTCOM
+		#ifdef FORCE_UARTCOM_DEBUG
+			UARTCOM_force_send_debug_n(Number);
+		#else
+			UARTCOM_send_debug_n(Number);
+		#endif
+	#endif
+}
 
 bool _check_CRC(transmissionData* tranData)
 {
@@ -55,10 +79,21 @@ bool UARTCOM_register_listener(uint8_t Type, LISTENER_CALLBACK callBack)
 	return true;
 }
 
+
 void UARTCOM_send_debug(char Text[])
 {
 	uint16_t Length = strlen(Text);
 	_transmit_block(_generate_data_block(1,(uint8_t*)Text,Length),true);
+}
+
+void UARTCOM_force_send_debug(char Text[])
+{
+	uart0_force_debug_output(Text);
+}
+
+void UARTCOM_force_send_debug_n(uint8_t Number)
+{
+	uart0_force_debug_output_n(Number);
 }
 
 void UARTCOM_send_debug_n(uint8_t Number)
@@ -76,6 +111,8 @@ bool UARTCOM_ready_to_send()
 {
 	return readyToSend && uart0_has_space();
 }
+
+
 
 transmissionData* _generate_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
 {
@@ -96,9 +133,7 @@ transmissionData* _generate_data_block(uint8_t Type, const uint8_t Data[], uint8
 			}
 		} else
 		{
-			#ifdef DEBUG_UARTCOM
-			UARTCOM_send_debug("generate_data_block: mallock returned NULL");
-			#endif
+			_put_debug("generate_data_block: malloc returned NULL");
 		}
 	}
 	_generateCRC(tranData, tranData->CRC);
@@ -179,9 +214,8 @@ void _transmit_block(transmissionData* Data, bool DeepMemmoryCleanRequired)
 			//lastTranDataAdvancedCleanup = DeepMemmoryCleanRequired;
 			_clean_up(Data,DeepMemmoryCleanRequired);
 		} else {
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("transmit_block: data pointet to NULL");
-			#endif
+			_put_debug("transmit_block: data pointet to NULL");
+			
 			_clean_up(Data,DeepMemmoryCleanRequired);
 			free(rawData);
 		}
@@ -189,9 +223,7 @@ void _transmit_block(transmissionData* Data, bool DeepMemmoryCleanRequired)
 		//readyToSend = false;
 	}else
 	{
-		#ifdef DEBUG_UARTCOM
-			UARTCOM_send_debug("transmit_block: malloc returned NULL");
-		#endif
+		_put_debug("transmit_block: malloc returned NULL");
 		_clean_up(Data,DeepMemmoryCleanRequired);
 	}
 }
@@ -215,18 +247,14 @@ void _parse_recv_data(transmissionData* recvData)
 	{
 		if(recvData->Type == ACK_CHAR && recvData->Length == 0)
 		{
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("parse_recv_data: GOT ACK");
-			#endif
+			_put_debug("parse_recv_data: GOT ACK");
 			
 			readyToSend = true;
 			_clean_up(recvData, false);
 			//lastTranData->Type = 0;
 		}else if(recvData->Type == NACK_CHAR && recvData->Length == 0)
 		{
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("parse_recv_data: GOT NACK");
-			#endif
+			_put_debug("parse_recv_data: GOT NACK");
 			/*
 			if(lastTranData->Type != 0)
 			{
@@ -242,10 +270,8 @@ void _parse_recv_data(transmissionData* recvData)
 				{
 					gotMatch = true;
 					reciveListeners[i].CallBack(recvData->Type, recvData->Data);
-					#ifdef DEBUG_UARTCOM
-					UARTCOM_send_debug("parse_recv_data: Type match: ");
-					UARTCOM_send_debug_n(recvData->Type);
-					#endif
+					_put_debug("parse_recv_data: Type match: ");
+					_put_debug_n(recvData->Type);
 					_clean_up(recvData,false);
 					break;
 				}
@@ -253,29 +279,21 @@ void _parse_recv_data(transmissionData* recvData)
 			if(gotMatch == false)
 			{
 				_clean_up(recvData,true);
-				#ifdef DEBUG_UARTCOM
-					UARTCOM_send_debug("parse_recv_data: Type Missmatch: ");
-					UARTCOM_send_debug_n(recvData->Type);
-				#endif
+				_put_debug("parse_recv_data: Type Missmatch: ");
+				_put_debug_n(recvData->Type);
 			}
 		}else
 		{
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("parse_recv_data: Type was 0");
-			#endif
+			_put_debug("parse_recv_data: Type was 0");
 			_clean_up(recvData,true);
 		}
 	} else
 	{
 		if(recvData == NULL)
 		{
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("parse_recv_data: Data pointet to NULL");
-			#endif
+			_put_debug("parse_recv_data: Data pointet to NULL");
 		}else{
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("parse_recv_data: CRC Check Error");
-			#endif
+			_put_debug("parse_recv_data: CRC Check Error");
 			_clean_up(recvData,true);
 		}
 	}
@@ -347,9 +365,7 @@ void _uart_recived_char(uint8_t recvChar)
 		case END:
 			if(recvChar == STOP_CHAR)
 			{
-				#ifdef DEBUG_UARTCOM
-					UARTCOM_send_debug("uart_recived_char: RECV. OK");
-				#endif
+				_put_debug("uart_recived_char: RECV. OK");
 				//RECV. Sucsessful
 				_parse_recv_data(receivedData);
 				//recvInProgress = false;
@@ -364,23 +380,17 @@ void _uart_recived_char(uint8_t recvChar)
 		case ERROR:
 			_clean_up(receivedData,true);
 			//TODO: Handle errors
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("uart_recived_char: ERROR");
-			#endif
+			_put_debug("uart_recived_char: ERROR");
 			break;
 		case TIMEOUT:
 			_clean_up(receivedData,true);
 			//TODO: Implement timeout timer
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("uart_recived_char: TIMEOUT");
-			#endif
+			_put_debug("uart_recived_char: TIMEOUT");
 			break;
 		default:
 			_clean_up(receivedData,true);
 			//TODO: Something went horribly wrong
-			#ifdef DEBUG_UARTCOM
-				UARTCOM_send_debug("uart_recived_char: FATAL ERROR");
-			#endif
+			_put_debug("uart_recived_char: FATAL ERROR");
 			break;
 	}
 }

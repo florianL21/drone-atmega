@@ -15,9 +15,9 @@ uint8_t TXBUFFER[270]; // UART PDC Transmit buffer
 uint8_t TXCHAR;
 
 void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup);
-#ifdef DEBUG_UART0
-	void _force_debug_output(char Text[]);
-#endif
+
+
+
 
 void uart0_init(uint32_t BaudRate)
 {
@@ -78,14 +78,14 @@ void uart0_puts(uint8_t Data[])
 			if(!queue_write(uartSendQueue, Data, strlen((char*)Data),false))
 			{
 				#ifdef DEBUG_UART0
-					_force_debug_output("uart0_puts: queue write error");
+					uart0_force_debug_output("uart0_puts: queue write error");
 				#endif
 				return;
 			}
 		}else
 		{
 			#ifdef DEBUG_UART0
-				_force_debug_output("uart0_puts: queue full");
+				uart0_force_debug_output("uart0_puts: queue full");
 			#endif
 			return;
 		}
@@ -106,14 +106,14 @@ void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClea
 			if(!queue_write(uartSendQueue, sendData, Length, requiresMemmoryCleanup))
 			{
 				#ifdef DEBUG_UART0
-					_force_debug_output("uart0_put_data: queue write error");
+					uart0_force_debug_output("uart0_put_data: queue write error");
 				#endif
 				return;
 			}
 		}else
 		{
 			#ifdef DEBUG_UART0
-				_force_debug_output("uart0_put_data: queue full");
+				uart0_force_debug_output("uart0_put_data: queue full");
 			#endif
 			return;
 		}
@@ -121,9 +121,10 @@ void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClea
 		PIOC->PIO_SODR = PIO_PC1;
 	}
 }
-#ifdef DEBUG_UART0
-	void _force_debug_output(char Text[])
-	{
+
+void uart0_force_debug_output(char Text[])
+{
+	#ifdef DEBUG
 		uint16_t Length = strlen(Text);
 		uint8_t* rawData = malloc(sizeof(uint8_t) * (Length + 8));
 		rawData[0] = START_CHAR;
@@ -139,9 +140,25 @@ void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClea
 		}
 		rawData[Length + 7] = STOP_CHAR;		//End
 		_put_raw_data(rawData,Length + 8,true);
+	#endif
+}
+
+void uart0_force_debug_output_n(uint8_t Number)
+{
+	#ifdef DEBUG
+	uint8_t* rawData = malloc(sizeof(uint8_t) * (9));
+	rawData[0] = START_CHAR;
+	rawData[1] = 2;//Type
+	rawData[2] = 1;//Length
+	rawData[3] = Number;
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		rawData[i + 4] = 0;		//CRC
 	}
-#endif
-	
+	rawData[8] = STOP_CHAR;		//End
+	_put_raw_data(rawData,9,false);
+	#endif
+}
 
 void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup)
 {
@@ -162,7 +179,7 @@ void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClean
 		UART->UART_IER = UART_IER_TXRDY;		//activate Transmit done interrupt
 	} else{
 		#ifdef DEBUG_UART0
-			_force_debug_output("_put_raw_data: sendData was a NULL pointer");
+			uart0_force_debug_output("_put_raw_data: sendData was a NULL pointer");
 		#endif
 	}
 }
@@ -197,7 +214,7 @@ void UART_Handler(void)
 			} else
 			{
 				#ifdef DEBUG_UART0
-					_force_debug_output("UART_Handler: queue read error");
+					uart0_force_debug_output("UART_Handler: queue read error");
 				#endif
 			}
 		}

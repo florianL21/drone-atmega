@@ -59,8 +59,11 @@ void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClea
 
 bool uart0_has_space();
 
-
-
+/*
+* Strictly meant for debugging purposes, may breaks the uart data transfer
+*/
+void uart0_force_debug_output(char Text[]);
+void uart0_force_debug_output_n(uint8_t Number);
 
 
 

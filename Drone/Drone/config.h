@@ -15,9 +15,13 @@
  *
  */
 
-
-//#define DEBUG
+//Main debug switch
+#define DEBUG_SWITCH
+//debug switch for UARTCOM
 #define DEBUG_UARTCOM
+//force the UARTCOM debug to send its messages through the force debug command. DEBUG_UARTCOM Has to be enabled!!!
+#define FORCE_UARTCOM_DEBUG
+//debug switch for UART0
 #define DEBUG_UART0
 
 

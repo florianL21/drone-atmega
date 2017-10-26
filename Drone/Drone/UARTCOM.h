@@ -56,6 +56,8 @@ typedef enum {
 #define LENGTH(x)  (sizeof(x) / sizeof((x)[0]))
 #define ARRAYDEF(x)		x,(sizeof(x) / sizeof((x)[0]))
 
+
+
 /*
 * Initializes everything needed for the UARTCOMM Module
 * the interrupts have to be enabled afterwards manually
@@ -80,16 +82,24 @@ bool UARTCOM_transmit_block(uint8_t Type, const uint8_t Data[], uint8_t Length);
 
 /*
 * Registers a listener for a specific type and links a callback to that type
-* returns true if the registration was sucessful
+* returns true if the registration was successful
 * IMPORTANT: you have to delete the data array yourself when you are done with it!
 */
 bool UARTCOM_register_listener(uint8_t Type, LISTENER_CALLBACK callBack);
 
 /*
-* Sends a low level message which doesen't require a ack from the reciver.
+* Sends a low level message which doesn't require a ack from the receiver.
 * gets delivered even if another transmission is waiting for the ack.
 */
 void UARTCOM_send_debug(char Text[]);
+
+/*
+* Sends a lowest level message which doesn't care if something else is transmitting,
+* it may break the correct data flow!!
+* Only use if absolutely needed!
+*/
+void UARTCOM_force_send_debug(char Text[]);
+void UARTCOM_force_send_debug_n(uint8_t Number);
 
 /*
 * Same as sendDebug, but sends a single 8 bit number instead of a string
