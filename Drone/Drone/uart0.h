@@ -15,7 +15,10 @@
 #include <string.h>
 #include "config.h"
 #include "HelperFunctions.h"
-#include "UARTCOM.h"
+#ifdef DEBUG_UART0
+	#include "UARTCOM.h"
+#endif
+
 
 typedef void (*UART_RECV_CALLBACK)(uint8_t recivedChar);
 
@@ -53,9 +56,9 @@ void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClea
 /*
  *	returns true if the uart queue has space
  */
-#ifdef UART_USE_QUEUE_LIMIT
-	bool uart0_has_space();
-#endif
+
+bool uart0_has_space();
+
 
 
 

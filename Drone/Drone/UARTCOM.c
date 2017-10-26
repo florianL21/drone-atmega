@@ -74,10 +74,7 @@ void UARTCOM_init(uint32_t BaudRate)
 
 bool UARTCOM_ready_to_send()
 {
-	#ifdef UART_USE_QUEUE_LIMIT
-		return readyToSend && uart0_has_space();
-	#endif
-	return readyToSend;
+	return readyToSend && uart0_has_space();
 }
 
 transmissionData* _generate_data_block(uint8_t Type, const uint8_t Data[], uint8_t Length)
@@ -153,13 +150,11 @@ void _transmit_nack()
 //interfaces with the UART module directly:
 void _transmit_block(transmissionData* Data, bool DeepMemmoryCleanRequired)
 {
-	#ifdef UART_USE_QUEUE_LIMIT
-		if(!uart0_has_space())
-		{
-			_clean_up(Data,DeepMemmoryCleanRequired);
-			return;
-		}
-	#endif
+	if(!uart0_has_space())
+	{
+		_clean_up(Data,DeepMemmoryCleanRequired);
+		return;
+	}
 	
 	uint8_t* rawData = malloc(sizeof(uint8_t)*(Data->Length + 8));
 	if(rawData != NULL)

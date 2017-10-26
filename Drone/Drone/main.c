@@ -6,7 +6,7 @@
  */ 
 
 #include "sam.h"
-//#include "uart0.h"
+#include "uart0.h"
 #include "UARTCOM.h"
 
 
@@ -149,36 +149,89 @@ int main(void)
 	UARTCOM_init(115200);
 	
 	UARTCOM_send_debug("START!");
-	
+	UARTCOM_send_debug("Lets go!");
+	UARTCOM_send_debug("Start Testing!");
+	_Delay(50000000);
+	uint8_t dataArray[2] = {0,0};
 	PIOB->PIO_SODR = PIO_PB27;
 	//UARTCOM_send_debug("START1!");
 	PIOB->PIO_CODR = PIO_PB27;
-	uint8_t dataArray[] = {0,0};
-	/*uint8_t testData=5;
-	Queue* testQueue = queue_new();
+	
+	/*
+	Queue* testQueue = queue_new(9);
 	queue_node dataOut;
-	queue_write(testQueue, &testData, 1,false);
-	testData = 10;
-	queue_write(testQueue, &testData, 1,false);
-	dataOut=queue_read(testQueue);
-	UARTCOM_send_debug_n(*dataOut.data);
-	dataOut=queue_read(testQueue);
-	UARTCOM_send_debug_n(*dataOut.data);
-	UARTCOM_send_debug("END!");
-	
-	
-	dataOut=queue_read(testQueue);
-	UARTCOM_send_debug_n(*dataOut.data);
-	dataOut=queue_read(testQueue);
-	UARTCOM_send_debug_n(*dataOut.data);*/
+	uint8_t data[20];
+	uart0_puts("start\n\r");
+	uint16_t count=0;
+	*/
 	while (1)
 	{
+		/*if(uart0_has_space())
+		{
+			count++;
+			itoa(count,data,10);
+			strcat(data, "\n\r");
+			uart0_puts(data);
+		}*/
+		/*
+		for (uint16_t i = 0; i < 10; i++)
+		{
+			if(queue_has_space(testQueue))
+			{
+				count++;
+				itoa(count,data,10);
+				strcat(data, "\n\r");
+				if(!queue_write(testQueue,data,LENGTH(data),false))
+				{
+					uart0_puts("write error\n\r");
+					_Delay(50000);
+				}
+			}
+			else
+			{
+				uart0_puts("queue is full\n\r");
+				_Delay(50000);
+			}
+		}
+		for (uint16_t i = 0; i < 10; i++)
+		{
+			while(uart0_has_space() == false);
+			if(queue_is_empty(testQueue))
+			{
+				uart0_puts("empty!\n\r");
+			} else
+			{
+				dataOut = queue_read(testQueue);
+				if(dataOut.Length != 0)
+				{
+					uart0_put_data(dataOut.data,strlen(dataOut.data),true);
+				} else
+				{
+					uart0_puts("error\n\r");
+				}
+			}
+			//free(dataOut.data);
+			_Delay(50000);
+		}*/
+		/*if(uart0_has_space())
+		{
+			dataArray[0]++;
+			char text[20];
+			itoa(dataArray[0]*dataArray[1],text,10);
+			strcat(text,"\n\r");
+			uart0_puts(text);
+			if(dataArray[0] == 255)
+				dataArray[1]++;
+		}*/
+
 		if(UARTCOM_ready_to_send())
 		{
 			dataArray[0]++;
 			if(!UARTCOM_transmit_block('5',ARRAYDEF(dataArray)))
 			{
 				UARTCOM_send_debug("STOP");
+			}else{
+				_Delay(50000);
 			}
 			if(dataArray[0] == 255)
 				dataArray[1]++;

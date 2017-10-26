@@ -14,11 +14,10 @@ UART_RECV_CALLBACK reciveCallBack = NULL;
 uint8_t TXBUFFER[270]; // UART PDC Transmit buffer
 uint8_t TXCHAR;
 
-#ifdef UART_USE_QUEUE_LIMIT
-	uint16_t queueItemCount = 0;
-#endif
-
 void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup);
+#ifdef DEBUG_UART0
+	void _force_debug_output(char Text[]);
+#endif
 
 void uart0_init(uint32_t BaudRate)
 {
@@ -48,7 +47,7 @@ void uart0_init(uint32_t BaudRate)
 	UART->UART_PTCR = UART_PTCR_TXTEN;
 
 	//initialize the Send queue
-	uartSendQueue = queue_new();
+	uartSendQueue = queue_new(UART_QUEUE_MAX_ITEMS);
 }
 
 /*
@@ -68,44 +67,81 @@ void uart0_register_recived_callback(UART_RECV_CALLBACK callBack)
 
 void uart0_puts(uint8_t Data[])
 {
-	#ifdef UART_USE_QUEUE_LIMIT
-		queueItemCount++;
-		if(!uart0_has_space())
-			return;
-	#endif
-	
 	if(sendingActive == false)
 	{
 		_put_raw_data(Data,strlen((char*)Data),false);
 		sendingActive = true;
 	} else
 	{
-		queue_write(uartSendQueue, Data, strlen((char*)Data),false);
+		if(queue_has_space(uartSendQueue))
+		{
+			if(!queue_write(uartSendQueue, Data, strlen((char*)Data),false))
+			{
+				#ifdef DEBUG_UART0
+					_force_debug_output("uart0_puts: queue write error");
+				#endif
+				return;
+			}
+		}else
+		{
+			#ifdef DEBUG_UART0
+				_force_debug_output("uart0_puts: queue full");
+			#endif
+			return;
+		}
 	}
 	//free(Data);
 }
 
 void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup)
 {
-	#ifdef UART_USE_QUEUE_LIMIT
-		if(!uart0_has_space())
-			return;
-	#endif
 	if(sendingActive == false)
 	{
 		_put_raw_data(sendData, Length, requiresMemmoryCleanup);
 		sendingActive = true;
 	} else
 	{
-		#ifdef UART_USE_QUEUE_LIMIT
-			queueItemCount++;
-		#endif
-		queue_write(uartSendQueue, sendData, Length, requiresMemmoryCleanup);
-
+		if(queue_has_space(uartSendQueue))
+		{
+			if(!queue_write(uartSendQueue, sendData, Length, requiresMemmoryCleanup))
+			{
+				#ifdef DEBUG_UART0
+					_force_debug_output("uart0_put_data: queue write error");
+				#endif
+				return;
+			}
+		}else
+		{
+			#ifdef DEBUG_UART0
+				_force_debug_output("uart0_put_data: queue full");
+			#endif
+			return;
+		}
 		PIOC->PIO_CODR = PIO_PC1;
 		PIOC->PIO_SODR = PIO_PC1;
 	}
 }
+#ifdef DEBUG_UART0
+	void _force_debug_output(char Text[])
+	{
+		uint16_t Length = strlen(Text);
+		uint8_t* rawData = malloc(sizeof(uint8_t) * (Length + 8));
+		rawData[0] = START_CHAR;
+		rawData[1] = 1;
+		rawData[2] = Length;
+		for(uint8_t i = 0; i < Length; i++)
+		{
+			rawData[i + 3] = Text[i];	//Transmit Data
+		}
+		for (uint8_t i = 0; i < 4; i++)
+		{
+			rawData[i + Length + 3] = 0;	//CRC
+		}
+		rawData[Length + 7] = STOP_CHAR;		//End
+		_put_raw_data(rawData,Length + 8,true);
+	}
+#endif
+	
 
 void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryCleanup)
 {
@@ -126,19 +162,15 @@ void _put_raw_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClean
 		UART->UART_IER = UART_IER_TXRDY;		//activate Transmit done interrupt
 	} else{
 		#ifdef DEBUG_UART0
-			UARTCOM_send_debug("_put_raw_data: sendData was a NULL pointer");
+			_force_debug_output("_put_raw_data: sendData was a NULL pointer");
 		#endif
 	}
 }
 
-#ifdef UART_USE_QUEUE_LIMIT
-	bool uart0_has_space()
-	{
-		return queueItemCount < UART_QUEUE_MAX_ITEMS;
-	}
-#endif
-
-
+bool uart0_has_space()
+{
+	return queue_has_space(uartSendQueue);
+}
 
 void UART_Handler(void)
 {
@@ -158,11 +190,16 @@ void UART_Handler(void)
 			sendingActive = false;
 		} else
 		{
-			#ifdef UART_USE_QUEUE_LIMIT
-				queueItemCount--;
-			#endif
 			queue_node writeData = queue_read(uartSendQueue);
-			_put_raw_data(writeData.data, writeData.Length, true);
+			if(writeData.Length != 0)
+			{
+				_put_raw_data(writeData.data, writeData.Length, true);
+			} else
+			{
+				#ifdef DEBUG_UART0
+					_force_debug_output("UART_Handler: queue read error");
+				#endif
+			}
 		}
 	}else
 	{

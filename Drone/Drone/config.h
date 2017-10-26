@@ -17,8 +17,8 @@
 
 
 //#define DEBUG
-//#define DEBUG_UARTCOM
-//#define DEBUG_UART0
+#define DEBUG_UARTCOM
+#define DEBUG_UART0
 
 
 /*
@@ -29,7 +29,6 @@
 
 // CPU frequency
 #define F_CPU 16000000
-// activate UART debugging?
 
 
 /*
@@ -66,8 +65,7 @@
  *	UART Configuration
  *
  */
-//turn queue limit on or off
-//#define UART_USE_QUEUE_LIMIT	
+
 //maximum number of entrys in the send queue (uint16_t)	
 #define UART_QUEUE_MAX_ITEMS	50	
 

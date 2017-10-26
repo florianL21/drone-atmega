@@ -23,6 +23,8 @@ typedef struct queue_node queue_node;
 struct Queue {
 	struct queue_node *front;
 	struct queue_node *back;
+	uint32_t queueLength;
+	uint32_t queueMaxLength;
 };
 typedef struct Queue Queue;
 
@@ -45,7 +47,7 @@ void _Delay(uint32_t delayCycles);
  * returns a Queue* pointer to the new queue
  * Returns NULL if an error occurs
  */
-Queue* queue_new();
+Queue* queue_new(uint32_t queueMaxLentgh);
 
 /*
  * 
@@ -81,6 +83,11 @@ uint16_t queue_get_item_count(Queue* queue);
  * 
  */
 bool queue_delete(Queue* queue);
+
+/*
+* returns true if there is space in the queue
+*/
+bool queue_has_space(Queue *queue);
 
 
 

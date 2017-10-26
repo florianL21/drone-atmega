@@ -20,6 +20,14 @@ void _Delay(uint32_t delayCycles)
 	}
 }
 
+bool queue_has_space(Queue *queue)
+{
+	if (queue == NULL) {
+		return false;
+	}
+	return (queue->queueLength < queue->queueMaxLength);
+}
+
 bool queue_delete(Queue *queue) {
 	if (queue == NULL) {
 		return false;
@@ -41,12 +49,14 @@ bool queue_is_empty(Queue *queue) {
 	}
 }
 
-Queue *queue_new(void) {
+Queue *queue_new(uint32_t maxQueueLength) {
 	Queue *queue = malloc(sizeof(*queue));
 	if (queue == NULL) {
 		return NULL;
 	}
 	queue->front = queue->back = NULL;
+	queue->queueMaxLength = maxQueueLength;
+	queue->queueLength = 0;
 	return queue;
 }
 
@@ -64,19 +74,27 @@ queue_node queue_read(Queue *queue) {
 		queue->back = NULL;
 	}
 	free(node);
+	queue->queueLength--;
 	return returnStruct;
 }
 
 bool queue_write(Queue *queue, uint8_t* data, uint16_t Length, bool CleanupRequired) {
-	if (queue == NULL) {
+	if (queue == NULL) 
+	{
 		return false;
 	}
 	queue_node *node = malloc(sizeof(*node));
-	if (node == NULL) {
+	if (node == NULL) 
+	{
+		return false;
+	}
+	if(!queue_has_space(queue))
+	{
 		return false;
 	}
 	node->data = malloc(Length * sizeof(uint8_t));
-	if (node->data == NULL) {
+	if (node->data == NULL) 
+	{
 		return false;
 	}
 	for(uint16_t dataIndex = 0; dataIndex < Length; dataIndex++)
@@ -96,5 +114,6 @@ bool queue_write(Queue *queue, uint8_t* data, uint16_t Length, bool CleanupRequi
 		queue->back->next = node;
 		queue->back = node;
 	}
+	queue->queueLength++;
 	return true;
 }
