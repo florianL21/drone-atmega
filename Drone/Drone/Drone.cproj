@@ -165,6 +165,12 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="RCReader.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="RCReader.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="syscalls.c">
       <SubType>compile</SubType>
     </Compile>

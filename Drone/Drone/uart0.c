@@ -124,7 +124,7 @@ void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClea
 
 void uart0_force_debug_output(char Text[])
 {
-	#ifdef DEBUG
+	#ifdef DEBUG_SWITCH
 		uint16_t Length = strlen(Text);
 		uint8_t* rawData = malloc(sizeof(uint8_t) * (Length + 8));
 		rawData[0] = START_CHAR;
@@ -145,7 +145,7 @@ void uart0_force_debug_output(char Text[])
 
 void uart0_force_debug_output_n(uint8_t Number)
 {
-	#ifdef DEBUG
+	#ifdef DEBUG_SWITCH
 	uint8_t* rawData = malloc(sizeof(uint8_t) * (9));
 	rawData[0] = START_CHAR;
 	rawData[1] = 2;//Type

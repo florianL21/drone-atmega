@@ -7,7 +7,6 @@
 
 #include "sam.h"
 #include "uart0.h"
-#include "UARTCOM.h"
 #include "ESCControl.h"
 
 
@@ -69,46 +68,9 @@ void configure_int(void)
 	NVIC_EnableIRQ(PIOB_IRQn);
 }
 
-
-void configure_tc(void)
-{
-
-	// Enable TC0 (27 is TC0)
-	PMC->PMC_PCER0 = 1 << ID_TC0;
-	
-	// Disable TC clock
-	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKDIS;
-	
-	// Disable interrupts
-	TC0->TC_CHANNEL[0].TC_IDR = 0xFFFFFFFF;
-	
-	// Clear status register
-	TC0->TC_CHANNEL[0].TC_SR;
-	
-	// Set TC0 Mode: Compare C and Clock5 (slow clock)
-	TC0->TC_CHANNEL[0].TC_CMR = TC_CMR_CPCTRG | TC_CMR_TCCLKS_TIMER_CLOCK5;
-	
-	// Set Compare Value in RC register
-	TC0->TC_CHANNEL[0].TC_RC = 64000; // note: RC oscillator is around 32kHz
-	
-	// Enable interrupt on RC compare
-	TC0->TC_CHANNEL[0].TC_IER = TC_IER_CPCS;
-
-	// Enable interrupt in NVIC
-	NVIC_EnableIRQ(TC0_IRQn);
-	
-	// Reset counter (SWTRG) and start counter clock (CLKEN)
-	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
-	
-}
-void TC0_Handler(void)
-{
-	// read status from TC0 status register
-	TC0->TC_CHANNEL[0].TC_SR;
-	
-	//LEDTOGGLE;
-}
 */
+
+
 
 void configure_wdt(void)
 {
@@ -122,13 +84,14 @@ int main(void)
 	/* Initialize the SAM system */
 	SystemInit();
 	configure_wdt();
-	esc_init();
+	uart0_init(115200);
+	/*esc_init();
 	esc_set(1,20);
 	esc_set(2,500);
 	esc_set(3,800);
-	esc_set(4,1100);
+	esc_set(4,1100);*/
 	
-	// Enable IO
+	/*// Enable IO
 	PIOC->PIO_PER = PIO_PC2;
 	PIOC->PIO_PER = PIO_PC1;
 	PIOC->PIO_PER = PIO_PC3 | PIO_PC4;
@@ -141,10 +104,16 @@ int main(void)
 	PIOC->PIO_PUDR = PIO_PC1;
 	PIOC->PIO_PUDR = PIO_PC3 | PIO_PC4;
 	
-	PIOB->PIO_CODR = PIO_PB27;
+	PIOB->PIO_CODR = PIO_PB27;*/
 	
+	uint8_t buffer[20];
 	while (1)
 	{
-		
+		if(uart0_has_space())
+		{
+			itoa(TC0->TC_CHANNEL[0].TC_CV,buffer,10);
+			strcat(buffer,"\n\r");
+			uart0_puts(buffer);
+		}
 	}
 }

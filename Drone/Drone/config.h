@@ -16,13 +16,13 @@
  */
 
 //Main debug switch
-#define DEBUG_SWITCH
+//#define DEBUG_SWITCH
 //debug switch for UARTCOM
-#define DEBUG_UARTCOM
+//#define DEBUG_UARTCOM
 //force the UARTCOM debug to send its messages through the force debug command. DEBUG_UARTCOM Has to be enabled!!!
-#define FORCE_UARTCOM_DEBUG
+//#define FORCE_UARTCOM_DEBUG
 //debug switch for UART0
-#define DEBUG_UART0
+//#define DEBUG_UART0
 
 
 /*
@@ -67,6 +67,19 @@
 #define ESC_MaxLimit 3937 // half of maximum motor power
 //#define ESC_MinLimit ESC_PWM_MIN_DUTY_CYCLE // 1ms duty cycle
 
+
+/*
+ *	
+ *	RCReader Configuration
+ *
+ */
+
+// Maximum Control Value Input (2000 = 1ms, 4000 = 2ms)
+#define RC_ControlMax 3861
+// Minimum Control Value Input (2000 = 1ms, 4000 = 2ms)
+#define RC_ControlMin 2250 //2180
+// Difference of the above defined values
+#define RC_ControlDiff (RC_ControlMax - RC_ControlMin)
 
 
 /*
