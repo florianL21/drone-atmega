@@ -150,6 +150,12 @@
     <Compile Include="Device_Startup\system_sam3xa.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="ESCControl.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ESCControl.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="HelperFunctions.c">
       <SubType>compile</SubType>
     </Compile>

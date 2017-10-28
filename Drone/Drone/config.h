@@ -42,16 +42,16 @@
  */
 
 // M1 ESC Timer OCR Offset
-#define ESC_Offset_M1 50
+#define ESC_Offset_M1 0
 // M2 ESC Timer OCR Offset
-#define ESC_Offset_M2 295
+#define ESC_Offset_M2 0
 // M3 ESC Timer OCR Offset
-#define ESC_Offset_M3 298
+#define ESC_Offset_M3 0
 // M4 ESC Timer OCR Offset
-#define ESC_Offset_M4 294
+#define ESC_Offset_M4 0
 
 // M1 ESC Slope Compensation Factor
-#define ESC_SlopeComp_M1 0.38
+#define ESC_SlopeComp_M1 0
 // M2 ESC Slope Compensation Factor
 #define ESC_SlopeComp_M2 0
 // M3 ESC Slope Compensation Factor
@@ -59,8 +59,13 @@
 // M4 ESC Slope Compensation Factor
 #define ESC_SlopeComp_M4 0
 
+//PWM Times:
+#define ESC_PWM_PERIOD 52500
+#define ESC_PWM_MIN_DUTY_CYCLE 2625
+
 // Maximum ESC Speed
-#define ESC_MaxLimit 960 // half of maximum motor power
+#define ESC_MaxLimit 3937 // half of maximum motor power
+//#define ESC_MinLimit ESC_PWM_MIN_DUTY_CYCLE // 1ms duty cycle
 
 
 

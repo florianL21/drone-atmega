@@ -8,6 +8,7 @@
 #include "sam.h"
 #include "uart0.h"
 #include "UARTCOM.h"
+#include "ESCControl.h"
 
 
 
@@ -26,11 +27,6 @@ void PIOB_Handler(void)
 		LEDTOGGLE;
 	}
 }
-
-
-
-
-
 void configure_int(void)
 {
 	// Enable Clock for PIOB - needed for sampling falling edge
@@ -73,15 +69,7 @@ void configure_int(void)
 	NVIC_EnableIRQ(PIOB_IRQn);
 }
 
-*/
-void configure_wdt(void)
-{
-	WDT->WDT_MR = 0x00000000; // disable WDT
-}
 
-
-
-/*
 void configure_tc(void)
 {
 
@@ -119,60 +107,12 @@ void TC0_Handler(void)
 	TC0->TC_CHANNEL[0].TC_SR;
 	
 	//LEDTOGGLE;
-}*/
-
-void config1()
-{
-	// PWM set-up on pins DAC1, A8, A9, A10, D9, D8, D7 and D6 for channels 0 through to 7 respectively
-	REG_PMC_PCER1 |= PMC_PCER1_PID36;                                               // Enable PWM
-	REG_PIOB_ABSR |= PIO_ABSR_P19 | PIO_ABSR_P18 | PIO_ABSR_P17 | PIO_ABSR_P16;     // Set the port B PWM pins to peripheral type B
-	REG_PIOC_ABSR |= PIO_ABSR_P24 | PIO_ABSR_P23 | PIO_ABSR_P22 | PIO_ABSR_P21;     // Set the port C PWM pins to peripheral type B
-	REG_PIOB_PDR |= PIO_PDR_P19 | PIO_PDR_P18 | PIO_PDR_P17 | PIO_PDR_P16;          // Set the port B PWM pins to outputs
-	REG_PIOC_PDR |= PIO_PDR_P24 | PIO_PDR_P23 | PIO_PDR_P22 | PIO_PDR_P21;          // Set the port C PWM pins to outputs
-	REG_PWM_CLK = PWM_CLK_PREA(5) | PWM_CLK_DIVA(1);                                // Set the PWM clock A rate to 84MHz (84MHz/1)
-	//REG_PWM_SCM |= PWM_SCM_SYNC7 | PWM_SCM_SYNC6 | PWM_SCM_SYNC5 | PWM_SCM_SYNC4 |  // Set the PWM channels as synchronous
-	//               PWM_SCM_SYNC3 | PWM_SCM_SYNC2 | PWM_SCM_SYNC1 | PWM_SCM_SYNC0;
-	for (uint8_t i = 0; i < PWMCH_NUM_NUMBER; i++)                      // Loop for each PWM channel (8 in total)
-	{
-		PWM->PWM_CH_NUM[i].PWM_CMR =  PWM_CMR_CPRE_CLKA;                  // Enable single slope PWM and set the clock source as CLKA
-		PWM->PWM_CH_NUM[i].PWM_CPRD = 52500;                               // Set the PWM period register 84MHz/(40kHz)=2100;
-	}
-	//REG_PWM_ENA = PWM_ENA_CHID0;           // Enable the PWM channels, (only need to set channel 0 for synchronous mode)
-	REG_PWM_ENA = PWM_ENA_CHID7 | PWM_ENA_CHID6 | PWM_ENA_CHID5 | PWM_ENA_CHID4 |    // Enable all PWM channels
-	PWM_ENA_CHID3 | PWM_ENA_CHID2 | PWM_ENA_CHID1 | PWM_ENA_CHID0;
-	for (uint8_t i = 0; i < PWMCH_NUM_NUMBER; i++)                      // Loop for each PWM channel (8 in total)
-	{
-		PWM->PWM_CH_NUM[i].PWM_CDTYUPD = 2625;                            // Set the PWM duty cycle to 50% (2100/2=1050) on all channels
-	}
-	//REG_PWM_SCUC = PWM_SCUC_UPDULOCK;      // Set the update unlock bit to trigger an update at the end of the next PWM period
-
 }
+*/
 
-void configure_PWM()
+void configure_wdt(void)
 {
-	// PWM set-up on pins DAC1, A8, A9, A10, D9, D8, D7 and D6 for channels 0 through to 7 respectively
-	REG_PMC_PCER1 |= PMC_PCER1_PID36;                                               // Enable PWM
-	REG_PIOB_ABSR |= PIO_ABSR_P19 | PIO_ABSR_P18 | PIO_ABSR_P17 | PIO_ABSR_P16;     // Set the port B PWM pins to peripheral type B
-	REG_PIOB_PDR |= PIO_PDR_P19 | PIO_PDR_P18 | PIO_PDR_P17 | PIO_PDR_P16;          // Set the port B PWM pins to outputs
-	REG_PWM_CLK = PWM_CLK_PREA(5) | PWM_CLK_DIVA(1);                                // Set the PWM clock A rate to 84MHz/32 ((84MHz/32)/1)
-
-	for (uint8_t i = 0; i < 4; i++)                      // Loop for each PWM channel (8 in total)
-	{
-		PWM->PWM_CH_NUM[i].PWM_CMR =  PWM_CMR_CPRE_CLKA;                  // Enable single slope PWM and set the clock source as CLKA
-		PWM->PWM_CH_NUM[i].PWM_CPRD = 52500;                               // Set the PWM period register 84MHz/(40kHz)=2100;
-	}
-
-	REG_PWM_ENA = PWM_ENA_CHID3 | PWM_ENA_CHID2 | PWM_ENA_CHID1 | PWM_ENA_CHID0;    // Enable all PWM channels
-	
-	for (uint8_t i = 0; i < 4; i++)                      // Loop for each PWM channel (8 in total)
-	{
-		PWM->PWM_CH_NUM[i].PWM_CDTYUPD = 2625;                            // Set the PWM duty cycle to 50% (2100/2=1050) on all channels
-	}
-
-	PWM->PWM_CH_NUM[0].PWM_CDTYUPD = 2625;				// Set the PWM duty cycle to 1ms  -> (1/20)*PWM Frequency
-	PWM->PWM_CH_NUM[1].PWM_CDTYUPD = 3281;
-	PWM->PWM_CH_NUM[2].PWM_CDTYUPD = 3937;
-	PWM->PWM_CH_NUM[3].PWM_CDTYUPD = 4593;
+	WDT->WDT_MR = 0x00000000; // disable WDT
 }
 
 int main(void)
@@ -182,8 +122,11 @@ int main(void)
 	/* Initialize the SAM system */
 	SystemInit();
 	configure_wdt();
-	configure_PWM();
-	//config1();
+	esc_init();
+	esc_set(1,20);
+	esc_set(2,500);
+	esc_set(3,800);
+	esc_set(4,1100);
 	
 	// Enable IO
 	PIOC->PIO_PER = PIO_PC2;
@@ -199,9 +142,9 @@ int main(void)
 	PIOC->PIO_PUDR = PIO_PC3 | PIO_PC4;
 	
 	PIOB->PIO_CODR = PIO_PB27;
+	
 	while (1)
 	{
-		
 		
 	}
 }
