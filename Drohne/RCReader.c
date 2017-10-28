@@ -8,7 +8,7 @@
 #include "RCReader.h"
 
 volatile uint16_t	throttle_mStartCount = 0;
-volatile uint16_t	throttle_lastMeasuredValue = -1;
+volatile uint16_t	throttle_lastMeasuredValue = 0;
 volatile uint8_t	throttle_lastState = 0;
 
 void rc_init()
@@ -27,11 +27,6 @@ void rc_init()
 	PCICR |= (1 << PCIE2);
 }
 
-uint16_t rc_read_throttle()
-{
-	return throttle_lastMeasuredValue;
-}
-
 uint16_t calculateTickDifference(uint16_t start, uint16_t stop)
 {
 	if(stop > start) // no overflow
@@ -47,13 +42,14 @@ void calculateThrottleValue(uint16_t diff)
 {
 	if(diff < RC_ControlMin || diff > RC_ControlMax) // diff is out of range...
 		throttle_lastMeasuredValue = 0; // ...so return 0 (min throttle)
-	// map the pwm high duration to an addable value
-	uint16_t mapped = map(diff, RC_ControlMin, RC_ControlMax, 0, RC_ControlDiff);
-	if(mapped < 0)
-		mapped = 0;
-	if(mapped > RC_ControlDiff)
-		mapped = RC_ControlDiff;
-	throttle_lastMeasuredValue = mapped;
+	else
+		throttle_lastMeasuredValue = diff - RC_ControlMin;
+}
+
+uint16_t rc_read_throttle()
+{
+	calculateThrottleValue(throttle_lastMeasuredValue);
+	return throttle_lastMeasuredValue;
 }
 
 // Pin Change Interrupt
@@ -69,7 +65,8 @@ ISR(PCINT2_vect)
 		else
 		{	// changed from high->low
 			uint16_t dT = calculateTickDifference(throttle_mStartCount, TCNT5);
-			calculateThrottleValue(dT);
+			//calculateThrottleValue(dT);
+			throttle_lastMeasuredValue = dT;
 		}
 	}
 	

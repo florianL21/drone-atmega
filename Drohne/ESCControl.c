@@ -36,7 +36,8 @@ void esc_set_m1(int16_t speed) // PIN 2
 	{
 		speed = ESC_MaxLimit;
 	}
-	else if(speed <= 0)
+
+	if(speed <= 0)
 	{
 		speed = 0;
 		OCR3B = 2000;
