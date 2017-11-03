@@ -23,6 +23,6 @@ void rc_init();
 /*
  *	Returns the last measured PWM input of throttle
  */
-uint16_t rc_read_throttle();
+uint32_t rc_read_throttle();
 
 #endif /* RCREADER_H_ */

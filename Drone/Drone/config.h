@@ -74,10 +74,10 @@
  *
  */
 
-// Maximum Control Value Input (2000 = 1ms, 4000 = 2ms)
-#define RC_ControlMax 3861
-// Minimum Control Value Input (2000 = 1ms, 4000 = 2ms)
-#define RC_ControlMin 2250 //2180
+// Maximum Control Value Input (2625 = 1ms, 5250 = 2ms)
+#define RC_ControlMax 5250
+// Minimum Control Value Input (2625 = 1ms, 5250 = 2ms)
+#define RC_ControlMin 2625 //2180
 // Difference of the above defined values
 #define RC_ControlDiff (RC_ControlMax - RC_ControlMin)
 
