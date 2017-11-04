@@ -81,6 +81,21 @@
 // Difference of the above defined values
 #define RC_ControlDiff (RC_ControlMax - RC_ControlMin)
 
+//PORT Configuration:
+#define RCREADER_PIO_PORT	PIOB				//IO Port
+#define RCREADER_PIO_IRQN	PIOB_IRQn			//interrupt routine
+#define RCREADER_PIO_ID		ID_PIOB				//Port ID
+#define RCREADER_INTERRUPT	PIOB_Handler		//name of the interrupt handler
+
+#define THROTTLE_PIN		PIO_PB24		//thro
+#define ROLE_PIN			PIO_PB25		//AILE
+#define PITCH_PIN			PIO_PB26		//ELEV
+#define YAW_PIN				PIO_PB27		//RUDO
+#define GEAR_PIN			PIO_PB28		//GEAR
+
+#define RCREADER_ENABLED_PINS	THROTTLE_PIN | ROLE_PIN | PITCH_PIN | YAW_PIN | GEAR_PIN;
+
+#define 
 
 /*
  *

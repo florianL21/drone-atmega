@@ -94,11 +94,13 @@ int main(void)
 	PIOB->PIO_CODR = PIO_PB27;*/
 	
 	uint8_t buffer[20];
+	RemoteControlValues Values;
 	while (1)
 	{
 		if(uart0_has_space())
 		{
-			itoa(rc_read_throttle(),buffer,10);
+			Values = rc_read_values();
+			itoa(Values.Role,buffer,10);
 			strcat(buffer,"\n\r");
 			uart0_puts(buffer);
 		}

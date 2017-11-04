@@ -7,9 +7,23 @@
 
 #include "RCReader.h"
 
-volatile uint32_t	throttle_mStartCount = 0;
-volatile uint32_t	throttle_lastMeasuredValue = 0;
-volatile uint8_t	throttle_lastState = 0;
+struct MeasurementHelpers
+{
+	uint32_t LastState;
+	uint32_t mStartCount;
+	uint16_t LastMeasuredValue;
+};
+typedef struct MeasurementHelpers MeasurementHelpers;
+
+struct
+{
+	MeasurementHelpers Throttle;
+	MeasurementHelpers Role;
+	MeasurementHelpers Pitch;
+	MeasurementHelpers Yaw;
+	MeasurementHelpers Gear;
+	bool error;
+}ReaderValues;
 
 
 void rc_init()
@@ -34,36 +48,43 @@ void rc_init()
 	// Reset counter (SWTRG) and start counter clock (CLKEN)
 	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 	
-	// Configure Pin Change Interrupt and Mask PIN A8 (PK0/PCINT16)
-	//PCMSK2 |= (1 << PCINT16);
-	//PCICR |= (1 << PCIE2);
-	
+	// Configure Pin Change Interrupts for all needed pins
 	// Enable Clock for PIOB - needed for sampling falling edge
-	PMC->PMC_PCER0 = 1 << ID_PIOB;
+	PMC->PMC_PCER0 = 1 << RCREADER_PIO_ID;
 	// Enable IO pin control
-	PIOB->PIO_PER = PIO_PB26;
+	RCREADER_PIO_PORT->PIO_PER = RCREADER_ENABLED_PINS;
 	// Disable output (set to High Z)
-	PIOB->PIO_ODR = PIO_PB26;
+	RCREADER_PIO_PORT->PIO_ODR = RCREADER_ENABLED_PINS;
 	// Enable pull-up
-	PIOB->PIO_PUER = PIO_PB26;
-	// Enable Glitch/Debouncing filter
-	//PIOB->PIO_IFER = PIO_PB26;
-	// Select Debouncing filter
-	//PIOB->PIO_DIFSR = PIO_PB26;
-	// Set Debouncing clock divider
-	//PIOB->PIO_SCDR = 0x4FF;
-	// Select additional detection mode (for single edge detection)
-	//PIOB->PIO_AIMER = PIO_PB26;
+	RCREADER_PIO_PORT->PIO_PUER = RCREADER_ENABLED_PINS;
 	// The interrupt source is an Edge detection event.
-	PIOB->PIO_ESR = PIO_PB26;
+	RCREADER_PIO_PORT->PIO_ESR = RCREADER_ENABLED_PINS;
 	// The interrupt source is set to a falling and rising Edge detection
-	PIOB->PIO_FELLSR = PIO_PB26;
-	PIOB->PIO_REHLSR = PIO_PB26;
+	RCREADER_PIO_PORT->PIO_FELLSR = RCREADER_ENABLED_PINS;
+	RCREADER_PIO_PORT->PIO_REHLSR = RCREADER_ENABLED_PINS;
 	// Enables the Input Change Interrupt on the I/O line.
-	PIOB->PIO_IER = PIO_PB26;
+	RCREADER_PIO_PORT->PIO_IER = RCREADER_ENABLED_PINS;
 	// Enable Interrupt Handling in NVIC
-	NVIC_EnableIRQ(PIOB_IRQn);
-}
+	NVIC_EnableIRQ(RCREADER_PIO_IRQN);
+	
+	//Initialize the measurement structure to zero
+	ReaderValues.error						= false;
+	ReaderValues.Gear.LastMeasuredValue		= 0;
+	ReaderValues.Gear.LastState				= 0;
+	ReaderValues.Gear.mStartCount			= 0;
+	ReaderValues.Pitch.LastMeasuredValue	= 0;
+	ReaderValues.Pitch.LastState			= 0;
+	ReaderValues.Pitch.mStartCount			= 0;
+	ReaderValues.Role.LastMeasuredValue		= 0;
+	ReaderValues.Role.LastState				= 0;
+	ReaderValues.Role.mStartCount			= 0;
+	ReaderValues.Throttle.LastMeasuredValue	= 0;
+	ReaderValues.Throttle.LastState			= 0;
+	ReaderValues.Throttle.mStartCount		= 0;
+	ReaderValues.Yaw.LastMeasuredValue		= 0;
+	ReaderValues.Yaw.LastState				= 0;
+	ReaderValues.Yaw.mStartCount			= 0;
+} 
 
 uint32_t calculateTickDifference(uint32_t start, uint32_t stop)
 {
@@ -76,17 +97,33 @@ uint32_t calculateTickDifference(uint32_t start, uint32_t stop)
 	return 0;
 }
 
-uint32_t calculateThrottleValue(uint32_t diff)
+RemoteControlValues rc_read_values()
 {
-	if(diff < RC_ControlMin || diff > RC_ControlMax) // diff is out of range...
-		return 0; // ...so return 0 (min throttle)
+	RemoteControlValues returnValues;
+	//Throttle
+	if(ReaderValues.Throttle.LastMeasuredValue < RC_ControlMin || ReaderValues.Throttle.LastMeasuredValue > RC_ControlMax) // diff is out of range...
+	{
+		returnValues.Throttle = 0;	// ...so return 0 (min throttle)
+		returnValues.error = true;	//and indicate that there was an error
+	}
 	else
-		return diff - RC_ControlMin;
-}
-
-uint32_t rc_read_throttle()
-{
-	return calculateThrottleValue(throttle_lastMeasuredValue);
+	{
+		returnValues.Throttle = ReaderValues.Throttle.LastMeasuredValue - RC_ControlMin;
+	}
+	
+	//Role
+	if(ReaderValues.Role.LastMeasuredValue < RC_ControlMin || ReaderValues.Role.LastMeasuredValue > RC_ControlMax) // diff is out of range...
+	{
+		returnValues.Role = 0;	// ...so return 0 (min throttle)
+		returnValues.error = true;	//and indicate that there was an error
+	}
+	else
+	{
+		returnValues.Role = ReaderValues.Role.LastMeasuredValue - RC_ControlMin;
+	}
+	//TODO:Manage all the other control values
+	
+	return returnValues;
 }
 
 void TC0_Handler(void)
@@ -96,49 +133,40 @@ void TC0_Handler(void)
 }
 
 // Pin Change Interrupt
-void PIOB_Handler(void)
+void RCREADER_INTERRUPT(void)
 {
 	// Save all triggered interrupts
-	uint32_t status = PIOB->PIO_ISR;
-	uint8_t PinState = (PIOB->PIO_PDSR & PIO_PB26)>>26;
-	if (status & PIO_PB26)
+	uint32_t status = RCREADER_PIO_PORT->PIO_ISR;
+	if (status & THROTTLE_PIN)
 	{
-		if(PinState != throttle_lastState)
+		uint32_t PinState = (RCREADER_PIO_PORT->PIO_PDSR & THROTTLE_PIN);
+		if(PinState != ReaderValues.Throttle.LastState)
 		{	// PIN A8 (PK0) has changed (either high->low or low->high)
-			throttle_lastState = PinState;
-			if(throttle_lastState)
+			ReaderValues.Throttle.LastState = PinState;
+			if(ReaderValues.Throttle.LastState)
 			{	// changed from low->high
-				throttle_mStartCount = TC0->TC_CHANNEL[0].TC_CV;
+				ReaderValues.Throttle.mStartCount = TC0->TC_CHANNEL[0].TC_CV;
 			}
 			else
 			{	// changed from high->low
-				uint16_t dT = calculateTickDifference(throttle_mStartCount, TC0->TC_CHANNEL[0].TC_CV);
-				//calculateThrottleValue(dT);
-				throttle_lastMeasuredValue = dT;
+				ReaderValues.Throttle.LastMeasuredValue = calculateTickDifference(ReaderValues.Throttle.mStartCount, TC0->TC_CHANNEL[0].TC_CV);
+			}
+		}
+	}
+	if (status & ROLE_PIN)
+	{
+		uint32_t PinState = (RCREADER_PIO_PORT->PIO_PDSR & ROLE_PIN);
+		if(PinState != ReaderValues.Role.LastState)
+		{	// PIN A8 (PK0) has changed (either high->low or low->high)
+			ReaderValues.Role.LastState = PinState;
+			if(ReaderValues.Role.LastState)
+			{	// changed from low->high
+				ReaderValues.Role.mStartCount = TC0->TC_CHANNEL[0].TC_CV;
+			}
+			else
+			{	// changed from high->low
+				ReaderValues.Role.LastMeasuredValue = calculateTickDifference(ReaderValues.Role.mStartCount, TC0->TC_CHANNEL[0].TC_CV);
 			}
 		}
 	}
 }
-
-
-
-
-/*
-ISR(PCINT2_vect)
-{
-	if((PINK & (1 << PK0)) != throttle_lastState)
-	{	// PIN A8 (PK0) has changed (either high->low or low->high)
-		throttle_lastState = (PINK & (1 << PK0));
-		if(throttle_lastState)
-		{	// changed from low->high
-			throttle_mStartCount = TCNT5;
-		}
-		else
-		{	// changed from high->low
-			uint16_t dT = calculateTickDifference(throttle_mStartCount, TCNT5);
-			//calculateThrottleValue(dT);
-			throttle_lastMeasuredValue = dT;
-		}
-	}
-	
-}*/

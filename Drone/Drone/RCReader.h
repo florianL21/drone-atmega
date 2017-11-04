@@ -11,7 +11,19 @@
 
 #include "sam.h"
 #include "config.h"
-#include "HelperFunctions.h"
+#include <stdbool.h>
+//#include "HelperFunctions.h"
+
+struct RemoteControlValues
+{
+	uint16_t Throttle;
+	uint16_t Role;
+	uint16_t Pitch;
+	uint16_t Yaw;
+	uint16_t Gear;
+	bool error;
+};
+typedef struct RemoteControlValues RemoteControlValues;
 
 /*
  *	Configures the Timer 5 with a 4us tick time for
@@ -23,6 +35,6 @@ void rc_init();
 /*
  *	Returns the last measured PWM input of throttle
  */
-uint32_t rc_read_throttle();
+RemoteControlValues rc_read_values();
 
 #endif /* RCREADER_H_ */
