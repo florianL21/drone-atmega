@@ -97,32 +97,55 @@ uint32_t calculateTickDifference(uint32_t start, uint32_t stop)
 	return 0;
 }
 
+uint16_t calculate_control_value(uint16_t LastMeasuredValue, bool* error, uint16_t RC_ControlMin, uint16_t RC_ControlMax, uint16_t RC_ControlCenter, uint16_t RC_ControlDeadSpot)
+{
+	if(LastMeasuredValue < RC_ControlMin || LastMeasuredValue > RC_ControlMax) // diff is out of range...
+	{
+		*error = true;	//and indicate that there was an error
+		return RC_ControlCenter;	// ...so return 0 (Center point)
+	}
+	else
+	{
+		if(LastMeasuredValue - RC_ControlMin >= RC_ControlCenter - RC_ControlDeadSpot && LastMeasuredValue - RC_ControlMin <= RC_ControlCenter + RC_ControlDeadSpot)
+			return RC_ControlCenter;
+		else
+			return LastMeasuredValue - RC_ControlMin;
+	}
+}
+
 RemoteControlValues rc_read_values()
 {
 	RemoteControlValues returnValues;
+	returnValues.error = false;
 	//Throttle
-	if(ReaderValues.Throttle.LastMeasuredValue < RC_ControlMin || ReaderValues.Throttle.LastMeasuredValue > RC_ControlMax) // diff is out of range...
+	if(ReaderValues.Throttle.LastMeasuredValue < RC_CCONTROL_MIN__THROTTLE || ReaderValues.Throttle.LastMeasuredValue > RC_CONTROL_MAX__THROTTLE) // is out of range...
 	{
 		returnValues.Throttle = 0;	// ...so return 0 (min throttle)
 		returnValues.error = true;	//and indicate that there was an error
 	}
 	else
 	{
-		returnValues.Throttle = ReaderValues.Throttle.LastMeasuredValue - RC_ControlMin;
+		if(ReaderValues.Throttle.LastMeasuredValue - RC_CCONTROL_MIN__THROTTLE <= RC_CONTROL_DEAD_SPOT__THROTTLE)
+			returnValues.Throttle = 0;
+		else
+			returnValues.Throttle = ReaderValues.Throttle.LastMeasuredValue - RC_CCONTROL_MIN__THROTTLE;
 	}
-	
-	//Role
-	if(ReaderValues.Role.LastMeasuredValue < RC_ControlMin || ReaderValues.Role.LastMeasuredValue > RC_ControlMax) // diff is out of range...
+	returnValues.Role = calculate_control_value(ReaderValues.Role.LastMeasuredValue, &returnValues.error, RC_CONTROL_MIN__ROLE, RC_CONTROL_MAX__ROLE, RC_CONTROL_CENTER__ROLE, RC_CONTROL_DEAD_SPOT__ROLE);
+	returnValues.Pitch = calculate_control_value(ReaderValues.Pitch.LastMeasuredValue, &returnValues.error, RC_CONTROL_MIN__PITCH, RC_CONTROL_MAX__PITCH, RC_CONTROL_CENTER__PITCH, RC_CONTROL_DEAD_SPOT__PITCH);
+	returnValues.Yaw = calculate_control_value(ReaderValues.Yaw.LastMeasuredValue, &returnValues.error, RC_CONTROL_MIN__YAW, RC_CONTROL_MAX__YAW, RC_CONTROL_CENTER__YAW, RC_CONTROL_DEAD_SPOT__YAW);
+	//Gear:
+	if(ReaderValues.Gear.LastMeasuredValue < RC_CONTROL_MIN__GEAR || ReaderValues.Gear.LastMeasuredValue > RC_CONTROL_MAX__GEAR) // is out of range...
 	{
-		returnValues.Role = 0;	// ...so return 0 (min throttle)
+		returnValues.Gear = false;	// ...so return 0 (min throttle)
 		returnValues.error = true;	//and indicate that there was an error
 	}
 	else
 	{
-		returnValues.Role = ReaderValues.Role.LastMeasuredValue - RC_ControlMin;
+		if(ReaderValues.Gear.LastMeasuredValue - RC_CONTROL_MIN__GEAR >= RC_CONTROL_THRESCHHOLD__GEAR)
+			returnValues.Gear = true;
+		else
+			returnValues.Gear = false;
 	}
-	//TODO:Manage all the other control values
-	
 	return returnValues;
 }
 
@@ -132,41 +155,34 @@ void TC0_Handler(void)
 	TC0->TC_CHANNEL[0].TC_SR;
 }
 
+void Calculate_measurement(uint32_t status, uint32_t MeasurementPin, MeasurementHelpers* ReadValues)
+{
+	if (status & MeasurementPin)
+	{
+		uint32_t PinState = (RCREADER_PIO_PORT->PIO_PDSR & MeasurementPin);
+		if(PinState != ReadValues->LastState)
+		{	// PIN A8 (PK0) has changed (either high->low or low->high)
+			ReadValues->LastState = PinState;
+			if(ReadValues->LastState)
+			{	// changed from low->high
+				ReadValues->mStartCount = TC0->TC_CHANNEL[0].TC_CV;
+			}
+			else
+			{	// changed from high->low
+				ReadValues->LastMeasuredValue = calculateTickDifference(ReadValues->mStartCount, TC0->TC_CHANNEL[0].TC_CV);
+			}
+		}
+	}
+}
+
 // Pin Change Interrupt
 void RCREADER_INTERRUPT(void)
 {
 	// Save all triggered interrupts
 	uint32_t status = RCREADER_PIO_PORT->PIO_ISR;
-	if (status & THROTTLE_PIN)
-	{
-		uint32_t PinState = (RCREADER_PIO_PORT->PIO_PDSR & THROTTLE_PIN);
-		if(PinState != ReaderValues.Throttle.LastState)
-		{	// PIN A8 (PK0) has changed (either high->low or low->high)
-			ReaderValues.Throttle.LastState = PinState;
-			if(ReaderValues.Throttle.LastState)
-			{	// changed from low->high
-				ReaderValues.Throttle.mStartCount = TC0->TC_CHANNEL[0].TC_CV;
-			}
-			else
-			{	// changed from high->low
-				ReaderValues.Throttle.LastMeasuredValue = calculateTickDifference(ReaderValues.Throttle.mStartCount, TC0->TC_CHANNEL[0].TC_CV);
-			}
-		}
-	}
-	if (status & ROLE_PIN)
-	{
-		uint32_t PinState = (RCREADER_PIO_PORT->PIO_PDSR & ROLE_PIN);
-		if(PinState != ReaderValues.Role.LastState)
-		{	// PIN A8 (PK0) has changed (either high->low or low->high)
-			ReaderValues.Role.LastState = PinState;
-			if(ReaderValues.Role.LastState)
-			{	// changed from low->high
-				ReaderValues.Role.mStartCount = TC0->TC_CHANNEL[0].TC_CV;
-			}
-			else
-			{	// changed from high->low
-				ReaderValues.Role.LastMeasuredValue = calculateTickDifference(ReaderValues.Role.mStartCount, TC0->TC_CHANNEL[0].TC_CV);
-			}
-		}
-	}
+	Calculate_measurement(status, THROTTLE_PIN, &ReaderValues.Throttle);
+	Calculate_measurement(status, ROLE_PIN, &ReaderValues.Role);
+	Calculate_measurement(status, PITCH_PIN, &ReaderValues.Pitch);
+	Calculate_measurement(status, YAW_PIN, &ReaderValues.Yaw);
+	Calculate_measurement(status, GEAR_PIN, &ReaderValues.Gear);
 }

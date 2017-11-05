@@ -61,11 +61,10 @@
 
 //PWM Times:
 #define ESC_PWM_PERIOD 52500
-#define ESC_PWM_MIN_DUTY_CYCLE 2625
-
+#define ESC_PWM_MIN_DUTY_CYCLE 2625	// 1ms duty cycle
 // Maximum ESC Speed
 #define ESC_MaxLimit 3937 // half of maximum motor power
-//#define ESC_MinLimit ESC_PWM_MIN_DUTY_CYCLE // 1ms duty cycle
+//#define ESC_MinLimit ESC_PWM_MIN_DUTY_CYCLE 
 
 
 /*
@@ -74,12 +73,54 @@
  *
  */
 
-// Maximum Control Value Input (2625 = 1ms, 5250 = 2ms)
-#define RC_ControlMax 5250
-// Minimum Control Value Input (2625 = 1ms, 5250 = 2ms)
-#define RC_ControlMin 2625 //2180
 // Difference of the above defined values
-#define RC_ControlDiff (RC_ControlMax - RC_ControlMin)
+#define RC_CONTROL_DIFF (RC_ControlMax - RC_ControlMin)
+
+//Dead spot of the joystick before values begin to change
+#define RC_CONTROL_DEAD_SPOT__THROTTLE	50
+// Minimum Control Value Input (2625 = 1ms, 5250 = 2ms)
+#define RC_CCONTROL_MIN__THROTTLE		2840
+// Maximum Control Value Input (2625 = 1ms, 5250 = 2ms)
+#define RC_CONTROL_MAX__THROTTLE		5200
+
+//Defines the value of the Input when the joystick is centered
+#define RC_CONTROL_CENTER__PITCH		1075
+#define RC_CONTROL_DEAD_SPOT__PITCH		40
+#define RC_CONTROL_MIN__PITCH			2850
+#define RC_CONTROL_MAX__PITCH			5200
+
+#define RC_CONTROL_CENTER__ROLE			1075
+#define RC_CONTROL_DEAD_SPOT__ROLE		40
+#define RC_CONTROL_MIN__ROLE			2875
+#define RC_CONTROL_MAX__ROLE			5200
+
+#define RC_CONTROL_CENTER__YAW			1075
+#define RC_CONTROL_DEAD_SPOT__YAW		40
+#define RC_CONTROL_MIN__YAW				2865
+#define RC_CONTROL_MAX__YAW				5200
+
+#define RC_CONTROL_MIN__GEAR			2830
+#define RC_CONTROL_MAX__GEAR			5200
+#define RC_CONTROL_THRESCHHOLD__GEAR	2000
+
+
+/*
+RC_ControlDeadSpot
+   _____|_____ ---------- RC_ControlMax
+  /     |     \			^
+ /   ___|___   \		|
+|   |<----->|   |		|
+|   |   O   |   |		| RC_ControlDiff
+|   |___|___|   |		|
+ \      |      /		v
+  \_____|_____/ --------- RC_ControlMin
+	    |     
+RC_ControlCenter
+
+
+*/
+
+
 
 //PORT Configuration:
 #define RCREADER_PIO_PORT	PIOB				//IO Port
@@ -94,8 +135,6 @@
 #define GEAR_PIN			PIO_PB28		//GEAR
 
 #define RCREADER_ENABLED_PINS	THROTTLE_PIN | ROLE_PIN | PITCH_PIN | YAW_PIN | GEAR_PIN;
-
-#define 
 
 /*
  *

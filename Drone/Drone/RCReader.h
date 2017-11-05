@@ -20,7 +20,7 @@ struct RemoteControlValues
 	uint16_t Role;
 	uint16_t Pitch;
 	uint16_t Yaw;
-	uint16_t Gear;
+	bool Gear;
 	bool error;
 };
 typedef struct RemoteControlValues RemoteControlValues;

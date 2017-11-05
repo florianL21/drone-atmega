@@ -13,6 +13,55 @@
 
 
 
+void configure_wdt(void)
+{
+	WDT->WDT_MR = 0x00000000; // disable WDT
+}
+
+int main(void)
+{
+	/* Initialize the SAM system */
+	SystemInit();
+	configure_wdt();
+	uart0_init(115200);
+	rc_init();
+	esc_init();	
+	RemoteControlValues Values;
+	while (1)
+	{
+		Values = rc_read_values();
+		if(Values.error != true)
+		{
+			esc_set(1,Values.Throttle);
+		}
+		if(uart0_has_space())
+		{
+			uint8_t numBuf[20] = "";
+			uint8_t buffer[50] = "";
+			strcat(buffer,"T: ");
+			itoa(Values.Throttle,numBuf,10);
+			strcat(buffer,numBuf);
+			itoa(Values.Role,numBuf,10);
+			strcat(buffer,"\tR: ");
+			strcat(buffer,numBuf);
+			itoa(Values.Pitch,numBuf,10);
+			strcat(buffer,"\tP: ");
+			strcat(buffer,numBuf);
+			itoa(Values.Yaw,numBuf,10);
+			strcat(buffer,"\tY: ");
+			strcat(buffer,numBuf);
+			itoa(Values.Gear,numBuf,10);
+			strcat(buffer,"\tG: ");
+			strcat(buffer,numBuf);
+			itoa(Values.error,numBuf,10);
+			strcat(buffer,"\tE: ");
+			strcat(buffer,numBuf);
+			strcat(buffer,"\n\r");
+			uart0_puts(buffer);
+		}
+	}
+}
+
 
 
 /*
@@ -26,6 +75,7 @@ void PIOB_Handler(void)
 		uart0_puts("t");
 	}
 }*/
+/*
 void configure_int(void)
 {
 	// Enable Clock for PIOB - needed for sampling falling edge
@@ -53,56 +103,4 @@ void configure_int(void)
 	PIOB->PIO_IER = PIO_PB26;
 	// Enable Interrupt Handling in NVIC
 	NVIC_EnableIRQ(PIOB_IRQn);
-}
-
-
-
-void configure_wdt(void)
-{
-	WDT->WDT_MR = 0x00000000; // disable WDT
-}
-
-int main(void)
-{
-	/*configure_led_io();
-	*/
-	/* Initialize the SAM system */
-	SystemInit();
-	configure_wdt();
-	uart0_init(115200);
-	//configure_int();
-	rc_init();
-	/*esc_init();
-	esc_set(1,20);
-	esc_set(2,500);
-	esc_set(3,800);
-	esc_set(4,1100);*/
-	
-	/*// Enable IO
-	PIOC->PIO_PER = PIO_PC2;
-	PIOC->PIO_PER = PIO_PC1;
-	PIOC->PIO_PER = PIO_PC3 | PIO_PC4;
-	// Set to output
-	PIOC->PIO_OER = PIO_PC2;
-	PIOC->PIO_OER = PIO_PC1;
-	PIOC->PIO_OER = PIO_PC3 | PIO_PC4;
-	// Disable pull-up
-	PIOC->PIO_PUDR = PIO_PC2;
-	PIOC->PIO_PUDR = PIO_PC1;
-	PIOC->PIO_PUDR = PIO_PC3 | PIO_PC4;
-	
-	PIOB->PIO_CODR = PIO_PB27;*/
-	
-	uint8_t buffer[20];
-	RemoteControlValues Values;
-	while (1)
-	{
-		if(uart0_has_space())
-		{
-			Values = rc_read_values();
-			itoa(Values.Role,buffer,10);
-			strcat(buffer,"\n\r");
-			uart0_puts(buffer);
-		}
-	}
-}
+}*/
