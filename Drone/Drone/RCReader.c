@@ -185,4 +185,5 @@ void RCREADER_INTERRUPT(void)
 	Calculate_measurement(status, PITCH_PIN, &ReaderValues.Pitch);
 	Calculate_measurement(status, YAW_PIN, &ReaderValues.Yaw);
 	Calculate_measurement(status, GEAR_PIN, &ReaderValues.Gear);
+	//TODO: Implement Timeout error
 }

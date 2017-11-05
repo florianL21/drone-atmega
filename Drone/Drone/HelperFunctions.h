@@ -37,7 +37,7 @@ typedef struct Queue Queue;
  *		out_min	- lower bound of output range
  *		out_max	- upper bound of output range
  */
-uint16_t map(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max);
+int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max);
 
 void _Delay(uint32_t delayCycles);
 

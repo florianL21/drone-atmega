@@ -41,14 +41,28 @@
  *
  */
 
+/*	MOTOR LAYOUT
+
+|----|        |----|
+| M1 |        | M2 |
+|----|        |----|
+
+
+
+|----|        |----|
+| M3 |        | M4 |
+|----|        |----|
+
+ */
+
 // M1 ESC Timer OCR Offset
-#define ESC_Offset_M1 0
+#define ESC_Offset_M1 10
 // M2 ESC Timer OCR Offset
-#define ESC_Offset_M2 0
+#define ESC_Offset_M2 390
 // M3 ESC Timer OCR Offset
-#define ESC_Offset_M3 0
+#define ESC_Offset_M3 390
 // M4 ESC Timer OCR Offset
-#define ESC_Offset_M4 0
+#define ESC_Offset_M4 390
 
 // M1 ESC Slope Compensation Factor
 #define ESC_SlopeComp_M1 0
@@ -77,7 +91,7 @@
 #define RC_CONTROL_DIFF (RC_ControlMax - RC_ControlMin)
 
 //Dead spot of the joystick before values begin to change
-#define RC_CONTROL_DEAD_SPOT__THROTTLE	50
+#define RC_CONTROL_DEAD_SPOT__THROTTLE	60
 // Minimum Control Value Input (2625 = 1ms, 5250 = 2ms)
 #define RC_CCONTROL_MIN__THROTTLE		2840
 // Maximum Control Value Input (2625 = 1ms, 5250 = 2ms)
