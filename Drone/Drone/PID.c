@@ -17,10 +17,33 @@ unsigned long millis()
  * This Library is licensed under the MIT License
  **********************************************************************************************/
 
+/*********************************************************************
+ * 
+ * Has to be called once before the PID Controllers can be used.
+ * 
+ *********************************************************************/
+PID_Init()
+{
+	PMC->PMC_PCER0 = 1 << ID_TC0;
+	// Disable TC clock
+	TC0->TC_CHANNEL[1].TC_CCR = TC_CCR_CLKDIS;
+	// Disable interrupts
+	TC0->TC_CHANNEL[1].TC_IDR = 0xFFFFFFFF;
+	// Clear status register
+	TC0->TC_CHANNEL[1].TC_SR;
+	// Set TC1 Mode: Capture mode Clock3 (84Mhz/32) = 2,625MHz
+	TC0->TC_CHANNEL[1].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK3;
+	// Set Compare Value in RC register
+	TC0->TC_CHANNEL[1].TC_RC = 64000; // note: RC oscillator is around 32kHz
+	// Reset counter (SWTRG) and start counter clock (CLKEN)
+	TC0->TC_CHANNEL[1].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
+}
+
 /*Constructor (...)*********************************************************
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
+
 PID_Controller* PID_newPID(double* Input, double* Output, double* Setpoint, double Kp, double Ki, double Kd, int POn, int ControllerDirection)
 {
     PID_Controller *aPID = malloc(sizeof(*aPID));
@@ -44,55 +67,56 @@ PID_Controller* PID_newPID(double* Input, double* Output, double* Setpoint, doub
 
 /* Compute() **********************************************************************
  *     This, as they say, is where the magic happens.  this function should be called
- *   every time "void loop()" executes.  the function will decide for itself whether a new
+ *   every time the while loop executes.(can also be called in a periodic timer interrupt)
+ *   the function will decide for itself whether a new
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
 bool PID_Compute(PID_Controller* aPID)
 {
-   if(!aPID->inAuto) return false;
-   unsigned long now = millis();
-   unsigned long timeChange = (now - aPID->lastTime);
-   if(timeChange >= aPID->SampleTime)
-   {
-      /*Compute all the working error variables*/
-      double input = *aPID->myInput;
-      double error = *aPID->mySetpoint - input;
-      double dInput = (input - aPID->lastInput);
-      aPID->outputSum += (aPID->ki * error);
+	if(!aPID->inAuto) 
+		return false;
+	unsigned long now = millis();
+	if((now - aPID->lastTime) >= aPID->SampleTime)
+	{
+		/*Compute all the working error variables*/
+		double input = *aPID->myInput;
+		double error = *aPID->mySetpoint - input;
+		double dInput = (input - aPID->lastInput);
+		aPID->outputSum += (aPID->ki * error);
 
-      /*Add Proportional on Measurement, if P_ON_M is specified*/
-      if(!aPID->pOnE) 
-        aPID->outputSum -= aPID->kp * dInput;
+		/*Add Proportional on Measurement, if P_ON_M is specified*/
+		if(!aPID->pOnE) 
+			aPID->outputSum -= aPID->kp * dInput;
 
-      if(aPID->outputSum > aPID->outMax) 
-        aPID->outputSum = aPID->outMax;
-      else if(aPID->outputSum < aPID->outMin) 
-        aPID->outputSum = aPID->outMin;
+		if(aPID->outputSum > aPID->outMax) 
+			aPID->outputSum = aPID->outMax;
+		else if(aPID->outputSum < aPID->outMin) 
+			aPID->outputSum = aPID->outMin;
 
-      /*Add Proportional on Error, if P_ON_E is specified*/
-	   double output;
-      if(aPID->pOnE) 
-        output = aPID->kp * error;
-      else 
-        output = 0;
+		/*Add Proportional on Error, if P_ON_E is specified*/
+		double output;
+		if(aPID->pOnE) 
+			output = aPID->kp * error;
+		else 
+			output = 0;
 
-      /*Compute Rest of PID Output*/
-      output += aPID->outputSum - aPID->kd * dInput;
+		/*Compute Rest of PID Output*/
+		output += aPID->outputSum - aPID->kd * dInput;
 
-	    if(output > aPID->outMax) 
-        output = aPID->outMax;
-      else if(output < aPID->outMin) 
-        output = aPID->outMin;
-	    *aPID->myOutput = output;
+		if(output > aPID->outMax) 
+			output = aPID->outMax;
+		else if(output < aPID->outMin) 
+			output = aPID->outMin;
+		*aPID->myOutput = output;
 
-      /*Remember some variables for next time*/
-      aPID->lastInput = input;
-      aPID->lastTime = now;
-	    return true;
-   }
-   else 
-     return false;
+		/*Remember some variables for next time*/
+		aPID->lastInput = input;
+		aPID->lastTime = now;
+		return true;
+	}
+	else 
+		return false;
 }
 
 /* SetTunings(...)*************************************************************
