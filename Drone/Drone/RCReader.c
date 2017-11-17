@@ -44,7 +44,7 @@ void rc_init()
 	// Set TC0 Mode: Capture mode Clock3 (84Mhz/32)
 	TC0->TC_CHANNEL[0].TC_CMR = TC_CMR_TCCLKS_TIMER_CLOCK3;
 	// Set Compare Value in RC register
-	TC0->TC_CHANNEL[0].TC_RC = 64000; // note: RC oscillator is around 32kHz
+	//TC0->TC_CHANNEL[0].TC_RC = 64000; // note: RC oscillator is around 32kHz
 	// Reset counter (SWTRG) and start counter clock (CLKEN)
 	TC0->TC_CHANNEL[0].TC_CCR = TC_CCR_CLKEN | TC_CCR_SWTRG;
 	

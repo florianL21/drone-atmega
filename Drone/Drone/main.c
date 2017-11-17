@@ -10,8 +10,7 @@
 #include "ESCControl.h"
 #include "RCReader.h"
 #include "HelperFunctions.h"
-
-
+#include "PID.h"
 
 
 void configure_wdt(void)
@@ -76,46 +75,3 @@ int main(void)
 		
 	}
 }
-
-
-
-/*
-void PIOB_Handler(void)
-{
-	// Save all triggered interrupts
-	uint32_t status = PIOB->PIO_ISR;
-	
-	if (status & PIO_PB26)
-	{
-		uart0_puts("t");
-	}
-}*/
-/*
-void configure_int(void)
-{
-	// Enable Clock for PIOB - needed for sampling falling edge
-	PMC->PMC_PCER0 = 1 << ID_PIOB;
-	// Enable IO pin control
-	PIOB->PIO_PER = PIO_PB26;
-	// Disable output (set to High Z)
-	PIOB->PIO_ODR = PIO_PB26;
-	// Enable pull-up
-	PIOB->PIO_PUER = PIO_PB26;
-	// Enable Glitch/Debouncing filter
-	//PIOB->PIO_IFER = PIO_PB26;
-	// Select Debouncing filter
-	//PIOB->PIO_DIFSR = PIO_PB26;
-	// Set Debouncing clock divider
-	//PIOB->PIO_SCDR = 0x4FF;
-	// Select additional detection mode (for single edge detection)
-	PIOB->PIO_AIMER = PIO_PB26;
-	// The interrupt source is an Edge detection event.
-	PIOB->PIO_ESR = PIO_PB26;
-	// The interrupt source is set to a falling and rising Edge detection
-	PIOB->PIO_FELLSR = PIO_PB26;
-	PIOB->PIO_REHLSR = PIO_PB26;
-	// Enables the Input Change Interrupt on the I/O line.
-	PIOB->PIO_IER = PIO_PB26;
-	// Enable Interrupt Handling in NVIC
-	NVIC_EnableIRQ(PIOB_IRQn);
-}*/
