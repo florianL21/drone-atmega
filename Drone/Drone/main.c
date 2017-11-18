@@ -6,11 +6,12 @@
  */ 
 
 #include "sam.h"
-#include "uart0.h"
-#include "ESCControl.h"
-#include "RCReader.h"
-#include "HelperFunctions.h"
-#include "PID.h"
+//#include "uart0.h"
+#include "USART0.h"
+//#include "ESCControl.h"
+//#include "RCReader.h"
+//#include "HelperFunctions.h"
+//#include "PID.h"
 
 
 void configure_wdt(void)
@@ -18,23 +19,42 @@ void configure_wdt(void)
 	WDT->WDT_MR = 0x00000000; // disable WDT
 }
 
+
+
+int main(void)
+{
+	SystemInit();
+	USART0_init(115200);
+	uint8_t testData[10]="Test\n\r";
+	
+	while(1)
+	{
+		USART0->US_THR ='t';
+	}
+}
+
+
+
+/* PID Test Program:*/
+/*
+
 float Input=0;
 float Output=0;
 float SetPoint=0;
 float Kp=0.5;
 float Ki=0.3;
-float Kd=0.005;
-pidData myPid;
+float Kd=0.008;
 
+pidData myPid;
 
 int main(void)
 {
-	/* Initialize the SAM system */
 	SystemInit();
 	configure_wdt();
 	uart0_init(115200);
 	rc_init();
 	PID_Init();
+	
 	PID_Initialize(&myPid, &Input, &Output, &SetPoint, Kp, Ki, Kd,-1000,1000,10);
 	
 	RemoteControlValues Values;
@@ -68,7 +88,7 @@ int main(void)
 		
 	}
 }
-
+*/
 /*
 int main(void)
 {

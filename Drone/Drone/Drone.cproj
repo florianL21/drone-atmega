@@ -192,6 +192,12 @@
     <Compile Include="UARTCOM.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="USART0.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="USART0.h">
+      <SubType>compile</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Device_Startup\" />
