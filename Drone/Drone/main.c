@@ -18,9 +18,61 @@ void configure_wdt(void)
 	WDT->WDT_MR = 0x00000000; // disable WDT
 }
 
+float Input=0;
+float Output=0;
+float SetPoint=0;
+float Kp=0.5;
+float Ki=0.3;
+float Kd=0.005;
+pidData myPid;
+
+
 int main(void)
 {
 	/* Initialize the SAM system */
+	SystemInit();
+	configure_wdt();
+	uart0_init(115200);
+	rc_init();
+	PID_Init();
+	PID_Initialize(&myPid, &Input, &Output, &SetPoint, Kp, Ki, Kd,-1000,1000,10);
+	
+	RemoteControlValues Values;
+	while(1)
+	{
+		Values = rc_read_values();
+		SetPoint = Values.Throttle;
+		if (PID_need_compute(&myPid))
+		{
+			// Compute new PID output value
+			PID_Compute(&myPid);
+			//Change actuator value
+			if(uart0_has_space())
+			{
+				uint8_t numBuf[20] = "";
+				uint8_t buffer[50] = "";
+				strcat(buffer,"In: ");
+				itoa(Input,numBuf,10);
+				strcat(buffer,numBuf);
+				strcat(buffer,"\tOut: ");
+				itoa(Output,numBuf,10);
+				strcat(buffer,numBuf);
+				strcat(buffer,"\tSet: ");
+				itoa(SetPoint,numBuf,10);
+				strcat(buffer,numBuf);
+				strcat(buffer,"\n\r");
+				uart0_puts(buffer);
+			}
+			Input += Output;
+		}
+		
+	}
+}
+
+/*
+int main(void)
+{
+	/ * Initialize the SAM system * /
 	SystemInit();
 	configure_wdt();
 	uart0_init(115200);
@@ -74,4 +126,4 @@ int main(void)
 		}
 		
 	}
-}
+}*/
