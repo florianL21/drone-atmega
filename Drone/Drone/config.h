@@ -161,6 +161,15 @@ RC_ControlCenter
 
 /*
  *
+ *	USART0 Configuration
+ *
+ */
+
+//maximum number of entrys in the send queue (uint16_t)	
+#define USART0_QUEUE_MAX_ITEMS	50	
+
+/*
+ *
  *	UARTCOM Configuration
  *
  */

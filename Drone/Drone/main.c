@@ -5,13 +5,35 @@
  * Author : flola
  */ 
 
+
+/*
+
+// Enable IO
+PIOB->PIO_PER = PIO_PB27;
+// Set to output
+PIOB->PIO_OER = PIO_PB27;
+// Disable pull-up
+PIOB->PIO_PUDR = PIO_PB27;
+PIOB->PIO_CODR = PIO_PB27;
+
+*/
+
+
 #include "sam.h"
-//#include "uart0.h"
+#include "uart0.h"
 #include "USART0.h"
 //#include "ESCControl.h"
 //#include "RCReader.h"
 //#include "HelperFunctions.h"
 //#include "PID.h"
+
+void _delay_not_ms(uint32_t loops)
+{
+	for (uint32_t i = 0; i < loops; i++)
+	{
+		asm("nop");
+	}
+}
 
 
 void configure_wdt(void)
@@ -19,17 +41,70 @@ void configure_wdt(void)
 	WDT->WDT_MR = 0x00000000; // disable WDT
 }
 
+/*
+void Test(uint8_t* Data, uint16_t Length)
+{
+	uint8_t test[3]="\r\n";
+	USART0_put_data(Data,Length);
+	USART0_put_data(test,2);
+	USART0_set_receiver_length(1);
+}
 
+int main(void)
+{
+	
+	SystemInit();
+	configure_wdt();
+	PIOB->PIO_PER = PIO_PB27;
+	// Set to output
+	PIOB->PIO_OER = PIO_PB27;
+	// Disable pull-up
+	PIOB->PIO_PUDR = PIO_PB27;
+	PIOB->PIO_CODR = PIO_PB27;
+	USART0_init(115200,3);
+	USART0_register_received_callback(Test);
+	
+	while(1)
+	{
+	}
+}*/
+
+void Test(uint8_t* Data, uint8_t Length)
+{
+	uint16_t data = 0x0000;
+	data = (Data[1] << 8 ) | (Data[0] & 0xff);
+	uint8_t numBuf[20] = "";
+	uint8_t buffer[50] = "";
+	//strcat(buffer,"ID: ");
+	itoa(data,numBuf,10);
+	strcat(buffer,numBuf);
+	strcat(buffer,"\n\r");
+	if(uart0_has_space())
+		uart0_puts(buffer);
+}
+
+void BNO_Error(uint8_t Error)
+{
+	uart0_puts("ERROR");
+}
 
 int main(void)
 {
 	SystemInit();
-	USART0_init(115200);
-	uint8_t testData[10]="Test\n\r";
-	
+	configure_wdt();
+	BNO055_Init(Test);
+	BNO055_register_error_callback(BNO_Error);
+	uart0_init(115200);
+	//uart0_puts("Start:\n\r");
+	BNO055_register_read(0x10,2);
+	//uart0_puts("END\n\r\n\r");
 	while(1)
 	{
-		USART0->US_THR ='t';
+		if(BNO055_is_idle() && uart0_is_idle())
+		{
+			BNO055_register_read(0x10,2);
+		}
+		_delay_not_ms(320000);
 	}
 }
 
@@ -89,6 +164,8 @@ int main(void)
 	}
 }
 */
+
+/*Drone Test Program:*/
 /*
 int main(void)
 {

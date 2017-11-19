@@ -78,7 +78,7 @@ queue_node queue_read(Queue *queue) {
 	return returnStruct;
 }
 
-bool queue_write(Queue *queue, uint8_t* data, uint16_t Length, bool CleanupRequired) {
+bool queue_write(Queue *queue, uint8_t* data, uint16_t Length) {
 	if (queue == NULL) 
 	{
 		return false;
@@ -100,11 +100,6 @@ bool queue_write(Queue *queue, uint8_t* data, uint16_t Length, bool CleanupRequi
 	for(uint16_t dataIndex = 0; dataIndex < Length; dataIndex++)
 	{
 		node->data[dataIndex] = data[dataIndex];
-	}
-	if(CleanupRequired == true)
-	{
-		if(data!=NULL)
-			free(data);
 	}
 	node->Length = Length;
 	node->next = NULL;

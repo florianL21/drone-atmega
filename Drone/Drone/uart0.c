@@ -59,8 +59,12 @@ void uart0_putc(uint8_t Character)
 	uart0_puts(dataArray);
 }
 */
+bool uart0_is_idle()
+{
+	return queue_is_empty(uartSendQueue);
+}
 
-void uart0_register_recived_callback(UART_RECV_CALLBACK callBack)
+void uart0_register_received_callback(UART_RECV_CALLBACK callBack)
 {
 	reciveCallBack = callBack;
 }
@@ -75,7 +79,7 @@ void uart0_puts(uint8_t Data[])
 	{
 		if(queue_has_space(uartSendQueue))
 		{
-			if(!queue_write(uartSendQueue, Data, strlen((char*)Data),false))
+			if(!queue_write(uartSendQueue, Data, strlen((char*)Data)))
 			{
 				#ifdef DEBUG_UART0
 					uart0_force_debug_output("uart0_puts: queue write error");
@@ -103,8 +107,12 @@ void uart0_put_data(uint8_t* sendData, uint16_t Length, bool requiresMemmoryClea
 	{
 		if(queue_has_space(uartSendQueue))
 		{
-			if(!queue_write(uartSendQueue, sendData, Length, requiresMemmoryCleanup))
+			if(!queue_write(uartSendQueue, sendData, Length))
 			{
+				if(requiresMemmoryCleanup && sendData != NULL)
+				{
+					free(sendData);
+				}
 				#ifdef DEBUG_UART0
 					uart0_force_debug_output("uart0_put_data: queue write error");
 				#endif

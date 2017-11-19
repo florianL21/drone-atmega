@@ -19,6 +19,7 @@
 	#include "UARTCOM.h"
 #endif
 
+bool uart0_is_idle();
 
 typedef void (*UART_RECV_CALLBACK)(uint8_t recivedChar);
 
@@ -39,7 +40,7 @@ void uart0_init(uint32_t BaudRate);
 /*
  *	Register a callback function which gets called when a char is received
  */
-void uart0_register_recived_callback(UART_RECV_CALLBACK callBack);
+void uart0_register_received_callback(UART_RECV_CALLBACK callBack);
 
 
 /*

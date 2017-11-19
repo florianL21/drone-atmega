@@ -141,6 +141,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BNO055.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="BNO055.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="config.h">
       <SubType>compile</SubType>
     </Compile>

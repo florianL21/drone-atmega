@@ -68,7 +68,7 @@ queue_node queue_read(Queue* readQueue);
  * Writes a Value to the top of the queue
  * returns 0 if an error occures
  */
-bool queue_write(Queue* writeQueue, uint8_t* writeWalue, uint16_t Length, bool CleanupRequired);
+bool queue_write(Queue* writeQueue, uint8_t* writeWalue, uint16_t Length);
 
 /*
  * 

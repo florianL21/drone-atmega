@@ -104,7 +104,7 @@ void UARTCOM_send_debug_n(uint8_t Number)
 void UARTCOM_init(uint32_t BaudRate)
 {
 	uart0_init(BaudRate);
-	uart0_register_recived_callback(_uart_recived_char);
+	uart0_register_received_callback(_uart_recived_char);
 }
 
 bool UARTCOM_ready_to_send()
