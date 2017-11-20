@@ -44,7 +44,7 @@ void PID_Init()
 
 //struct pidData myPidData[NUM_PID_CONTROLLERS];
 
-PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime)
+void PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime)
 {
 	pidController->Input = Input;
 	pidController->Output = Output;

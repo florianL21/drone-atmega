@@ -147,6 +147,9 @@
     <Compile Include="BNO055.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="BNO055_reg_table.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="config.h">
       <SubType>compile</SubType>
     </Compile>
@@ -190,12 +193,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="uart0.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="UARTCOM.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="UARTCOM.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="USART0.c">

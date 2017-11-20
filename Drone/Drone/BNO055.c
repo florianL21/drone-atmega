@@ -7,6 +7,7 @@
 
 #include "BNO055.h"
 
+
 /* BNO Status Bytes: */
 #define START_BYTE			0xAA
 #define WRITE_BYTE			0x00
@@ -24,6 +25,9 @@ typedef enum {
 
 
 
+
+
+
 bool bnoIsIdle = true;
 uint8_t _rec_length = 0;
 BNO_ERROR_CALLBACK _error_callback = NULL;
@@ -32,22 +36,31 @@ BNO_recvStates _rec_states = BNO_REC_STATE_IDLE;
 
 void _response_received(uint8_t* Data,uint16_t Length);
 
-void BNO055_Init(BNO_READ_SUCCESS_CALLBACK callBack)
+ERROR_CODE BNO055_Init(BNO_READ_SUCCESS_CALLBACK callBack)
 {
-	USART0_init(115200,2);
-	USART0_register_received_callback(_response_received);
-	//USART0_set_receiver_length(2);
+	if(callBack == NULL)
+	{
+		return BNO055_ERROR_GOT_NULL_POINTER;
+	}
+	DEFUALT_ERROR_HANDLER(USART0_init(115200, 2),error_return1);
+	DEFUALT_ERROR_HANDLER(USART0_register_received_callback(_response_received),error_return2);
 	_read_success_callback = callBack;
+	return SUCCESS;
 }
 
-void BNO055_register_error_callback(BNO_ERROR_CALLBACK callBack)
+ERROR_CODE BNO055_register_error_callback(BNO_ERROR_CALLBACK callBack)
 {
+	if(callBack == NULL)
+	{
+		return BNO055_ERROR_GOT_NULL_POINTER;
+	}
 	_error_callback = callBack;
+	return SUCCESS;
 }
 
 void _response_received(uint8_t* Data, uint16_t Length)
 {
-	uint8_t* recData;
+	ERROR_CODE USART_return;
 	switch(_rec_states)
 	{
 		case BNO_REC_STATE_IDLE:
@@ -55,20 +68,25 @@ void _response_received(uint8_t* Data, uint16_t Length)
 			{
 				if(Data[2] != BNO_STATUS_WRITE_SUCCESS && _error_callback != NULL)
 				{
-					_error_callback(Data[1]);
+					_error_callback(Data[1], SUCCESS);
 				}
 				bnoIsIdle = true;
 			}
 			else if(Length == 2 && Data[0] == READ_SUCCESS_BYTE)
 			{
 				_rec_length = Data[1];
-				USART0_set_receiver_length(_rec_length);
+				USART_return = USART0_set_receiver_length(_rec_length);
+				if(USART_return != SUCCESS)
+				{
+					_error_callback(BNO_TRANSMIT_ERROR, USART_return);
+					return;
+				}
 				_rec_states = BNO_REC_STATE_READ_SUCCESS;
 			}else
 			{
 				if(_error_callback != NULL)
 				{
-					_error_callback(BNO_TRANSMIT_ERROR);
+					_error_callback(BNO_TRANSMIT_ERROR, BNO055_ERROR_ARGUMENT_OUT_OF_RANGE);
 				}
 				bnoIsIdle = true;
 			}
@@ -79,7 +97,13 @@ void _response_received(uint8_t* Data, uint16_t Length)
 			{
 				_read_success_callback(Data, _rec_length);
 			}
-			USART0_set_receiver_length(2);
+			USART_return = USART0_set_receiver_length(2);
+			if(USART_return != SUCCESS)
+			{
+				_error_callback(BNO_TRANSMIT_ERROR, USART_return);
+				_rec_states = BNO_REC_STATE_IDLE;
+				return;
+			}
 			bnoIsIdle = true;
 			_rec_states = BNO_REC_STATE_IDLE;
 		break;
@@ -87,7 +111,7 @@ void _response_received(uint8_t* Data, uint16_t Length)
 		default:
 			if(_error_callback != NULL)
 			{
-				_error_callback(BNO_TRANSMIT_ERROR);
+				_error_callback(BNO_TRANSMIT_ERROR, ERROR_FATAL);
 			}
 			bnoIsIdle = true;
 		break;
@@ -99,20 +123,16 @@ bool BNO055_is_idle()
 	return bnoIsIdle;
 }
 
-bool BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
+ERROR_CODE BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
 {
-	if(!bnoIsIdle)
+	if(!BNO055_is_idle() || !USART0_has_space())
 	{
-		return false;
-	}
-	if(!USART0_has_space())
-	{
-		return false;
+		return BNO055_ERROR_NOT_READY_FOR_OPERATION;
 	}
 	uint8_t* Message = malloc((Length+4)*sizeof(uint8_t));
 	if(Message == NULL)
 	{
-		return false;
+		return BNO055_ERROR_MALLOC_RETURNED_NULL;
 	}
 	Message[0] = START_BYTE;
 	Message[1] = WRITE_BYTE;
@@ -122,37 +142,34 @@ bool BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
 	{
 		Message[i + 3] = Data[i];
 	}
-	if(USART0_put_data(Message, Length + 4))
+	ERROR_CODE USART_return = USART0_put_data(Message, Length + 4);
+	if(USART_return == SUCCESS)
 	{
-		USART0_set_receiver_length(2);
+		DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(2),error_return);
 		bnoIsIdle = false;
 		free(Message);
-		return true;
+		return SUCCESS;
+	}else
+	{
+		free(Message);
+		return USART_return;
 	}
-	free(Message);
-	return false;
 }
 
-bool BNO055_register_read(uint8_t Register, uint8_t Length)
+ERROR_CODE BNO055_register_read(uint8_t Register, uint8_t Length)
 {
-	if(!bnoIsIdle)
+	if(!BNO055_is_idle() || !USART0_has_space())
 	{
-		return false;
-	}
-	if(!USART0_has_space())
-	{
-		return false;
+		return BNO055_ERROR_NOT_READY_FOR_OPERATION;
 	}
 	uint8_t Message[4];
 	Message[0] = START_BYTE;
 	Message[1] = READ_BYTE;
 	Message[2] = Register;
 	Message[3] = Length;
-	if(USART0_put_data(Message, 4))
-	{
-		USART0_set_receiver_length(2);
-		bnoIsIdle = false;
-		return true;
-	}
-	return false;
+	DEFUALT_ERROR_HANDLER(USART0_put_data(Message, 4),error_return1);
+	DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(2),error_return2);
+	bnoIsIdle = false;
+
+	return SUCCESS;
 }

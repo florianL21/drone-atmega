@@ -36,7 +36,7 @@ struct pidData
 typedef struct pidData pidData;
 
 
-PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime);
+void PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime);
 void PID_Compute(pidData* pidController);
 void PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd);
 void PID_SetSampleTime(pidData* pidController, float NewSampleTime);

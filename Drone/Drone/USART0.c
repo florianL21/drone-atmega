@@ -6,19 +6,26 @@
  */ 
 #include "USART0.h"
 
+#define MIN_BAUD_RATE	9600
+#define MAX_BAUD_RATE	1843200
+
 uint8_t TXBUFFER[270]; // UART PDC Transmit buffer
 USART_RECV_CALLBACK usart_reciveCallBack = NULL;
-uint32_t ReceiveLength = 1;
-uint8_t *ReceivePtr = NULL;
-uint32_t LastReceiveLength = 0;
-uint8_t *LastReceivePtr = NULL;
-bool IsFirstReceive = true;
+uint32_t usart0_ReceiveLength = 1;
+uint8_t *usart0_ReceivePtr = NULL;
 Queue* usart0SendQueue;
-bool transmitInProgress = false;
+bool usart0_transmitInProgress = false;
 
-void USART0_init(uint32_t BaudRate, uint32_t RecvLength)
+void usart0_put_raw_data(uint8_t* sendData, uint16_t Length);
+
+ERROR_CODE USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
-	USART0_set_receiver_length(RecvLength);
+	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
+	{
+		return USART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+	}
+	DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength),error_return);
+	
 	// Enable Clock for UART
 	PMC->PMC_PCER0 = 1 << ID_USART0;
 	// Set pin in peripheral mode
@@ -40,15 +47,19 @@ void USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	// Disable all UART interrupts
 	USART0->US_IDR = 0xFFFFFFFF;
 	// Enable UART interrupt
-	USART0->US_IER = US_IER_ENDRX;//| UART_IER_TXRDY;
+	USART0->US_IER = US_IER_ENDRX;
 	// Enable UART Interrupt Handling in NVIC
 	NVIC_EnableIRQ(USART0_IRQn);
 	// Enable Peripheral DMA Controller Transmission
 	USART0->US_PTCR = US_PTCR_TXTEN | US_PTCR_RXTEN;
 	
 	usart0SendQueue = queue_new(USART0_QUEUE_MAX_ITEMS);
+	if(usart0SendQueue == NULL)
+	{
+		return USART0_ERROR_MALLOC_RETURNED_NULL;
+	}
 
-	
+	return SUCCESS;
 }
 
 bool USART0_has_space()
@@ -56,7 +67,7 @@ bool USART0_has_space()
 	return queue_has_space(usart0SendQueue);
 }
 
-void _put_raw_data_(uint8_t* sendData, uint16_t Length)
+void usart0_put_raw_data(uint8_t* sendData, uint16_t Length)
 {
 	// copy to buffer - MUST be in SRAM as PDC is not connected to Flash
 	for (uint16_t count = 0; count < Length; count++)
@@ -65,62 +76,62 @@ void _put_raw_data_(uint8_t* sendData, uint16_t Length)
 	}
 	USART0->US_TPR = (uint32_t)TXBUFFER; 	// set Trasmission pointer in PDC register
 	USART0->US_TCR = Length; 				// set count of characters to be sent; starts transmission (since UART_PTCR_TXTEN is already set)
-	USART0->US_IER = US_IER_TXRDY;			//activate Transmit done interrupt
+	USART0->US_IER = US_IER_ENDTX;			//activate Transmit done interrupt
 }
 
-bool USART0_put_data(uint8_t* sendData, uint16_t Length)
+ERROR_CODE USART0_put_data(uint8_t* sendData, uint16_t Length)
 {
-	if(sendData != NULL)
+	if(sendData == NULL)
 	{
-		if(transmitInProgress == false)
-		{
-			transmitInProgress = true;
-			_put_raw_data_(sendData,Length);
-			return true;
-		} else if(queue_has_space(usart0SendQueue))
-		{
-			queue_write(usart0SendQueue,sendData,Length);
-			return true;
-		}else{
-			return false;
-		}
-	} else
+		return USART0_ERROR_GOT_NULL_POINTER;
+	}
+	if(Length == 0)
 	{
-		return false;
+		return USART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+	}
+	if(usart0_transmitInProgress == false)
+	{
+		usart0_transmitInProgress = true;
+		usart0_put_raw_data(sendData,Length);
+		return SUCCESS;
+	} else if(queue_has_space(usart0SendQueue))
+	{
+		queue_write(usart0SendQueue,sendData,Length);
+		return SUCCESS;
+	}else{
+		return USART0_ERROR_NOT_READY_FOR_OPERATION;
 	}
 }
 
-void USART0_set_receiver_length(uint32_t Length)
+ERROR_CODE USART0_set_receiver_length(uint32_t Length)
 {
-	
-	if(ReceivePtr != NULL)
+	if(Length == 0)
 	{
-		free(ReceivePtr);
+		return USART0_ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	ReceiveLength = Length;
-	USART0->US_RCR = ReceiveLength;
-	ReceivePtr = malloc(Length*sizeof(uint8_t));
-	USART0->US_RPR = (uint32_t)ReceivePtr;
-	/*ReceiveLength = Length;
-	if(IsFirstReceive == true)
+	if(usart0_ReceivePtr != NULL)
 	{
-		USART0->US_RCR = ReceiveLength - 1;
-		IsFirstReceive = false;
-	}else
-	{
-		USART0->US_RCR = ReceiveLength;
-		if(ReceivePtr != NULL)
-		{
-			free(ReceivePtr);
-		}
+		free(usart0_ReceivePtr);
 	}
-	ReceivePtr = malloc(ReceiveLength*sizeof(uint8_t));
-	USART0->US_RPR = (uint32_t)ReceivePtr;*/
+	usart0_ReceiveLength = Length;
+	USART0->US_RCR = usart0_ReceiveLength;
+	usart0_ReceivePtr = malloc(Length*sizeof(uint8_t));
+	if(usart0_ReceivePtr == NULL)
+	{
+		return USART0_ERROR_MALLOC_RETURNED_NULL;
+	}
+	USART0->US_RPR = (uint32_t)usart0_ReceivePtr;
+	return SUCCESS;
 }
 
-void USART0_register_received_callback(USART_RECV_CALLBACK callBack)
+ERROR_CODE USART0_register_received_callback(USART_RECV_CALLBACK callBack)
 {
+	if(callBack == NULL)
+	{
+		return USART0_ERROR_GOT_NULL_POINTER;
+	}
 	usart_reciveCallBack = callBack;
+	return SUCCESS;
 }
 
 void USART0_Handler(void)
@@ -132,21 +143,21 @@ void USART0_Handler(void)
 		
 		if(usart_reciveCallBack != NULL)
 		{
-			usart_reciveCallBack(ReceivePtr,ReceiveLength);
+			usart_reciveCallBack(usart0_ReceivePtr,usart0_ReceiveLength);
 		}
 		
-		USART0->US_RCR = ReceiveLength;
-		USART0->US_RPR = (uint32_t)ReceivePtr;
+		USART0->US_RCR = usart0_ReceiveLength;
+		USART0->US_RPR = (uint32_t)usart0_ReceivePtr;
 	}
-	if(USART0->US_CSR & US_CSR_TXRDY)
+	if(USART0->US_CSR & US_CSR_ENDTX)
 	{
 		if(queue_is_empty(usart0SendQueue))
 		{
-			transmitInProgress = false;
-			USART0->US_IDR = US_IDR_TXRDY;		//deactivate transmit done interrupt to keep it from firing constantly...
+			usart0_transmitInProgress = false;
+			USART0->US_IDR = US_IDR_ENDTX;		//deactivate transmit done interrupt to keep it from firing constantly...
 		}else{
 			queue_node qData = queue_read(usart0SendQueue);
-			_put_raw_data_(qData.data, qData.Length);
+			usart0_put_raw_data(qData.data, qData.Length);
 		}
 	}
 }
