@@ -9,6 +9,8 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#include <stdbool.h>
+
 /*
  *
  *	Debugging settings
@@ -33,38 +35,63 @@
 
 typedef enum {
 	//General:
-	ERROR_GENERIC							= 0x00,
-	SUCCESS									= 0x01,
-	ERROR_FATAL								= 0x02,
-	ERROR_ARGUMENT_OUT_OF_RANGE				= 0x03,
-	ERROR_GOT_NULL_POINTER					= 0x04,
-	ERROR_MALLOC_RETURNED_NULL				= 0x05,
-	ERROR_NOT_READY_FOR_OPERATION			= 0x06,
+	BOOL_TURE										= true,
+	BOOL_FALSE										= false,
+	ERROR_GENERIC									= 0x10,
+	SUCCESS											= 0x11,
+	ERROR_FATAL										= 0x12,
+	ERROR_ARGUMENT_OUT_OF_RANGE						= 0x13,
+	ERROR_GOT_NULL_POINTER							= 0x14,
+	ERROR_MALLOC_RETURNED_NULL						= 0x15,
+	ERROR_NOT_READY_FOR_OPERATION					= 0x16,
+	ERROR_INVALID_ARGUMENT							= 0x17,
 
 	//USART0:
-	USART0_ERROR							= 0x10,
-	USART0_ERROR_ARGUMENT_OUT_OF_RANGE		= 0x13,
-	USART0_ERROR_GOT_NULL_POINTER			= 0x14,
-	USART0_ERROR_MALLOC_RETURNED_NULL		= 0x15,
-	USART0_ERROR_NOT_READY_FOR_OPERATION	= 0x16,
+	USART0_ERROR									= 0x20,
+	USART0_ERROR_ARGUMENT_OUT_OF_RANGE				= 0x23,
+	USART0_ERROR_GOT_NULL_POINTER					= 0x24,
+	USART0_ERROR_MALLOC_RETURNED_NULL				= 0x25,
+	USART0_ERROR_NOT_READY_FOR_OPERATION			= 0x26,
 
 	//UART0:
-	UART0_ERROR								= 0x20,
-	UART0_ERROR_ARGUMENT_OUT_OF_RANGE		= 0x23,
-	UART0_ERROR_GOT_NULL_POINTER			= 0x24,
-	UART0_ERROR_MALLOC_RETURNED_NULL		= 0x25,
-	UART0_ERROR_NOT_READY_FOR_OPERATION		= 0x26,
+	UART0_ERROR										= 0x30,
+	UART0_ERROR_ARGUMENT_OUT_OF_RANGE				= 0x33,
+	UART0_ERROR_GOT_NULL_POINTER					= 0x34,
+	UART0_ERROR_MALLOC_RETURNED_NULL				= 0x35,
+	UART0_ERROR_NOT_READY_FOR_OPERATION				= 0x36,
 
 	//BNO055:
-	BNO055_ERROR							= 0x30,
-	BNO055_ERROR_ARGUMENT_OUT_OF_RANGE		= 0x33,
-	BNO055_ERROR_GOT_NULL_POINTER			= 0x34,
-	BNO055_ERROR_MALLOC_RETURNED_NULL		= 0x35,
-	BNO055_ERROR_NOT_READY_FOR_OPERATION	= 0x36
-} ERROR_CODE;
+	BNO055_ERROR									= 0x40,
+	BNO055_ERROR_ARGUMENT_OUT_OF_RANGE				= 0x43,
+	BNO055_ERROR_GOT_NULL_POINTER					= 0x44,
+	BNO055_ERROR_MALLOC_RETURNED_NULL				= 0x45,
+	BNO055_ERROR_NOT_READY_FOR_OPERATION			= 0x46,
+	BNO055_ERROR_INVALID_ARGUMENT					= 0x47,
+	BNO055_ERROR_WRONG_DEVICE_ID					= 0x48,
+
+	//ESCControl:
+	ESCControl_ERROR								= 0x50,
+	ESCControl_ERROR_ARGUMENT_OUT_OF_RANGE			= 0x53,
+
+	//HelperFunctions:
+	HelperFunctions_ERROR							= 0x60,
+	HelperFunctions_ERROR_ARGUMENT_OUT_OF_RANGE		= 0x63,
+	HelperFunctions_ERROR_GOT_NULL_POINTER			= 0x64,
+	HelperFunctions_ERROR_MALLOC_RETURNED_NULL		= 0x65,
+	HelperFunctions_ERROR_NOT_READY_FOR_OPERATION	= 0x66,
+	HelperFunctions_ERROR_QUEUE_WAS_EMPTY			= 0x68,
+
+	//PID:
+	PID_ERROR										= 0x70,
+	PID_ERROR_ARGUMENT_OUT_OF_RANGE					= 0x73,
+	PID_ERROR_GOT_NULL_POINTER						= 0x74,
+	PID_ERROR_INVALID_ARGUMENT						= 0x67
+
+} StatusCode;
+typedef StatusCode BoolStatusCode;
 
 
-#define DEFUALT_ERROR_HANDLER(x,y)		ERROR_CODE y = x;if(y != SUCCESS){return y;}
+#define DEFUALT_ERROR_HANDLER(x,y)		StatusCode y = x;if(y != SUCCESS){return y;}
 
 
 
@@ -220,5 +247,16 @@ RC_ControlCenter
 
 // Maximum amount of different reciver types that are used in the program
 #define UARTCOM_MAX_RECIVE_TYPES 20
+
+/*
+ *
+ *	BNO055 Configuration
+ *
+ */
+
+// ONLY USE THIS OPTION FOR ERROR DIAGNOSIS!!!
+// It validates every register and register length with every call of register_write and register_read
+// thus resulting in higher CPU usage and slower Communication with the BNO.
+#define BNO_USE_REGISTER_VALIDATION
 
 #endif /* CONFIG_H_ */

@@ -6,6 +6,7 @@
  */ 
 
 #include "BNO055.h"
+#include "BNO055_reg_table.h"
 
 
 /* BNO Status Bytes: */
@@ -14,6 +15,9 @@
 #define READ_BYTE			0x01
 #define ACK_OR_ERROR_BYTE	0xEE
 #define	READ_SUCCESS_BYTE	0xBB
+
+/*Predefined bno constants*/
+#define BNO055_ID			0xA0
 
 
 typedef enum {
@@ -25,110 +29,178 @@ typedef enum {
 
 
 
+bool bno_IsIdle = true;
+uint8_t bno_rec_length = 0;
+BNO_ERROR_CALLBACK bno_error_callback = NULL;
+BNO_READ_SUCCESS_CALLBACK bno_read_success_callback = NULL;
+BNO_recvStates bno_rec_states = BNO_REC_STATE_IDLE;
+
+void bno_response_received(uint8_t* Data,uint16_t Length);
+bool bno_register_validation_check(uint8_t Register, uint8_t Length, uint8_t read_write);
+
+/***************************************************************************************************
+* BNO Top Level interaction:
+****************************************************************************************************/
+
+uint8_t bno_init_response_value = 0x00;
+bool bno_init_waiting_for_response = false;
+StatusCode bno_init_response_status = SUCCESS;
+
+void bno_init_success(uint8_t* Data, uint8_t Length)
+{
+	bno_init_waiting_for_response = false;
+	bno_init_response_value = Data[0];
+	bno_init_response_status = SUCCESS;
+}
+
+void bno_init_error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
+{
+	bno_init_waiting_for_response = false;
+	bno_init_response_status = BNO055_ERROR_INVALID_ARGUMENT;
+}
 
 
 
-bool bnoIsIdle = true;
-uint8_t _rec_length = 0;
-BNO_ERROR_CALLBACK _error_callback = NULL;
-BNO_READ_SUCCESS_CALLBACK _read_success_callback = NULL;
-BNO_recvStates _rec_states = BNO_REC_STATE_IDLE;
+StatusCode BNO055_Setup(BNO_READ_SUCCESS_CALLBACK callBack, bool Init_in_blocking_mode)
+{
+	DEFUALT_ERROR_HANDLER(BNO055_Init(bno_init_success), error_return);
+	DEFUALT_ERROR_HANDLER(BNO055_register_error_callback(bno_init_error), error_return1);
+	
 
-void _response_received(uint8_t* Data,uint16_t Length);
+	if(Init_in_blocking_mode)
+	{
+		while(!USART0_is_idle());
+		//Check for right device
+		//Read Chip-id 
+		
+		bno_init_waiting_for_response = true;
+		BNO055_register_read(BNO055_reg_table0[BNO_REG][BNO_REG_CHIP_ID], BNO055_reg_table0[BNO_REG_LEN][BNO_REG_CHIP_ID]);
+		while(bno_init_waiting_for_response);	//wait for transmission response
+		if(bno_init_response_value != BNO055_ID)
+		{
+			return BNO055_ERROR_WRONG_DEVICE_ID;
+		}
+		//BNO055_register_write(BNO055_reg_table0[BNO_REG][BNO_REG_OPR_MODE], BNO055_reg_table0[BNO_REG_LEN][BNO_REG_OPR_MODE]);
 
-ERROR_CODE BNO055_Init(BNO_READ_SUCCESS_CALLBACK callBack)
+	}
+
+
+
+
+	DEFUALT_ERROR_HANDLER(BNO055_register_success_callback(callBack), error_returnX);
+	return SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+/***************************************************************************************************
+* BNO Communication Level:
+****************************************************************************************************/
+
+bool bno055_register_is_valid(uint8_t Register, uint8_t Length, bool read_write)
+{
+	//check the PAGE1 registers first, because they are fewer and thus its faster
+	for(uint8_t regCounter = 0; regCounter < BNO_NUM_REG_ADDRESSES1; regCounter++)
+	{
+		if(Register == BNO055_reg_table1[BNO_REG][regCounter] && Length == BNO055_reg_table1[BNO_REG_LEN][regCounter] && 
+			(BNO055_reg_table1[BNO_REG_RW_SATUS][regCounter] == BNO_REG_READ_AND_WRITE || read_write == BNO055_reg_table1[BNO_REG_RW_SATUS][regCounter]))
+		{
+			return true;
+		}
+	}
+	//check the PAGE0 registers second, because now that we know that the register isn't one of PAGE1 we can use a more efficient algorithm for the remaining registers
+	for(uint8_t regCounter = 0; regCounter < BNO_NUM_REG_ADDRESSES0; regCounter++)
+	{
+		if(Register == BNO055_reg_table0[BNO_REG][regCounter])
+		{
+			if(Length != BNO055_reg_table0[BNO_REG_LEN][regCounter] || (read_write != BNO055_reg_table0[BNO_REG_RW_SATUS][regCounter] && BNO055_reg_table1[BNO_REG_RW_SATUS][regCounter] != BNO_REG_READ_AND_WRITE))
+				return false;
+			else 
+				return true;
+		}
+	}
+	return false;
+}
+
+StatusCode BNO055_Init(BNO_READ_SUCCESS_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
 		return BNO055_ERROR_GOT_NULL_POINTER;
 	}
 	DEFUALT_ERROR_HANDLER(USART0_init(115200, 2),error_return1);
-	DEFUALT_ERROR_HANDLER(USART0_register_received_callback(_response_received),error_return2);
-	_read_success_callback = callBack;
+	DEFUALT_ERROR_HANDLER(USART0_register_received_callback(bno_response_received),error_return2);
+	bno_read_success_callback = callBack;
 	return SUCCESS;
 }
 
-ERROR_CODE BNO055_register_error_callback(BNO_ERROR_CALLBACK callBack)
+StatusCode BNO055_register_error_callback(BNO_ERROR_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
 		return BNO055_ERROR_GOT_NULL_POINTER;
 	}
-	_error_callback = callBack;
+	bno_error_callback = callBack;
 	return SUCCESS;
 }
 
-void _response_received(uint8_t* Data, uint16_t Length)
+StatusCode BNO055_register_success_callback(BNO_READ_SUCCESS_CALLBACK callBack)
 {
-	ERROR_CODE USART_return;
-	switch(_rec_states)
+	if(callBack == NULL)
 	{
-		case BNO_REC_STATE_IDLE:
-			if(Length == 2 && Data[0] == ACK_OR_ERROR_BYTE)
-			{
-				if(Data[2] != BNO_STATUS_WRITE_SUCCESS && _error_callback != NULL)
-				{
-					_error_callback(Data[1], SUCCESS);
-				}
-				bnoIsIdle = true;
-			}
-			else if(Length == 2 && Data[0] == READ_SUCCESS_BYTE)
-			{
-				_rec_length = Data[1];
-				USART_return = USART0_set_receiver_length(_rec_length);
-				if(USART_return != SUCCESS)
-				{
-					_error_callback(BNO_TRANSMIT_ERROR, USART_return);
-					return;
-				}
-				_rec_states = BNO_REC_STATE_READ_SUCCESS;
-			}else
-			{
-				if(_error_callback != NULL)
-				{
-					_error_callback(BNO_TRANSMIT_ERROR, BNO055_ERROR_ARGUMENT_OUT_OF_RANGE);
-				}
-				bnoIsIdle = true;
-			}
-		break;
-		
-		case BNO_REC_STATE_READ_SUCCESS:
-			if(_read_success_callback != NULL)
-			{
-				_read_success_callback(Data, _rec_length);
-			}
-			USART_return = USART0_set_receiver_length(2);
-			if(USART_return != SUCCESS)
-			{
-				_error_callback(BNO_TRANSMIT_ERROR, USART_return);
-				_rec_states = BNO_REC_STATE_IDLE;
-				return;
-			}
-			bnoIsIdle = true;
-			_rec_states = BNO_REC_STATE_IDLE;
-		break;
-		
-		default:
-			if(_error_callback != NULL)
-			{
-				_error_callback(BNO_TRANSMIT_ERROR, ERROR_FATAL);
-			}
-			bnoIsIdle = true;
-		break;
+		return BNO055_ERROR_GOT_NULL_POINTER;
 	}
+	bno_read_success_callback = callBack;
+	return SUCCESS;
 }
 
 bool BNO055_is_idle()
 {
-	return bnoIsIdle;
+	return bno_IsIdle;
 }
 
-ERROR_CODE BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
+StatusCode BNO055_register_read(uint8_t Register, uint8_t Length)
 {
 	if(!BNO055_is_idle() || !USART0_has_space())
 	{
 		return BNO055_ERROR_NOT_READY_FOR_OPERATION;
 	}
+	#ifdef BNO_USE_REGISTER_VALIDATION
+	if(!bno055_register_is_valid(Register, Length, BNO_REG_READ_ONLY))
+	{
+		return BNO055_ERROR_INVALID_ARGUMENT;
+	}
+	#endif
+	uint8_t Message[4];
+	Message[0] = START_BYTE;
+	Message[1] = READ_BYTE;
+	Message[2] = Register;
+	Message[3] = Length;
+	DEFUALT_ERROR_HANDLER(USART0_put_data(Message, 4),error_return1);
+	DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(2),error_return2);
+	bno_IsIdle = false;
+
+	return SUCCESS;
+}
+
+StatusCode BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
+{
+	if(!BNO055_is_idle() || !USART0_has_space())
+	{
+		return BNO055_ERROR_NOT_READY_FOR_OPERATION;
+	}
+	#ifdef BNO_USE_REGISTER_VALIDATION
+	if(!bno055_register_is_valid(Register, Length, BNO_REG_WRITE_ONLY))
+	{
+		return BNO055_ERROR_INVALID_ARGUMENT;
+	}
+	#endif
 	uint8_t* Message = malloc((Length+4)*sizeof(uint8_t));
 	if(Message == NULL)
 	{
@@ -142,11 +214,11 @@ ERROR_CODE BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data
 	{
 		Message[i + 3] = Data[i];
 	}
-	ERROR_CODE USART_return = USART0_put_data(Message, Length + 4);
+	StatusCode USART_return = USART0_put_data(Message, Length + 4);
 	if(USART_return == SUCCESS)
 	{
 		DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(2),error_return);
-		bnoIsIdle = false;
+		bno_IsIdle = false;
 		free(Message);
 		return SUCCESS;
 	}else
@@ -156,20 +228,64 @@ ERROR_CODE BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data
 	}
 }
 
-ERROR_CODE BNO055_register_read(uint8_t Register, uint8_t Length)
-{
-	if(!BNO055_is_idle() || !USART0_has_space())
-	{
-		return BNO055_ERROR_NOT_READY_FOR_OPERATION;
-	}
-	uint8_t Message[4];
-	Message[0] = START_BYTE;
-	Message[1] = READ_BYTE;
-	Message[2] = Register;
-	Message[3] = Length;
-	DEFUALT_ERROR_HANDLER(USART0_put_data(Message, 4),error_return1);
-	DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(2),error_return2);
-	bnoIsIdle = false;
 
-	return SUCCESS;
+void bno_response_received(uint8_t* Data, uint16_t Length)
+{
+	StatusCode USART_return;
+	switch(bno_rec_states)
+	{
+		case BNO_REC_STATE_IDLE:
+			if(Length == 2 && Data[0] == ACK_OR_ERROR_BYTE)
+			{
+				if(Data[2] != BNO_STATUS_WRITE_SUCCESS && bno_error_callback != NULL)
+				{
+					bno_error_callback(Data[1], SUCCESS);
+				}
+				bno_IsIdle = true;
+			}
+			else if(Length == 2 && Data[0] == READ_SUCCESS_BYTE)
+			{
+				bno_rec_length = Data[1];
+				USART_return = USART0_set_receiver_length(bno_rec_length);
+				if(USART_return != SUCCESS)
+				{
+					bno_error_callback(BNO_TRANSMIT_ERROR, USART_return);
+					return;
+				}
+				bno_rec_states = BNO_REC_STATE_READ_SUCCESS;
+			}else
+			{
+				if(bno_error_callback != NULL)
+				{
+					bno_error_callback(BNO_TRANSMIT_ERROR, BNO055_ERROR_ARGUMENT_OUT_OF_RANGE);
+				}
+				bno_IsIdle = true;
+			}
+		break;
+		
+		case BNO_REC_STATE_READ_SUCCESS:
+			if(bno_read_success_callback != NULL)
+			{
+				bno_read_success_callback(Data, bno_rec_length);
+			}
+			USART_return = USART0_set_receiver_length(2);
+			if(USART_return != SUCCESS)
+			{
+				bno_error_callback(BNO_TRANSMIT_ERROR, USART_return);
+				bno_rec_states = BNO_REC_STATE_IDLE;
+				return;
+			}
+			bno_IsIdle = true;
+			bno_rec_states = BNO_REC_STATE_IDLE;
+		break;
+		
+		default:
+			if(bno_error_callback != NULL)
+			{
+				bno_error_callback(BNO_TRANSMIT_ERROR, ERROR_FATAL);
+			}
+			bno_IsIdle = true;
+		break;
+	}
 }
+

@@ -23,20 +23,13 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "uart0.h"
 #include "USART0.h"
 #include "BNO055.h"
-#include "BNO055_reg_table.h"
+#include "HelperFunctions.h"
+
 
 //#include "ESCControl.h"
 //#include "RCReader.h"
 //#include "HelperFunctions.h"
 //#include "PID.h"
-
-void _delay_not_ms(uint32_t loops)
-{
-	for (uint32_t i = 0; i < loops; i++)
-	{
-		asm("nop");
-	}
-}
 
 
 void configure_wdt(void)
@@ -86,7 +79,7 @@ void Test(uint8_t* Data, uint8_t Length)
 		UART0_puts(buffer);
 }
 
-void BNO_Error(BNO_STATUS_BYTES Error, ERROR_CODE Transmit_error_code)
+void BNO_Error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
 {
 	UART0_puts("ERROR");
 }
@@ -99,7 +92,7 @@ int main(void)
 	BNO055_register_error_callback(BNO_Error);
 	UART0_init(115200,1);
 	//uart0_puts("Start:\n\r");
-	BNO055_register_read(BNO055_reg_table0[BNO_REG][BNO_REG_CHIP_ID],BNO055_reg_table0[BNO_REG_LEN][BNO_REG_CHIP_ID]);
+	//BNO055_register_read(BNO055_reg_table0[BNO_REG][BNO_REG_CHIP_ID],BNO055_reg_table0[BNO_REG_LEN][BNO_REG_CHIP_ID]);
 	//uart0_puts("END\n\r\n\r");
 	while(1)
 	{
@@ -107,7 +100,7 @@ int main(void)
 		{
 			BNO055_register_read(0x10,2);
 		}
-		_delay_not_ms(320000);*/
+		_Delay(320000);*/
 	}
 }
 

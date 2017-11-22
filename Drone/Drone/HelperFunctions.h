@@ -12,6 +12,7 @@
 #include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include "config.h"
 
 struct queue_node {
 	struct queue_node *next;
@@ -41,53 +42,54 @@ int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t 
 
 void _Delay(uint32_t delayCycles);
 
-/*
- * 
- * Creates a queue for further usage.
- * returns a Queue* pointer to the new queue
- * Returns NULL if an error occurs
- */
-Queue* queue_new(uint32_t queueMaxLentgh);
 
 /*
  * 
  * Returns true if the queue is empty
  * 
  */
-bool queue_is_empty(Queue* queue);
+BoolStatusCode queue_is_empty(Queue* queue);
+
+/*
+* returns true if there is space in the queue
+*/
+BoolStatusCode queue_has_space(Queue *queue);
+
+/*
+ * 
+ * Creates a queue for further usage.
+ * returns a Queue* pointer to the new queue
+ * Returns NULL if an error occurs
+ */
+StatusCode queue_new(Queue* new_queue, uint32_t queueMaxLentgh);
 
 /*
  * 
  * Returns the value from the top of the queue and deletes it
  * returns 0 if an error occures
  */
-queue_node queue_read(Queue* readQueue);
+StatusCode queue_read(Queue* readQueue, queue_node* read_element);
 
 /*
  * 
  * Writes a Value to the top of the queue
  * returns 0 if an error occures
  */
-bool queue_write(Queue* writeQueue, uint8_t* writeWalue, uint16_t Length);
+StatusCode queue_write(Queue* writeQueue, uint8_t* writeWalue, uint16_t Length);
 
 /*
  * 
  * Returns the count of stored values in the queue
  * 
  */
-uint16_t queue_get_item_count(Queue* queue);
+uint32_t queue_get_item_count(Queue* queue);
 
 /*
  * 
  * Deletes the queue and all its elements.
  * 
  */
-bool queue_delete(Queue* queue);
-
-/*
-* returns true if there is space in the queue
-*/
-bool queue_has_space(Queue *queue);
+StatusCode queue_delete(Queue* queue);
 
 
 

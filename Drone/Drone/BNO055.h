@@ -17,6 +17,7 @@
 
 
 typedef enum {
+	BNO_STATUS_READ_SUCCESS				= 0x00,
 	BNO_STATUS_WRITE_SUCCESS			= 0x01,
 	BNO_STATUS_READ_FAIL				= 0x02,
 	BNO_STATUS_WRITE_FAIL				= 0x03,
@@ -30,16 +31,17 @@ typedef enum {
 	BNO_TRANSMIT_ERROR					= 0xFF
 } BNO_STATUS_BYTES;
 
-typedef void (*BNO_ERROR_CALLBACK)(BNO_STATUS_BYTES Error, ERROR_CODE Transmit_error_code);
+typedef void (*BNO_ERROR_CALLBACK)(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code);
 typedef void (*BNO_READ_SUCCESS_CALLBACK)(uint8_t* Data, uint8_t Length);
 
 
 
-ERROR_CODE BNO055_Init(BNO_READ_SUCCESS_CALLBACK callBack);
-ERROR_CODE BNO055_register_error_callback(BNO_ERROR_CALLBACK callBack);
+StatusCode BNO055_Init(BNO_READ_SUCCESS_CALLBACK callBack);
+StatusCode BNO055_register_error_callback(BNO_ERROR_CALLBACK callBack);
+StatusCode BNO055_register_success_callback(BNO_READ_SUCCESS_CALLBACK callBack);
 bool BNO055_is_idle();
-ERROR_CODE BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data);
-ERROR_CODE BNO055_register_read(uint8_t Register, uint8_t Length);
+StatusCode BNO055_register_write(uint8_t Register, uint8_t Length, uint8_t* Data);
+StatusCode BNO055_register_read(uint8_t Register, uint8_t Length);
 
 
 

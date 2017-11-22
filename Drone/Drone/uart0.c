@@ -18,7 +18,7 @@ bool uart0_transmitInProgress = false;
 
 void uart0_put_raw_data_(uint8_t* sendData, uint16_t Length);
 
-ERROR_CODE UART0_init(uint32_t BaudRate, uint32_t RecvLength)
+StatusCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
@@ -50,13 +50,8 @@ ERROR_CODE UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	// Enable Peripheral DMA Controller Transmission
 	UART->UART_PTCR = UART_PTCR_TXTEN | UART_PTCR_RXTEN;
 	
-	uart0SendQueue = queue_new(UART0_QUEUE_MAX_ITEMS);
-	if(uart0SendQueue == NULL)
-	{
-		return UART0_ERROR_MALLOC_RETURNED_NULL;
-	}
-
-	return SUCCESS;
+	
+	return queue_new(uart0SendQueue, UART0_QUEUE_MAX_ITEMS);
 }
 
 bool UART0_is_idle()
@@ -64,12 +59,12 @@ bool UART0_is_idle()
 	return uart0_transmitInProgress;
 }
 
-bool UART0_has_space()
+BoolStatusCode UART0_has_space()
 {
 	return queue_has_space(uart0SendQueue);
 }
 
-ERROR_CODE UART0_puts(char Data[])
+StatusCode UART0_puts(char Data[])
 {
 	return UART0_put_data((uint8_t*)Data,strlen((char*)Data));
 }
@@ -86,7 +81,7 @@ void uart0_put_raw_data(uint8_t* sendData, uint16_t Length)
 	UART->UART_IER = UART_IER_ENDTX;			//activate Transmit done interrupt
 }
 
-ERROR_CODE UART0_put_data(uint8_t* sendData, uint16_t Length)
+StatusCode UART0_put_data(uint8_t* sendData, uint16_t Length)
 {
 	if(sendData == NULL)
 	{
@@ -101,16 +96,22 @@ ERROR_CODE UART0_put_data(uint8_t* sendData, uint16_t Length)
 		uart0_transmitInProgress = true;
 		uart0_put_raw_data(sendData,Length);
 		return SUCCESS;
-	} else if(queue_has_space(uart0SendQueue))
-	{
-		queue_write(uart0SendQueue,sendData,Length);
-		return SUCCESS;
-	}else{
-		return UART0_ERROR_NOT_READY_FOR_OPERATION;
+	} else {
+		BoolStatusCode queue_return = queue_has_space(uart0SendQueue);
+		if(queue_return == true)
+		{
+			return queue_write(uart0SendQueue,sendData,Length);
+		}else if(queue_return == false)
+		{
+			return UART0_ERROR_NOT_READY_FOR_OPERATION;
+		} else
+		{
+			return queue_return;
+		}
 	}
 }
 
-ERROR_CODE UART0_set_receiver_length(uint32_t Length)
+StatusCode UART0_set_receiver_length(uint32_t Length)
 {
 	if(Length == 0)
 	{
@@ -131,7 +132,7 @@ ERROR_CODE UART0_set_receiver_length(uint32_t Length)
 	return SUCCESS;
 }
 
-ERROR_CODE UART0_register_received_callback(UART_RECV_CALLBACK callBack)
+StatusCode UART0_register_received_callback(UART_RECV_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
@@ -157,13 +158,21 @@ void UART_Handler(void)
 	}
 	if(UART->UART_SR & UART_SR_ENDTX)
 	{
-		if(queue_is_empty(uart0SendQueue))
+		BoolStatusCode queue_return = queue_is_empty(uart0SendQueue);
+		if(queue_return == true)
 		{
 			uart0_transmitInProgress = false;
 			UART->UART_IDR = UART_IER_ENDTX;		//deactivate transmit done interrupt to keep it from firing constantly...
-		}else{
-			queue_node qData = queue_read(uart0SendQueue);
+		}else if(queue_return == false)
+		{
+			queue_node qData;
+			//TODO: ERROR Handling
+			queue_read(uart0SendQueue, &qData);
 			uart0_put_raw_data(qData.data, qData.Length);
+		}else
+		{
+			//TODO: ERROR Handling
+			//queue_return;
 		}
 	}
 }

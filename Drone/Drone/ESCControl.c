@@ -36,11 +36,11 @@ void esc_init()
 //Motor3: Timer2 PIN PB18
 //Motor4: Timer3 PIN PB19
 //value must be in between 0 and ESC_MaxLimit-ESC_PWM_MIN_DUTY_CYCLE
-bool esc_set(uint8_t MotorNum, int16_t speed) 
+StatusCode esc_set(uint8_t MotorNum, int16_t speed) 
 {
 	MotorNum += 3;
 	if(MotorNum < 4 || MotorNum > 7)
-		return false;
+		return ESCControl_ERROR_ARGUMENT_OUT_OF_RANGE;
 	
 	if(speed > (ESC_MaxLimit-ESC_PWM_MIN_DUTY_CYCLE))
 	{
@@ -55,5 +55,5 @@ bool esc_set(uint8_t MotorNum, int16_t speed)
 	{
 		PWM->PWM_CH_NUM[MotorNum].PWM_CDTYUPD = ((ESC_PWM_MIN_DUTY_CYCLE + speed + ESC_Offset[MotorNum-4]) + (((float)speed) * ESC_SlopeComp[MotorNum-4]));
 	}
-	return true;
+	return SUCCESS;
 }

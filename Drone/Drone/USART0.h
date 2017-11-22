@@ -17,12 +17,12 @@
 
 typedef void (*USART_RECV_CALLBACK)(uint8_t* startPtr, uint16_t Length);
 
-ERROR_CODE USART0_init(uint32_t BaudRate, uint32_t RecvLength);
-ERROR_CODE USART0_put_data(uint8_t* sendData, uint16_t Length);
-ERROR_CODE USART0_set_receiver_length(uint32_t Length);
-ERROR_CODE USART0_register_received_callback(USART_RECV_CALLBACK callBack);
-bool USART0_has_space();
-
+StatusCode USART0_init(uint32_t BaudRate, uint32_t RecvLength);
+StatusCode USART0_put_data(uint8_t* sendData, uint16_t Length);
+StatusCode USART0_set_receiver_length(uint32_t Length);
+StatusCode USART0_register_received_callback(USART_RECV_CALLBACK callBack);
+BoolStatusCode USART0_has_space();
+bool USART0_is_idle();
 
 
 #endif /* USART0_H_ */

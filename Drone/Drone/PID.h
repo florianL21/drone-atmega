@@ -12,6 +12,7 @@
 #include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include "config.h"
 
 //SampleTime in ms
 
@@ -30,19 +31,19 @@ struct pidData
 	float kp, ki, kd;
 	float SampleTime;
 	float outMin, outMax;
-	int controllerDirection;
+	uint8_t controllerDirection;
 	uint32_t LastTime;
 };
 typedef struct pidData pidData;
 
 
-void PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime);
-void PID_Compute(pidData* pidController);
-void PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd);
-void PID_SetSampleTime(pidData* pidController, float NewSampleTime);
-void PID_SetOutputLimits(pidData* pidController, float Min, float Max);
-void PID_SetControllerDirection(pidData* pidController, int Direction);
+StatusCode PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime);
+StatusCode PID_Compute(pidData* pidController);
+StatusCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd);
+StatusCode PID_SetSampleTime(pidData* pidController, float NewSampleTime);
+StatusCode PID_SetOutputLimits(pidData* pidController, float Min, float Max);
+StatusCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction);
 void PID_Init();
-bool PID_need_compute(pidData* pidController);
+BoolStatusCode PID_need_compute(pidData* pidController);
 
 #endif /* PID_H_ */

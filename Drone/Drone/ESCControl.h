@@ -39,7 +39,7 @@ void esc_init();
 /*
  *	Sets the duty cycle of the corresponding Timer from the motor
  */
-bool esc_set(uint8_t MotorNum,int16_t speed);
+StatusCode esc_set(uint8_t MotorNum,int16_t speed);
 
 
 

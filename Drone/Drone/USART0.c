@@ -18,7 +18,7 @@ bool usart0_transmitInProgress = false;
 
 void usart0_put_raw_data(uint8_t* sendData, uint16_t Length);
 
-ERROR_CODE USART0_init(uint32_t BaudRate, uint32_t RecvLength)
+StatusCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
@@ -53,18 +53,17 @@ ERROR_CODE USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	// Enable Peripheral DMA Controller Transmission
 	USART0->US_PTCR = US_PTCR_TXTEN | US_PTCR_RXTEN;
 	
-	usart0SendQueue = queue_new(USART0_QUEUE_MAX_ITEMS);
-	if(usart0SendQueue == NULL)
-	{
-		return USART0_ERROR_MALLOC_RETURNED_NULL;
-	}
-
-	return SUCCESS;
+	return queue_new(usart0SendQueue, USART0_QUEUE_MAX_ITEMS);
 }
 
-bool USART0_has_space()
+BoolStatusCode USART0_has_space()
 {
 	return queue_has_space(usart0SendQueue);
+}
+
+bool USART0_is_idle()
+{
+	return usart0_transmitInProgress;
 }
 
 void usart0_put_raw_data(uint8_t* sendData, uint16_t Length)
@@ -79,7 +78,7 @@ void usart0_put_raw_data(uint8_t* sendData, uint16_t Length)
 	USART0->US_IER = US_IER_ENDTX;			//activate Transmit done interrupt
 }
 
-ERROR_CODE USART0_put_data(uint8_t* sendData, uint16_t Length)
+StatusCode USART0_put_data(uint8_t* sendData, uint16_t Length)
 {
 	if(sendData == NULL)
 	{
@@ -94,16 +93,23 @@ ERROR_CODE USART0_put_data(uint8_t* sendData, uint16_t Length)
 		usart0_transmitInProgress = true;
 		usart0_put_raw_data(sendData,Length);
 		return SUCCESS;
-	} else if(queue_has_space(usart0SendQueue))
+	} else 
 	{
-		queue_write(usart0SendQueue,sendData,Length);
-		return SUCCESS;
-	}else{
-		return USART0_ERROR_NOT_READY_FOR_OPERATION;
+		BoolStatusCode queue_return = queue_has_space(usart0SendQueue);
+		if(queue_return == true)
+		{
+			return queue_write(usart0SendQueue,sendData,Length);
+		}else if(queue_return == false)
+		{
+			return USART0_ERROR_NOT_READY_FOR_OPERATION;
+		}else
+		{
+			return queue_return;
+		}
 	}
 }
 
-ERROR_CODE USART0_set_receiver_length(uint32_t Length)
+StatusCode USART0_set_receiver_length(uint32_t Length)
 {
 	if(Length == 0)
 	{
@@ -124,7 +130,7 @@ ERROR_CODE USART0_set_receiver_length(uint32_t Length)
 	return SUCCESS;
 }
 
-ERROR_CODE USART0_register_received_callback(USART_RECV_CALLBACK callBack)
+StatusCode USART0_register_received_callback(USART_RECV_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
@@ -151,13 +157,19 @@ void USART0_Handler(void)
 	}
 	if(USART0->US_CSR & US_CSR_ENDTX)
 	{
-		if(queue_is_empty(usart0SendQueue))
+		BoolStatusCode queue_return = queue_is_empty(usart0SendQueue);
+		if(queue_return == true)
 		{
 			usart0_transmitInProgress = false;
 			USART0->US_IDR = US_IDR_ENDTX;		//deactivate transmit done interrupt to keep it from firing constantly...
-		}else{
-			queue_node qData = queue_read(usart0SendQueue);
+		}else if(queue_return == false){
+			queue_node qData;
+			//TODO: ERROR Handling
+			queue_read(usart0SendQueue, &qData);
 			usart0_put_raw_data(qData.data, qData.Length);
+		} else {
+			//TODO: ERROR Handling
+			//queue_return;
 		}
 	}
 }
