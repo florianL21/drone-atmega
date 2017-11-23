@@ -147,6 +147,12 @@
     <Compile Include="BNO055.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="BNOCOM.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="BNOCOM.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="BNO055_reg_table.h">
       <SubType>compile</SubType>
     </Compile>

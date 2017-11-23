@@ -88,11 +88,11 @@ int main(void)
 {
 	SystemInit();
 	configure_wdt();
-	BNO055_Init(Test);
-	BNO055_register_error_callback(BNO_Error);
+	BNOCOM_Init(Test);
+	BNOCOM_register_error_callback(BNO_Error);
 	UART0_init(115200,1);
 	//uart0_puts("Start:\n\r");
-	//BNO055_register_read(BNO055_reg_table0[BNO_REG][BNO_REG_CHIP_ID],BNO055_reg_table0[BNO_REG_LEN][BNO_REG_CHIP_ID]);
+	BNOCOM_register_read(0x00,1);
 	//uart0_puts("END\n\r\n\r");
 	while(1)
 	{

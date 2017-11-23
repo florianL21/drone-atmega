@@ -104,7 +104,7 @@
 #define BNO_NUM_REG_ADDRESSES1					BNO_REG1_GYR_AM_SET+1
 
 //Register adresses PAGE 0
-uint8_t BNO055_reg_table0[3][BNO_NUM_REG_ADDRESSES0] =
+static const uint8_t BNO055_reg_table0[3][BNO_NUM_REG_ADDRESSES0] =
 {	{
 	0x00,	0x01,	0x02,	0x03,	0x04,	0x06,	0x07,	0x08,
 	0x0A,	0x0C,	0x0E,	0x10,	0x12,	0x14,	0x16,	0x18,
@@ -135,7 +135,7 @@ uint8_t BNO055_reg_table0[3][BNO_NUM_REG_ADDRESSES0] =
 };
 
 //Register adresses PAGE 1
-uint8_t BNO055_reg_table1[3][BNO_NUM_REG_ADDRESSES1]=
+static const uint8_t BNO055_reg_table1[3][BNO_NUM_REG_ADDRESSES1]=
 {	{
 	0x07,	0x08,	0x09,	0x0A,	0x0B,	0x0C,	0x0D,	0x0F,
 	0x10,	0x11,	0x12,	0x13,	0x14,	0x15,	0x16,	0x17,
