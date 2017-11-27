@@ -68,6 +68,7 @@ typedef enum {
 	BNO055_ERROR_NOT_READY_FOR_OPERATION			= 0x46,
 	BNO055_ERROR_INVALID_ARGUMENT					= 0x47,
 	BNO055_ERROR_WRONG_DEVICE_ID					= 0x48,
+	BNO055_ERROR_LENGTH_MISSMATCH					= 0x49,
 
 	//ESCControl:
 	ESCControl_ERROR								= 0x50,
@@ -87,11 +88,12 @@ typedef enum {
 	PID_ERROR_GOT_NULL_POINTER						= 0x74,
 	PID_ERROR_INVALID_ARGUMENT						= 0x67
 
-} StatusCode;
+};
 typedef StatusCode BoolStatusCode;
 
 
 #define DEFUALT_ERROR_HANDLER(x,y)		StatusCode y = x;if(y != SUCCESS){return y;}
+#define DEFUALT_ERROR_HANDLER1(x,y)		y = x;if(y != SUCCESS){return y;}
 
 
 

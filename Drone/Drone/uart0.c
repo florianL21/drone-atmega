@@ -56,7 +56,7 @@ StatusCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 
 bool UART0_is_idle()
 {
-	return uart0_transmitInProgress;
+	return !uart0_transmitInProgress;
 }
 
 BoolStatusCode UART0_has_space()
@@ -67,6 +67,20 @@ BoolStatusCode UART0_has_space()
 StatusCode UART0_puts(char Data[])
 {
 	return UART0_put_data((uint8_t*)Data,strlen((char*)Data));
+}
+
+StatusCode UART0_put_float(float num)
+{
+	char buffer[20] = "";
+	sprintf(buffer,"%.4f",num);
+	return UART0_puts(buffer);
+}
+
+StatusCode UART0_put_int(int num)
+{
+	char buffer[20] = "";
+	sprintf(buffer,"%d",num);
+	return UART0_puts(buffer);
 }
 
 void uart0_put_raw_data(uint8_t* sendData, uint16_t Length)

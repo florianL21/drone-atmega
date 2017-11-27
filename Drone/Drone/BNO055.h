@@ -16,12 +16,27 @@
 #include "BNOCOM.h"
 #include "BNO055_reg_table.h"
 
+struct BNO055_eulerData  
+{
+	float roll;
+	float pitch;
+	float heading;
+}; 
+typedef struct BNO055_eulerData BNO055_eulerData;
 
-typedef void (*BNOCOM_ERROR_CALLBACK)(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code);
-typedef void (*BNOCOM_SUCCESS_CALLBACK)(uint8_t* Data, uint8_t Length);
 
-StatusCode BNO055_Setup(bool calibrationNeeded);
-StatusCode BNO055_calculate_calibration(uint8_t CalibrationData, uint8_t* sys, uint8_t* gyro, uint8_t* accel, uint8_t* mag);
-StatusCode BNO055_get_euler_data(bool measureContinous);
+typedef void (*BNO055_ERROR_CALLBACK)(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code);
+typedef void (*BNO055_DATA_READY_CALLBACK)(void);
+
+StatusCode BNO055_init(bool calibrationNeeded);
+StatusCode BNO055_get_calibration(uint8_t* sys, uint8_t* gyro, uint8_t* accel, uint8_t* mag);
+BNO055_eulerData BNO055_get_euler_measurement_data();
+StatusCode BNO055_start_euler_measurement(bool measureContinous, bool triggerCallback);
+StatusCode BNO055_stop_continous_measurement();
+StatusCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback);
+StatusCode BNO055_register_data_ready_callback(BNO055_DATA_READY_CALLBACK callback);
+StatusCode BNO055_calibrate();
+bool BNO055_is_busy();
+//TODO: safety check for bno is busy
 
 #endif /* BNO055_H_ */

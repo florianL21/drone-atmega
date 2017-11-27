@@ -38,6 +38,207 @@ bool bnocom_register_validation_check(uint8_t Register, uint8_t Length, uint8_t 
 
 
 
+/***************************************************************************************************
+* BNO Blocking mode function for easier initialisation:
+****************************************************************************************************/
+
+uint8_t* bno_response_value;
+uint8_t bno_response_length = 0;
+bool bno_waiting_for_response = false;
+StatusCode bno_response_status = SUCCESS;
+BNO_STATUS_BYTES bno_response_error = BNO_STATUS_READ_SUCCESS;
+
+void bno_success(uint8_t* Data, uint8_t Length)
+{
+	bno_waiting_for_response = false;
+	bno_response_length = Length;
+	bno_response_value = Data;
+	bno_response_status = SUCCESS;
+}
+
+void bno_error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
+{
+	bno_waiting_for_response = false;
+	bno_response_error = Error;
+	bno_response_status = BNO055_ERROR;
+}
+
+StatusCode BNOCOM_write_and_wait_for_response_1byte(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Data)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	return BNOCOM_write_and_wait_for_response(RegisterTableOffset, RegisterTablePage, &Data, 1);
+}
+
+StatusCode BNOCOM_read_and_wait_for_response_1byte(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* responseData)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	if(responseData == NULL)
+		return BNO055_ERROR_GOT_NULL_POINTER;
+	uint8_t responseLength = 0;
+	DEFUALT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response(RegisterTableOffset, RegisterTablePage, responseData, &responseLength), bno_read_status);
+	if(responseLength != 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	return SUCCESS;
+}
+
+StatusCode BNOCOM_write_and_wait_for_response(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* Data, uint8_t Length)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1 || Length == 0)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	if(Data == NULL)
+		return BNO055_ERROR_GOT_NULL_POINTER;
+	StatusCode error_return = SUCCESS;
+	//Store original callbacks
+	BNOCOM_ERROR_CALLBACK SavedErrorCallback = bnocom_error_callback;
+	BNOCOM_SUCCESS_CALLBACK SavedSuccessCallback = bnocom_read_success_callback;
+	//register new callbacks
+	BNOCOM_register_error_callback(bno_error);
+	BNOCOM_register_success_callback(bno_success);
+
+	bno_waiting_for_response = true;
+	error_return = BNOCOM_register_write_by_table(RegisterTableOffset, RegisterTablePage, Data, Length);
+	if(error_return != SUCCESS)
+		return error_return;
+	while(bno_waiting_for_response);	//wait for transmission response
+	//restore original callbacks
+	BNOCOM_register_error_callback(SavedErrorCallback);
+	BNOCOM_register_success_callback(SavedSuccessCallback);
+	return bno_response_status;
+}
+
+StatusCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t responseData[], uint8_t* responseLength)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	if(responseData == NULL || responseLength == NULL)
+		return BNO055_ERROR_GOT_NULL_POINTER;
+	StatusCode error_return = SUCCESS;
+	//Store original callbacks
+	BNOCOM_ERROR_CALLBACK SavedErrorCallback = bnocom_error_callback;
+	BNOCOM_SUCCESS_CALLBACK SavedSuccessCallback = bnocom_read_success_callback;
+	//register new callbacks
+	BNOCOM_register_error_callback(bno_error);
+	BNOCOM_register_success_callback(bno_success);
+	uint8_t expectedLength = *responseLength; //store length for comparison
+	bno_waiting_for_response = true;
+	error_return = BNOCOM_register_read_by_table(RegisterTableOffset, RegisterTablePage, expectedLength);
+	if(error_return != SUCCESS)
+		return error_return;
+	while(bno_waiting_for_response);	//wait for transmission response
+	//restore original callbacks
+	BNOCOM_register_error_callback(SavedErrorCallback);
+	BNOCOM_register_success_callback(SavedSuccessCallback);
+	if(bno_response_status != SUCCESS)
+		return bno_response_status;
+	
+	if(expectedLength != bno_response_length)
+	{
+		*responseLength = bno_response_length;
+		return BNO055_ERROR_LENGTH_MISSMATCH;
+	}
+	//copy response to destination:
+	for(uint8_t counter = 0; counter < bno_response_length; counter++)
+	{
+		responseData[counter] = bno_response_value[counter];
+	}
+	return SUCCESS;
+}
+
+
+/***************************************************************************************************
+* BNO easy to use functions:
+****************************************************************************************************/
+
+StatusCode BNOCOM_register_write_1byte_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Data)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	
+	if(RegisterTablePage == 0)
+	{
+		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_write(BNO055_reg_table0[BNO_REG][RegisterTableOffset], 1, &Data);
+	}
+	else
+	{
+		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_write(BNO055_reg_table1[BNO_REG][RegisterTableOffset], 1, &Data);
+	}
+}
+
+StatusCode BNOCOM_register_write_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* Data, uint8_t Length)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	
+	if(RegisterTablePage == 0)
+	{
+		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_write(BNO055_reg_table0[BNO_REG][RegisterTableOffset], Length, Data);
+	}
+	else
+	{
+		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_write(BNO055_reg_table1[BNO_REG][RegisterTableOffset], Length, Data);
+	}
+}
+
+StatusCode BNOCOM_register_write_1byte(uint8_t Register, uint8_t Data)
+{
+	return BNOCOM_register_write(Register,1,&Data);
+}
+
+StatusCode BNOCOM_register_read_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Length)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	if(RegisterTablePage == 0)
+	{
+		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_read(BNO055_reg_table0[BNO_REG][RegisterTableOffset], Length);
+	}
+	else
+	{
+		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_read(BNO055_reg_table1[BNO_REG][RegisterTableOffset], Length);
+	}
+}
+
+StatusCode BNOCOM_register_read_1byte_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage)
+{
+	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
+		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+	if(RegisterTablePage == 0)
+	{
+		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_read(BNO055_reg_table0[BNO_REG][RegisterTableOffset], 1);
+	}
+	else
+	{
+		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
+			return BNO055_ERROR_INVALID_ARGUMENT;
+		return BNOCOM_register_read(BNO055_reg_table1[BNO_REG][RegisterTableOffset], 1);
+	}
+}
+
+StatusCode BNOCOM_register_read_1byte(uint8_t Register)
+{
+	return BNOCOM_register_read(Register,1);
+}
+
+
+
+
+
 
 /***************************************************************************************************
 * BNO Communication Level:

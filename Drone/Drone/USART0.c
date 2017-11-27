@@ -63,7 +63,7 @@ BoolStatusCode USART0_has_space()
 
 bool USART0_is_idle()
 {
-	return usart0_transmitInProgress;
+	return !usart0_transmitInProgress;
 }
 
 void usart0_put_raw_data(uint8_t* sendData, uint16_t Length)

@@ -88,12 +88,11 @@ int main(void)
 {
 	SystemInit();
 	configure_wdt();
-	BNOCOM_Init(Test);
-	BNOCOM_register_error_callback(BNO_Error);
 	UART0_init(115200,1);
-	//uart0_puts("Start:\n\r");
-	BNOCOM_register_read(0x00,1);
-	//uart0_puts("END\n\r\n\r");
+	StatusCode bno_return;
+	//UART0_puts("start\n\r");
+	bno_return = BNO055_init(false);
+	UART0_put_int(bno_return);
 	while(1)
 	{
 		/*if(BNO055_is_idle() && UART0_is_idle())

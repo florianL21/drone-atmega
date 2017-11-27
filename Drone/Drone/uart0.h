@@ -15,6 +15,7 @@
 #include <string.h>
 #include "HelperFunctions.h"
 #include "config.h"
+#include <stdio.h>
 
 typedef void (*UART_RECV_CALLBACK)(uint8_t* startPtr, uint16_t Length);
 
@@ -25,6 +26,8 @@ StatusCode UART0_set_receiver_length(uint32_t Length);
 StatusCode UART0_register_received_callback(UART_RECV_CALLBACK callBack);
 BoolStatusCode UART0_has_space();
 bool UART0_is_idle();
+StatusCode UART0_put_int(int num);
+StatusCode UART0_put_float(float num);
 
 
 
