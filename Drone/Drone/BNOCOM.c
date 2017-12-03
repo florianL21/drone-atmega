@@ -76,7 +76,7 @@ StatusCode BNOCOM_read_and_wait_for_response_1byte(uint8_t RegisterTableOffset, 
 		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
 	if(responseData == NULL)
 		return BNO055_ERROR_GOT_NULL_POINTER;
-	uint8_t responseLength = 0;
+	uint8_t responseLength = 1;
 	DEFUALT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response(RegisterTableOffset, RegisterTablePage, responseData, &responseLength), bno_read_status);
 	if(responseLength != 1)
 		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
@@ -126,7 +126,7 @@ StatusCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_
 	error_return = BNOCOM_register_read_by_table(RegisterTableOffset, RegisterTablePage, expectedLength);
 	if(error_return != SUCCESS)
 		return error_return;
-	while(bno_waiting_for_response);	//wait for transmission response
+	while(bno_waiting_for_response == true);	//wait for transmission response
 	//restore original callbacks
 	BNOCOM_register_error_callback(SavedErrorCallback);
 	BNOCOM_register_success_callback(SavedSuccessCallback);

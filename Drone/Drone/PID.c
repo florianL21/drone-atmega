@@ -76,10 +76,10 @@ StatusCode PID_Initialize(pidData* pidController, float *Input, float *Output, f
 	return SUCCESS;
 }
 
-BoolStatusCode PID_need_compute(pidData* pidController)
+bool PID_need_compute(pidData* pidController)
 {
 	if(pidController == NULL)
-		return PID_ERROR_GOT_NULL_POINTER;
+		return false;
 	return pid_calculateTicks(pidController->LastTime, pid_getTicks()) >= pidController->SampleTime;
 }
 
@@ -87,8 +87,7 @@ StatusCode PID_Compute(pidData* pidController)
 {
 	if(pidController == NULL)
 		return PID_ERROR_GOT_NULL_POINTER;
-	BoolStatusCode needCompute_return = PID_need_compute(pidController);
-	if(needCompute_return == true)
+	if(PID_need_compute(pidController) == true)
 	{
 		/*Compute all the working error variables*/
 		float input = *(pidController->Input);
@@ -116,9 +115,6 @@ StatusCode PID_Compute(pidData* pidController)
 		/*Remember some variables for next time*/
 		pidController->lastInput = input;
 		pidController->LastTime = pid_getTicks();
-	} else if(needCompute_return != false)
-	{
-		return needCompute_return;
 	}
 	return SUCCESS;
 }

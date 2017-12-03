@@ -44,6 +44,6 @@ StatusCode PID_SetSampleTime(pidData* pidController, float NewSampleTime);
 StatusCode PID_SetOutputLimits(pidData* pidController, float Min, float Max);
 StatusCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction);
 void PID_Init();
-BoolStatusCode PID_need_compute(pidData* pidController);
+bool PID_need_compute(pidData* pidController);
 
 #endif /* PID_H_ */

@@ -88,8 +88,7 @@ typedef enum {
 	PID_ERROR_GOT_NULL_POINTER						= 0x74,
 	PID_ERROR_INVALID_ARGUMENT						= 0x67
 
-};
-typedef StatusCode BoolStatusCode;
+}StatusCode;
 
 
 #define DEFUALT_ERROR_HANDLER(x,y)		StatusCode y = x;if(y != SUCCESS){return y;}
@@ -259,6 +258,6 @@ RC_ControlCenter
 // ONLY USE THIS OPTION FOR ERROR DIAGNOSIS!!!
 // It validates every register and register length with every call of register_write and register_read
 // thus resulting in higher CPU usage and slower Communication with the BNO.
-#define BNO_USE_REGISTER_VALIDATION
+//#define BNO_USE_REGISTER_VALIDATION
 
 #endif /* CONFIG_H_ */

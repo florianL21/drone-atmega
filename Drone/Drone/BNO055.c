@@ -61,7 +61,9 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	//Check for right device
 	//Read Chip-id 
 	uint8_t Data = 0;
+	
 	DEFUALT_ERROR_HANDLER1(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, 0, &Data), error_return);
+	UART0_put_int(Data);
 	//UART0_puts("BNO ID\n\r");
 	if(Data != BNO055_ID)
 		return BNO055_ERROR_WRONG_DEVICE_ID;
@@ -74,7 +76,7 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	/*//sensor defaults to PAGE_ID -> PAGE0
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0), error_return);
 	*/
-
+	UART0_puts("1");
 	//Set output units:
 	Data =	(0<<7) | //Orientation = Windows
 			(0<<4) | //Temperature = Celsius
@@ -82,7 +84,8 @@ StatusCode BNO055_init(bool calibrationNeeded)
 			(1<<1) | //Gyro = Rads
 			(0<<0);  //Accelerometer = m/s^2
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data), error_return);
-
+	_Delay(10000);
+	UART0_puts("2");
 	/*//sensor defaults to SYS_TRIGGER -> Internal oscillator
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_SYS_TRIGGER, 0, BNO_INTERNAL_OSC), error_return);
 	*/
@@ -124,6 +127,7 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	
 	//Set Operation Mode to NDOF (nine degrees of freedom)
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, FUSION_MODE_NDOF), error_return);
+	UART0_puts("3");
 	//Initialize data struct to zero
 	lastMeasuredData.roll = 0;
 	lastMeasuredData.pitch = 0;

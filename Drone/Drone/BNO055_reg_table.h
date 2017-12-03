@@ -18,6 +18,9 @@
 #define BNO_REG_WRITE_ONLY						1
 #define BNO_REG_READ_AND_WRITE					2
 
+#define BNO_REG_TABLE0							0
+#define BNO_REG_TABLE1							1
+
 //PAGE 0
 #define BNO_REG_CHIP_ID							0//r
 #define BNO_REG_ACC_ID							1//r

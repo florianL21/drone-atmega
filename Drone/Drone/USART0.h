@@ -21,7 +21,7 @@ StatusCode USART0_init(uint32_t BaudRate, uint32_t RecvLength);
 StatusCode USART0_put_data(uint8_t* sendData, uint16_t Length);
 StatusCode USART0_set_receiver_length(uint32_t Length);
 StatusCode USART0_register_received_callback(USART_RECV_CALLBACK callBack);
-BoolStatusCode USART0_has_space();
+bool USART0_has_space();
 bool USART0_is_idle();
 
 

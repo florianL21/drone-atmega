@@ -52,11 +52,13 @@ StatusCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	NVIC_EnableIRQ(USART0_IRQn);
 	// Enable Peripheral DMA Controller Transmission
 	USART0->US_PTCR = US_PTCR_TXTEN | US_PTCR_RXTEN;
-	
-	return queue_new(usart0SendQueue, USART0_QUEUE_MAX_ITEMS);
+	usart0SendQueue = queue_new(USART0_QUEUE_MAX_ITEMS);
+	if(usart0SendQueue == NULL)
+		return HelperFunctions_ERROR_MALLOC_RETURNED_NULL;
+	return SUCCESS;
 }
 
-BoolStatusCode USART0_has_space()
+bool USART0_has_space()
 {
 	return queue_has_space(usart0SendQueue);
 }
@@ -95,16 +97,12 @@ StatusCode USART0_put_data(uint8_t* sendData, uint16_t Length)
 		return SUCCESS;
 	} else 
 	{
-		BoolStatusCode queue_return = queue_has_space(usart0SendQueue);
-		if(queue_return == true)
+		if(queue_has_space(usart0SendQueue) == true)
 		{
 			return queue_write(usart0SendQueue,sendData,Length);
-		}else if(queue_return == false)
-		{
-			return USART0_ERROR_NOT_READY_FOR_OPERATION;
 		}else
 		{
-			return queue_return;
+			return USART0_ERROR_NOT_READY_FOR_OPERATION;
 		}
 	}
 }
@@ -157,19 +155,17 @@ void USART0_Handler(void)
 	}
 	if(USART0->US_CSR & US_CSR_ENDTX)
 	{
-		BoolStatusCode queue_return = queue_is_empty(usart0SendQueue);
-		if(queue_return == true)
+		if(queue_is_empty(usart0SendQueue) == true)
 		{
 			usart0_transmitInProgress = false;
 			USART0->US_IDR = US_IDR_ENDTX;		//deactivate transmit done interrupt to keep it from firing constantly...
-		}else if(queue_return == false){
+		}else
+		{
 			queue_node qData;
 			//TODO: ERROR Handling
-			queue_read(usart0SendQueue, &qData);
-			usart0_put_raw_data(qData.data, qData.Length);
-		} else {
-			//TODO: ERROR Handling
-			//queue_return;
+			qData = queue_read(usart0SendQueue);
+			if(qData.Length != 0)
+				usart0_put_raw_data(qData.data, qData.Length);
 		}
 	}
 }

@@ -89,10 +89,19 @@ int main(void)
 	SystemInit();
 	configure_wdt();
 	UART0_init(115200,1);
-	StatusCode bno_return;
-	//UART0_puts("start\n\r");
-	bno_return = BNO055_init(false);
+	StatusCode bno_return = ERROR_GENERIC;
+	uint8_t data = 0;
+	uint8_t dataLenght = 1;
+	UART0_puts("\n\rstart:\n\r\n\r");
+	UART0_puts("Go!\n\rInit: ");
+	//bno_return = BNO055_init(false);
+	bno_return = BNOCOM_Init(Test);
 	UART0_put_int(bno_return);
+	UART0_puts("\n\rRead: ");
+	bno_return = BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, BNO_REG_TABLE0, &data);
+	//bno_return = BNO055_init(false);
+	UART0_put_int(data);
+	UART0_puts("\n\r");
 	while(1)
 	{
 		/*if(BNO055_is_idle() && UART0_is_idle())

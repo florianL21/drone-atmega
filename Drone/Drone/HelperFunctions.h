@@ -48,12 +48,12 @@ void _Delay(uint32_t delayCycles);
  * Returns true if the queue is empty
  * 
  */
-BoolStatusCode queue_is_empty(Queue* queue);
+bool queue_is_empty(Queue* queue);
 
 /*
 * returns true if there is space in the queue
 */
-BoolStatusCode queue_has_space(Queue *queue);
+bool queue_has_space(Queue *queue);
 
 /*
  * 
@@ -61,14 +61,14 @@ BoolStatusCode queue_has_space(Queue *queue);
  * returns a Queue* pointer to the new queue
  * Returns NULL if an error occurs
  */
-StatusCode queue_new(Queue* new_queue, uint32_t queueMaxLentgh);
+Queue *queue_new(uint32_t maxQueueLength);
 
 /*
  * 
  * Returns the value from the top of the queue and deletes it
  * returns 0 if an error occures
  */
-StatusCode queue_read(Queue* readQueue, queue_node* read_element);
+queue_node queue_read(Queue *queue);
 
 /*
  * 
