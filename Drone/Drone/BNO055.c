@@ -64,9 +64,9 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	
 	DEFUALT_ERROR_HANDLER1(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, 0, &Data), error_return);
 	UART0_put_int(Data);
-	//UART0_puts("BNO ID\n\r");
 	if(Data != BNO055_ID)
 		return BNO055_ERROR_WRONG_DEVICE_ID;
+	UART0_puts("ID OK\n\r");
 	/*//sensor defaults to OPR_MODE -> config mode
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE), error_return);
 	*/

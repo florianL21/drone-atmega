@@ -100,7 +100,7 @@ int main(void)
 	UART0_puts("\n\rRead: ");
 	bno_return = BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, BNO_REG_TABLE0, &data);
 	//bno_return = BNO055_init(false);
-	UART0_put_int(data);
+	//UART0_put_int(data);
 	UART0_puts("\n\r");
 	while(1)
 	{

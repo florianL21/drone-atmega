@@ -42,7 +42,7 @@ bool bnocom_register_validation_check(uint8_t Register, uint8_t Length, uint8_t 
 * BNO Blocking mode function for easier initialisation:
 ****************************************************************************************************/
 
-uint8_t* bno_response_value;
+uint8_t* bno_response_value = NULL;
 uint8_t bno_response_length = 0;
 bool bno_waiting_for_response = false;
 StatusCode bno_response_status = SUCCESS;
@@ -53,7 +53,18 @@ void bno_success(uint8_t* Data, uint8_t Length)
 	bno_waiting_for_response = false;
 	bno_response_length = Length;
 	bno_response_value = Data;
-	bno_response_status = SUCCESS;
+	if(bno_response_value != NULL)
+		free(bno_response_value);
+	bno_response_value = malloc(Length * sizeof(uint8_t));
+	if(bno_response_value == NULL)
+		bno_response_status = BNO055_ERROR_MALLOC_RETURNED_NULL;
+	else{
+		for (uint8_t count = 0; count < Length; count++)
+		{
+			bno_response_value[count]=Data[count];
+		}
+		bno_response_status = SUCCESS;
+	}
 }
 
 void bno_error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
@@ -143,6 +154,7 @@ StatusCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_
 	{
 		responseData[counter] = bno_response_value[counter];
 	}
+	
 	return SUCCESS;
 }
 
