@@ -76,16 +76,17 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	/*//sensor defaults to PAGE_ID -> PAGE0
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0), error_return);
 	*/
-	UART0_puts("1");
+	//UART0_puts("1");
 	//Set output units:
 	Data =	(0<<7) | //Orientation = Windows
 			(0<<4) | //Temperature = Celsius
 			(0<<2) | //Euler = Degrees
 			(1<<1) | //Gyro = Rads
 			(0<<0);  //Accelerometer = m/s^2
+	_Delay(1000000);
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data), error_return);
 	_Delay(10000);
-	UART0_puts("2");
+	UART0_puts("2\n\r");
 	/*//sensor defaults to SYS_TRIGGER -> Internal oscillator
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_SYS_TRIGGER, 0, BNO_INTERNAL_OSC), error_return);
 	*/
@@ -127,7 +128,7 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	
 	//Set Operation Mode to NDOF (nine degrees of freedom)
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, FUSION_MODE_NDOF), error_return);
-	UART0_puts("3");
+	UART0_puts("3\n\r");
 	//Initialize data struct to zero
 	lastMeasuredData.roll = 0;
 	lastMeasuredData.pitch = 0;
@@ -146,11 +147,15 @@ StatusCode BNO055_calibrate()
 	uint8_t mag = 0;
 	bno_is_busy = true;
 	bno_last_requested_measurement = bno_calibration_in_progress;
-	while(sys != 3 || gyro != 3 || accel != 3 || mag != 3)
+	while(sys != 3)
 	{
 		DEFUALT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CALIB_STAT, 0, &Data), error_return);
 
 		DEFUALT_ERROR_HANDLER(bno_calculate_calibration(Data, &sys, &gyro, &accel, &mag), calib_return);
+		UART0_puts("sys: ");
+		UART0_put_int(sys);
+		UART0_puts("\n\r");
+		_Delay(1000000);
 	}
 	bno_is_busy = false;
 	return SUCCESS;

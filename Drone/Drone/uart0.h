@@ -29,6 +29,9 @@ bool UART0_is_idle();
 StatusCode UART0_put_int(int num);
 StatusCode UART0_put_float(float num);
 
+StatusCode UART0_put_int_blocking(int num);
+StatusCode UART0_puts_blocking(char sendData[]);
+
 
 
 #endif /* UART0_H_ */

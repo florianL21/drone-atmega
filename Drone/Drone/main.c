@@ -67,7 +67,8 @@ int main(void)
 
 void Test(uint8_t* Data, uint8_t Length)
 {
-	//uint16_t data = 0x0000;
+	
+	/*//uint16_t data = 0x0000;
 	//data = (Data[1] << 8 ) | (Data[0] & 0xff);
 	char numBuf[20] = "";
 	char buffer[50] = "";
@@ -76,7 +77,7 @@ void Test(uint8_t* Data, uint8_t Length)
 	strcat(buffer,numBuf);
 	strcat(buffer,"\n\r");
 	if(UART0_has_space())
-		UART0_puts(buffer);
+		UART0_puts(buffer);*/
 }
 
 void BNO_Error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
@@ -92,13 +93,14 @@ int main(void)
 	StatusCode bno_return = ERROR_GENERIC;
 	uint8_t data = 0;
 	uint8_t dataLenght = 1;
-	UART0_puts("\n\rstart:\n\r\n\r");
+	UART0_puts("1234567890start:\n\r\n\r");
 	UART0_puts("Go!\n\rInit: ");
-	//bno_return = BNO055_init(false);
-	bno_return = BNOCOM_Init(Test);
+	bno_return = BNO055_init(true);
+	//bno_return = BNOCOM_Init(Test);
 	UART0_put_int(bno_return);
-	UART0_puts("\n\rRead: ");
-	bno_return = BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, BNO_REG_TABLE0, &data);
+	//UART0_puts("\n\rRead: ");
+	//bno_return = BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, BNO_REG_TABLE0, &data);
+	//UART0_put_int(bno_return);
 	//bno_return = BNO055_init(false);
 	//UART0_put_int(data);
 	UART0_puts("\n\r");

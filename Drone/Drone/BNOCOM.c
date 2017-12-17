@@ -21,7 +21,6 @@ typedef enum {
 	BNOCOM_REC_STATE_IDLE			= 0,
 	BNOCOM_REC_STATE_READ_SUCCESS	= 1,
 	BNOCOM_REC_STATE_ERROR			= 2,
-	
 } BNOCOM_recvStates;
 
 
@@ -49,26 +48,25 @@ StatusCode bno_response_status = SUCCESS;
 BNO_STATUS_BYTES bno_response_error = BNO_STATUS_READ_SUCCESS;
 
 void bno_success(uint8_t* Data, uint8_t Length)
-{
-	bno_waiting_for_response = false;
+{	
 	bno_response_length = Length;
-	bno_response_value = Data;
 	if(bno_response_value != NULL)
 		free(bno_response_value);
 	bno_response_value = malloc(Length * sizeof(uint8_t));
 	if(bno_response_value == NULL)
 		bno_response_status = BNO055_ERROR_MALLOC_RETURNED_NULL;
 	else{
-		for (uint8_t count = 0; count < Length; count++)
-		{
-			bno_response_value[count]=Data[count];
-		}
+		memcpy(bno_response_value, Data, Length);
 		bno_response_status = SUCCESS;
 	}
+	bno_waiting_for_response = false;
 }
 
 void bno_error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
 {
+	UART0_puts("error:\n\r");
+	UART0_put_int(Error);
+	UART0_puts("\n\r");
 	bno_waiting_for_response = false;
 	bno_response_error = Error;
 	bno_response_status = BNO055_ERROR;
@@ -342,8 +340,6 @@ StatusCode BNOCOM_register_read(uint8_t Register, uint8_t Length)
 	return SUCCESS;
 }
 
-
-
 StatusCode BNOCOM_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
 {
 	if(!BNOCOM_is_idle() || !USART0_has_space())
@@ -367,7 +363,7 @@ StatusCode BNOCOM_register_write(uint8_t Register, uint8_t Length, uint8_t* Data
 	Message[3] = Length;
 	for (uint8_t i = 0; i < Length; i++)
 	{
-		Message[i + 3] = Data[i];
+		Message[i + 4] = Data[i];
 	}
 	StatusCode USART_return = USART0_put_data(Message, Length + 4);
 	if(USART_return == SUCCESS)
@@ -392,10 +388,10 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 		case BNOCOM_REC_STATE_IDLE:
 			if(Length == 2 && Data[0] == ACK_OR_ERROR_BYTE)
 			{
-				if(Data[2] == BNO_STATUS_WRITE_SUCCESS && bnocom_read_success_callback != NULL)
+				if(Data[1] == BNO_STATUS_WRITE_SUCCESS && bnocom_read_success_callback != NULL)
 				{
 					bnocom_read_success_callback(NULL,0);
-				}else if(Data[2] != BNO_STATUS_WRITE_SUCCESS && bnocom_error_callback != NULL)
+				}else if(Data[1] != BNO_STATUS_WRITE_SUCCESS && bnocom_error_callback != NULL)
 				{
 					bnocom_error_callback(Data[1], SUCCESS);
 				}

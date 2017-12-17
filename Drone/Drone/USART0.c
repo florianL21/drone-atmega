@@ -9,7 +9,7 @@
 #define MIN_BAUD_RATE	9600
 #define MAX_BAUD_RATE	1843200
 
-uint8_t TXBUFFER[270]; // UART PDC Transmit buffer
+uint8_t USART0TXBUFFER[270]; // UART PDC Transmit buffer
 USART_RECV_CALLBACK usart_reciveCallBack = NULL;
 uint32_t usart0_ReceiveLength = 1;
 uint8_t *usart0_ReceivePtr = NULL;
@@ -73,9 +73,9 @@ void usart0_put_raw_data(uint8_t* sendData, uint16_t Length)
 	// copy to buffer - MUST be in SRAM as PDC is not connected to Flash
 	for (uint16_t count = 0; count < Length; count++)
 	{
-		TXBUFFER[count] = sendData[count];
+		USART0TXBUFFER[count] = sendData[count];
 	}
-	USART0->US_TPR = (uint32_t)TXBUFFER; 	// set Trasmission pointer in PDC register
+	USART0->US_TPR = (uint32_t)USART0TXBUFFER; 	// set Trasmission pointer in PDC register
 	USART0->US_TCR = Length; 				// set count of characters to be sent; starts transmission (since UART_PTCR_TXTEN is already set)
 	USART0->US_IER = US_IER_ENDTX;			//activate Transmit done interrupt
 }

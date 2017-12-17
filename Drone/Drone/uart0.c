@@ -92,7 +92,7 @@ void uart0_put_raw_data(uint8_t* sendData, uint16_t Length)
 	{
 		TXBUFFER[count] = sendData[count];
 	}
-	UART->UART_TPR = (uint32_t)TXBUFFER; 	// set Trasmission pointer in PDC register
+	UART->UART_TPR = (uint32_t)TXBUFFER; 	// set Transmission pointer in PDC register
 	UART->UART_TCR = Length; 				// set count of characters to be sent; starts transmission (since UART_PTCR_TXTEN is already set)
 	UART->UART_IER = UART_IER_ENDTX;		//activate Transmit done interrupt
 }
@@ -107,6 +107,11 @@ StatusCode UART0_put_data(uint8_t* sendData, uint16_t Length)
 	{
 		return UART0_ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
+/*
+	while(uart0_transmitInProgress);
+	uart0_transmitInProgress = true;
+	uart0_put_raw_data(sendData, Length);
+	return SUCCESS;*/
 	if(uart0_transmitInProgress == false)
 	{
 		uart0_transmitInProgress = true;
@@ -121,6 +126,25 @@ StatusCode UART0_put_data(uint8_t* sendData, uint16_t Length)
 			return UART0_ERROR_NOT_READY_FOR_OPERATION;
 		}
 	}
+}
+
+StatusCode UART0_put_int_blocking(int num)
+{
+	char buffer[50] = "";
+	sprintf(buffer,"%d",num);
+	return UART0_puts_blocking(buffer);
+}
+
+StatusCode UART0_puts_blocking(char sendData[])
+{
+	if(sendData == NULL)
+	{
+		return UART0_ERROR_GOT_NULL_POINTER;
+	}
+	while(uart0_transmitInProgress);
+	uart0_transmitInProgress = true;
+	uart0_put_raw_data((uint8_t*)sendData, strlen((char*)sendData));
+	return SUCCESS;
 }
 
 StatusCode UART0_set_receiver_length(uint32_t Length)
