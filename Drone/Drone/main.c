@@ -24,65 +24,100 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "USART0.h"
 #include "BNO055.h"
 #include "HelperFunctions.h"
+#include "ESCControl.h"
+#include "RCReader.h"
+#include "PID.h"
 
+BNO055_eulerData SensorValues;
+//Init variables for the drone programm
+RemoteControlValues RemoteValues;
+uint16_t Motor_speeds[4] = {0};
+float ValueMapFactor = 0.3;
+uint8_t maximumControlDegree = 10;
 
-//#include "ESCControl.h"
-//#include "RCReader.h"
-//#include "HelperFunctions.h"
-//#include "PID.h"
-
+//PID Config:
+float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
+float PID_RoleInput = 0,	PID_RoleOutput = 0,		PID_RoleSetPoint = 0;
+float PitchKp = 0.5,	PitchKi = 0.3,		PitchKd = 0.008;
+float RoleKp = 0.5,		RoleKi = 0.3,		RoleKd = 0.008;
+pidData PitchPid;
+pidData RolePid;
 
 void configure_wdt(void)
 {
 	WDT->WDT_MR = 0x00000000; // disable WDT
 }
 
-/*
-void Test(uint8_t* Data, uint16_t Length)
-{
-	uint8_t test[3]="\r\n";
-	USART0_put_data(Data,Length);
-	USART0_put_data(test,2);
-	USART0_set_receiver_length(1);
-}
-
-int main(void)
-{
-	
-	SystemInit();
-	configure_wdt();
-	PIOB->PIO_PER = PIO_PB27;
-	// Set to output
-	PIOB->PIO_OER = PIO_PB27;
-	// Disable pull-up
-	PIOB->PIO_PUDR = PIO_PB27;
-	PIOB->PIO_CODR = PIO_PB27;
-	USART0_init(115200,3);
-	USART0_register_received_callback(Test);
-	
-	while(1)
-	{
-	}
-}*/
-
-void Test(uint8_t* Data, uint8_t Length)
-{
-	
-	/*//uint16_t data = 0x0000;
-	//data = (Data[1] << 8 ) | (Data[0] & 0xff);
-	char numBuf[20] = "";
-	char buffer[50] = "";
-	//strcat(buffer,"ID: ");
-	itoa(Data[0],numBuf,10);
-	strcat(buffer,numBuf);
-	strcat(buffer,"\n\r");
-	if(UART0_has_space())
-		UART0_puts(buffer);*/
-}
-
 void BNO_Error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
 {
-	UART0_puts("ERROR");
+	if(Error == BNO_STATUS_BUS_OVER_RUN_ERROR && Transmit_error_code == BNO055_ERROR)
+		BNO055_start_euler_measurement(true,true);
+	else 
+	{
+		_Delay(840000);
+		UART0_puts("ERROR ");
+		UART0_put_int(Error);
+		UART0_puts("\n\r");
+	}
+}
+
+void DataReady()
+{
+	bool needComputePitch = PID_need_compute(&PitchPid);
+	bool needComputeRole = PID_need_compute(&RolePid);
+	if(needComputeRole == true || needComputePitch == true)
+	{
+		//read Values from sensor and remote control:
+		SensorValues = BNO055_get_euler_measurement_data();
+		RemoteValues = rc_read_values();
+		
+		if(RemoteValues.error != true)
+		{
+			//UART0_puts("Values OK\n\r");
+			//int16_t MappedYaw   = map(RemoteValues.Yaw, 0, RC_CONTROL_CENTER__PITCH * 2, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
+			
+			//pitch --> role: 180;-180
+			//role --> pitch: 90;-90
+			
+			PID_PitchInput		= SensorValues.role;
+			PID_RoleInput		= SensorValues.pitch;
+			PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, RC_CONTROL_CENTER__PITCH * 2, -maximumControlDegree, maximumControlDegree);
+			PID_RoleSetPoint	= map(RemoteValues.Role, 0, RC_CONTROL_CENTER__PITCH * 2, -maximumControlDegree, maximumControlDegree);
+			
+			// Compute new PID output value
+			if (needComputePitch)
+				PID_Compute(&PitchPid);
+			if (needComputeRole)
+				PID_Compute(&RolePid);
+
+			int16_t MappedPitch = map(PID_PitchOutput, -180, 180, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
+			int16_t MappedRole  = map(PID_RoleOutput, -90, 90, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
+			//int16_t MappedYaw   = map(PID_YawOutput, -1000, 1000, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
+			Motor_speeds[0] = RemoteValues.Throttle - MappedPitch - MappedRole;// - MappedYaw;
+			Motor_speeds[1] = RemoteValues.Throttle - MappedPitch + MappedRole;// + MappedYaw;
+			Motor_speeds[2] = RemoteValues.Throttle + MappedPitch - MappedRole;// - MappedYaw;
+			Motor_speeds[3] = RemoteValues.Throttle + MappedPitch + MappedRole;// + MappedYaw;
+		
+			esc_set(1, Motor_speeds[0]);
+			esc_set(2, Motor_speeds[1]);
+			esc_set(3, Motor_speeds[2]);
+			esc_set(4, Motor_speeds[3]);
+		
+		
+			/*if(UART0_is_idle())
+			{
+				char buffer[100] = "";
+				sprintf(buffer, "In: %3.3f\tOut: %3.3f\tSet: %3.3f\n\r", PID_RoleInput, PID_RoleOutput, PID_RoleSetPoint);
+				UART0_puts(buffer);
+			}*/
+			/*if(UART0_is_idle())
+			{
+				char buffer[100] = "";
+				sprintf(buffer, "role: %3.3f\tpitch: %3.3f\theading: %3.3f\n\r", SensorValues.role, SensorValues.pitch, SensorValues.heading);
+				UART0_puts(buffer);
+			}*/
+		}
+	}
 }
 
 int main(void)
@@ -90,30 +125,27 @@ int main(void)
 	SystemInit();
 	configure_wdt();
 	UART0_init(115200,1);
-	StatusCode bno_return = ERROR_GENERIC;
-	uint8_t data = 0;
-	uint8_t dataLenght = 1;
-	UART0_puts("1234567890start:\n\r\n\r");
-	UART0_puts("Go!\n\rInit: ");
-	bno_return = BNO055_init(true);
-	//bno_return = BNOCOM_Init(Test);
-	UART0_put_int(bno_return);
-	//UART0_puts("\n\rRead: ");
-	//bno_return = BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, BNO_REG_TABLE0, &data);
-	//UART0_put_int(bno_return);
-	//bno_return = BNO055_init(false);
-	//UART0_put_int(data);
-	UART0_puts("\n\r");
+	UART0_puts("Go!\n\r");
+	//BNO init:
+	BNO055_init(true);
+	UART0_puts("Calib OK\n\r");
+	BNO055_register_error_callback(BNO_Error);
+	
+	BNO055_register_data_ready_callback(DataReady);
+	//rc control and esc init:
+	rc_init();
+	esc_init();
+	
+	PID_Init();
+	PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-180,180,10);
+	PID_Initialize(&RolePid, &PID_RoleInput, &PID_RoleOutput, &PID_RoleSetPoint, RoleKp, RoleKi, RoleKd,-90,90,10);
+	UART0_puts("ALL INITS DONE!\n\r");
+	BNO055_start_euler_measurement(true,true);
 	while(1)
 	{
-		/*if(BNO055_is_idle() && UART0_is_idle())
-		{
-			BNO055_register_read(0x10,2);
-		}
-		_Delay(320000);*/
+		
 	}
 }
-
 
 
 /* PID Test Program:*/
@@ -171,17 +203,19 @@ int main(void)
 }
 */
 
-/*Drone Test Program:*/
+
 /*
+
+/ *Drone Test Program:* /
+
 int main(void)
 {
 	/ * Initialize the SAM system * /
 	SystemInit();
 	configure_wdt();
-	uart0_init(115200);
 	rc_init();
-	esc_init();	
-	RemoteControlValues Values;
+	esc_init();
+	RemoteControlValues RemoteValues;
 	int16_t MappedPitch=0;
 	int16_t MappedRole=0;
 	int16_t MappedYaw=0;
@@ -189,18 +223,18 @@ int main(void)
 	float ValueMapFactor = 0.3;
 	while (1)
 	{
-		Values = rc_read_values();
-		if(Values.error != true)
+		RemoteValues = rc_read_values();
+		if(RemoteValues.error != true)
 		{
-			MappedPitch = map(Values.Pitch,0,RC_CONTROL_CENTER__PITCH*2,-(Values.Throttle*ValueMapFactor),(Values.Throttle*ValueMapFactor));
-			MappedRole  = map(Values.Role,0,RC_CONTROL_CENTER__PITCH*2,-(Values.Throttle*ValueMapFactor),(Values.Throttle*ValueMapFactor));
-			MappedYaw   = map(Values.Yaw,0,RC_CONTROL_CENTER__PITCH*2,-(Values.Throttle*ValueMapFactor),(Values.Throttle*ValueMapFactor));
+			MappedPitch = map(RemoteValues.Pitch,0,RC_CONTROL_CENTER__PITCH*2,-(RemoteValues.Throttle*ValueMapFactor),(RemoteValues.Throttle*ValueMapFactor));
+			MappedRole  = map(RemoteValues.Role,0,RC_CONTROL_CENTER__PITCH*2,-(RemoteValues.Throttle*ValueMapFactor),(RemoteValues.Throttle*ValueMapFactor));
+			MappedYaw   = map(RemoteValues.Yaw,0,RC_CONTROL_CENTER__PITCH*2,-(RemoteValues.Throttle*ValueMapFactor),(RemoteValues.Throttle*ValueMapFactor));
 			
 			
-			Motor_speeds[0] = Values.Throttle-MappedPitch-MappedRole-MappedYaw;
-			Motor_speeds[1] = Values.Throttle-MappedPitch+MappedRole+MappedYaw;
-			Motor_speeds[2] = Values.Throttle+MappedPitch-MappedRole-MappedYaw;
-			Motor_speeds[3] = Values.Throttle+MappedPitch+MappedRole+MappedYaw;
+			Motor_speeds[0] = RemoteValues.Throttle-MappedPitch-MappedRole-MappedYaw;
+			Motor_speeds[1] = RemoteValues.Throttle-MappedPitch+MappedRole+MappedYaw;
+			Motor_speeds[2] = RemoteValues.Throttle+MappedPitch-MappedRole-MappedYaw;
+			Motor_speeds[3] = RemoteValues.Throttle+MappedPitch+MappedRole+MappedYaw;
 			
 			esc_set(1,Motor_speeds[0]);
 			esc_set(2,Motor_speeds[1]);
@@ -228,5 +262,39 @@ int main(void)
 			}
 		}
 		
+	}
+}
+*/
+
+
+
+
+
+
+/*
+void Test(uint8_t* Data, uint16_t Length)
+{
+	uint8_t test[3]="\r\n";
+	USART0_put_data(Data,Length);
+	USART0_put_data(test,2);
+	USART0_set_receiver_length(1);
+}
+
+int main(void)
+{
+	
+	SystemInit();
+	configure_wdt();
+	PIOB->PIO_PER = PIO_PB27;
+	// Set to output
+	PIOB->PIO_OER = PIO_PB27;
+	// Disable pull-up
+	PIOB->PIO_PUDR = PIO_PB27;
+	PIOB->PIO_CODR = PIO_PB27;
+	USART0_init(115200,3);
+	USART0_register_received_callback(Test);
+	
+	while(1)
+	{
 	}
 }*/

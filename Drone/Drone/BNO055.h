@@ -18,7 +18,7 @@
 
 struct BNO055_eulerData  
 {
-	float roll;
+	float role;
 	float pitch;
 	float heading;
 }; 

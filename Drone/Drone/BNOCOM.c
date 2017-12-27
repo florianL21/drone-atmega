@@ -64,9 +64,9 @@ void bno_success(uint8_t* Data, uint8_t Length)
 
 void bno_error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
 {
-	UART0_puts("error:\n\r");
+	/*UART0_puts("error:\n\r");
 	UART0_put_int(Error);
-	UART0_puts("\n\r");
+	UART0_puts("\n\r");*/
 	bno_waiting_for_response = false;
 	bno_response_error = Error;
 	bno_response_status = BNO055_ERROR;
@@ -140,7 +140,11 @@ StatusCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_
 	BNOCOM_register_error_callback(SavedErrorCallback);
 	BNOCOM_register_success_callback(SavedSuccessCallback);
 	if(bno_response_status != SUCCESS)
+	{
+		if(*responseLength != 0)
+			responseData[0] = bno_response_error;
 		return bno_response_status;
+	}
 	
 	if(expectedLength != bno_response_length)
 	{
@@ -388,14 +392,14 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 		case BNOCOM_REC_STATE_IDLE:
 			if(Length == 2 && Data[0] == ACK_OR_ERROR_BYTE)
 			{
+				bnocom_IsIdle = true;
 				if(Data[1] == BNO_STATUS_WRITE_SUCCESS && bnocom_read_success_callback != NULL)
 				{
 					bnocom_read_success_callback(NULL,0);
 				}else if(Data[1] != BNO_STATUS_WRITE_SUCCESS && bnocom_error_callback != NULL)
 				{
-					bnocom_error_callback(Data[1], SUCCESS);
+					bnocom_error_callback(Data[1], BNO055_ERROR);
 				}
-				bnocom_IsIdle = true;
 			}
 			else if(Length == 2 && Data[0] == READ_SUCCESS_BYTE)
 			{
@@ -409,15 +413,16 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 				bnocom_rec_states = BNOCOM_REC_STATE_READ_SUCCESS;
 			}else
 			{
+				bnocom_IsIdle = true;
 				if(bnocom_error_callback != NULL)
 				{
 					bnocom_error_callback(BNO_TRANSMIT_ERROR, BNO055_ERROR_ARGUMENT_OUT_OF_RANGE);
 				}
-				bnocom_IsIdle = true;
 			}
 		break;
 		
 		case BNOCOM_REC_STATE_READ_SUCCESS:
+			bnocom_IsIdle = true;
 			if(bnocom_read_success_callback != NULL)
 			{
 				bnocom_read_success_callback(Data, bnocom_rec_length);
@@ -429,16 +434,15 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 				bnocom_rec_states = BNOCOM_REC_STATE_IDLE;
 				return;
 			}
-			bnocom_IsIdle = true;
 			bnocom_rec_states = BNOCOM_REC_STATE_IDLE;
 		break;
 		
 		default:
+			bnocom_IsIdle = true;
 			if(bnocom_error_callback != NULL)
 			{
 				bnocom_error_callback(BNO_TRANSMIT_ERROR, ERROR_FATAL);
 			}
-			bnocom_IsIdle = true;
 		break;
 	}
 }

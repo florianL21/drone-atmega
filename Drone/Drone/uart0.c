@@ -58,7 +58,7 @@ StatusCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 
 bool UART0_is_idle()
 {
-	return !uart0_transmitInProgress;
+	return queue_is_empty(uart0SendQueue) == true;
 }
 
 bool UART0_has_space()
@@ -107,11 +107,6 @@ StatusCode UART0_put_data(uint8_t* sendData, uint16_t Length)
 	{
 		return UART0_ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-/*
-	while(uart0_transmitInProgress);
-	uart0_transmitInProgress = true;
-	uart0_put_raw_data(sendData, Length);
-	return SUCCESS;*/
 	if(uart0_transmitInProgress == false)
 	{
 		uart0_transmitInProgress = true;
