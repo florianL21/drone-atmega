@@ -80,13 +80,14 @@ typedef enum {
 	HelperFunctions_ERROR_GOT_NULL_POINTER			= 0x64,
 	HelperFunctions_ERROR_MALLOC_RETURNED_NULL		= 0x65,
 	HelperFunctions_ERROR_NOT_READY_FOR_OPERATION	= 0x66,
+	HelperFunctions_ERROR_INVALID_ARGUMENT			= 0x67,
 	HelperFunctions_ERROR_QUEUE_WAS_EMPTY			= 0x68,
 
 	//PID:
 	PID_ERROR										= 0x70,
 	PID_ERROR_ARGUMENT_OUT_OF_RANGE					= 0x73,
 	PID_ERROR_GOT_NULL_POINTER						= 0x74,
-	PID_ERROR_INVALID_ARGUMENT						= 0x67
+	PID_ERROR_INVALID_ARGUMENT						= 0x77
 
 }StatusCode;
 
@@ -221,6 +222,9 @@ RC_ControlCenter
 #define GEAR_PIN			PIO_PB28		//GEAR
 
 #define RCREADER_ENABLED_PINS	THROTTLE_PIN | ROLE_PIN | PITCH_PIN | YAW_PIN | GEAR_PIN;
+
+//filter size for measurements, higher number = lesser value breakouts and smoother but slower reaction.
+#define FILTER_SIZE			5
 
 /*
  *

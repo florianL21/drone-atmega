@@ -12,7 +12,7 @@
 #include "sam.h"
 #include "config.h"
 #include <stdbool.h>
-//#include "HelperFunctions.h"
+#include "HelperFunctions.h"
 
 struct RemoteControlValues
 {

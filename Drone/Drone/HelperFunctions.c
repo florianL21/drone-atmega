@@ -135,3 +135,49 @@ StatusCode queue_write(Queue *queue, uint8_t* data, uint16_t Length)
 	queue->queueLength++;
 	return SUCCESS;
 }
+
+StatusCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue)
+{
+	if(size == 0)
+		return HelperFunctions_ERROR_INVALID_ARGUMENT;
+	if(newFilter == NULL)
+		return HelperFunctions_ERROR_GOT_NULL_POINTER;
+	newFilter->FilterValues = malloc(sizeof(uint16_t)*size);
+	if(newFilter->FilterValues == NULL)
+		return HelperFunctions_ERROR_MALLOC_RETURNED_NULL;
+	for(uint8_t i = 0; i < size; i++)
+	{
+		newFilter->FilterValues[i] = initValue; 
+	}
+	newFilter->FilterSize = size;
+	return SUCCESS;
+}
+
+StatusCode median_filter_add(MedianFilter* Filter, uint16_t newValue)
+{
+	if(Filter == NULL)
+		return HelperFunctions_ERROR_GOT_NULL_POINTER;
+	for(uint8_t i = 0; i < Filter->FilterSize; i++)
+	{
+		Filter->FilterValues[i] = Filter->FilterValues[i + 1];
+	}
+	Filter->FilterValues[Filter->FilterSize - 1] = newValue;
+	return SUCCESS;
+}
+
+uint16_t median_filter_get(MedianFilter* Filter)
+{
+	if(Filter == NULL)
+		return 0;
+	uint16_t biggest = 0, lowest = 65535;
+	uint32_t sum = 0;
+	for(uint8_t i = 0; i < Filter->FilterSize; i++)
+	{
+		sum += Filter->FilterValues[i];
+		if(Filter->FilterValues[i] > biggest)
+			biggest = Filter->FilterValues[i];
+		if(Filter->FilterValues[i] < lowest)
+			lowest = Filter->FilterValues[i];
+	}
+	return (sum - (lowest+biggest))/(Filter->FilterSize-2);
+}

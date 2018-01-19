@@ -67,12 +67,13 @@ void DataReady()
 	bool needComputeRole = PID_need_compute(&RolePid);
 	if(needComputeRole == true || needComputePitch == true)
 	{
+		
 		//read Values from sensor and remote control:
 		SensorValues = BNO055_get_euler_measurement_data();
 		RemoteValues = rc_read_values();
-		
 		if(RemoteValues.error != true)
 		{
+			
 			//UART0_puts("Values OK\n\r");
 			//int16_t MappedYaw   = map(RemoteValues.Yaw, 0, RC_CONTROL_CENTER__PITCH * 2, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
 			
@@ -104,18 +105,27 @@ void DataReady()
 			esc_set(4, Motor_speeds[3]);
 		
 		
-			/*if(UART0_is_idle())
+			/*
+			if(UART0_is_idle())
 			{
 				char buffer[100] = "";
 				sprintf(buffer, "In: %3.3f\tOut: %3.3f\tSet: %3.3f\n\r", PID_RoleInput, PID_RoleOutput, PID_RoleSetPoint);
 				UART0_puts(buffer);
-			}*/
-			/*if(UART0_is_idle())
+			}//*/
+			/*
+			if(UART0_is_idle())
 			{
 				char buffer[100] = "";
 				sprintf(buffer, "role: %3.3f\tpitch: %3.3f\theading: %3.3f\n\r", SensorValues.role, SensorValues.pitch, SensorValues.heading);
 				UART0_puts(buffer);
-			}*/
+			}//*/
+			//*
+			if(UART0_is_idle())
+			{
+				char buffer[100] = "";
+				sprintf(buffer, "throttle: %6d\n\r", RemoteValues.Throttle);
+				UART0_puts(buffer);
+			}//*/
 		}
 	}
 }
@@ -127,7 +137,7 @@ int main(void)
 	UART0_init(115200,1);
 	UART0_puts("Go!\n\r");
 	//BNO init:
-	BNO055_init(true);
+	BNO055_init(false);
 	UART0_puts("Calib OK\n\r");
 	BNO055_register_error_callback(BNO_Error);
 	

@@ -29,6 +29,12 @@ struct Queue {
 };
 typedef struct Queue Queue;
 
+struct MedianFilter {
+	uint16_t* FilterValues;
+	uint8_t FilterSize;
+};
+typedef struct MedianFilter MedianFilter;
+
 /*
  *	Maps the value x from an input range to an output range
  *	Parameters:
@@ -92,6 +98,10 @@ uint32_t queue_get_item_count(Queue* queue);
 StatusCode queue_delete(Queue* queue);
 
 
+
+StatusCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue);
+StatusCode median_filter_add(MedianFilter* Filter, uint16_t newValue);
+uint16_t median_filter_get(MedianFilter* Filter);
 
 
 #endif /* HELPERFUNCTIONS_H_ */
