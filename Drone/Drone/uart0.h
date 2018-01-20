@@ -32,6 +32,8 @@ StatusCode UART0_put_float(float num);
 StatusCode UART0_put_int_blocking(int num);
 StatusCode UART0_puts_blocking(char sendData[]);
 
+void uart0_put_raw_data(uint8_t* sendData, uint16_t Length);
+
 
 
 #endif /* UART0_H_ */

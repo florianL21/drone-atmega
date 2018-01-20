@@ -11,7 +11,7 @@ struct MeasurementHelpers
 {
 	uint32_t LastState;
 	uint32_t mStartCount;
-	uint16_t FilteredOutput;
+	uint16_t LastMeasuredValue;
 };
 typedef struct MeasurementHelpers MeasurementHelpers;
 
@@ -74,19 +74,19 @@ void rc_init()
 	
 	//Initialize the measurement structure to zero
 	ReaderValues.error						= false;
-	ReaderValues.Gear.FilteredOutput		= 0;
+	ReaderValues.Gear.LastMeasuredValue		= 0;
 	ReaderValues.Gear.LastState				= 0;
 	ReaderValues.Gear.mStartCount			= 0;
-	ReaderValues.Pitch.FilteredOutput		= 0;
+	ReaderValues.Pitch.LastMeasuredValue		= 0;
 	ReaderValues.Pitch.LastState			= 0;
 	ReaderValues.Pitch.mStartCount			= 0;
-	ReaderValues.Role.FilteredOutput		= 0;
+	ReaderValues.Role.LastMeasuredValue		= 0;
 	ReaderValues.Role.LastState				= 0;
 	ReaderValues.Role.mStartCount			= 0;
-	ReaderValues.Throttle.FilteredOutput	= 0;
+	ReaderValues.Throttle.LastMeasuredValue	= 0;
 	ReaderValues.Throttle.LastState			= 0;
 	ReaderValues.Throttle.mStartCount		= 0;
-	ReaderValues.Yaw.FilteredOutput			= 0;
+	ReaderValues.Yaw.LastMeasuredValue			= 0;
 	ReaderValues.Yaw.LastState				= 0;
 	ReaderValues.Yaw.mStartCount			= 0;
 	
@@ -129,30 +129,35 @@ RemoteControlValues rc_read_values()
 	RemoteControlValues returnValues;
 	returnValues.error = false;
 	//Throttle
-	if(ReaderValues.Throttle.FilteredOutput < RC_CCONTROL_MIN__THROTTLE || ReaderValues.Throttle.FilteredOutput > RC_CONTROL_MAX__THROTTLE) // is out of range...
+	uint16_t FilteredValue = median_filter_get(&rcreader_filter_throttle);
+	if(FilteredValue < RC_CCONTROL_MIN__THROTTLE || FilteredValue > RC_CONTROL_MAX__THROTTLE) // is out of range...
 	{
 		returnValues.Throttle = 0;	// ...so return 0 (min throttle)
 		returnValues.error = true;	//and indicate that there was an error
 	}
 	else
 	{
-		if(ReaderValues.Throttle.FilteredOutput - RC_CCONTROL_MIN__THROTTLE <= RC_CONTROL_DEAD_SPOT__THROTTLE)
+		if(FilteredValue - RC_CCONTROL_MIN__THROTTLE <= RC_CONTROL_DEAD_SPOT__THROTTLE)
 			returnValues.Throttle = 0;
 		else
-			returnValues.Throttle = ReaderValues.Throttle.FilteredOutput - RC_CCONTROL_MIN__THROTTLE;
+			returnValues.Throttle = FilteredValue - RC_CCONTROL_MIN__THROTTLE;
 	}
-	returnValues.Role = calculate_control_value(ReaderValues.Role.FilteredOutput, &returnValues.error, RC_CONTROL_MIN__ROLE, RC_CONTROL_MAX__ROLE, RC_CONTROL_CENTER__ROLE, RC_CONTROL_DEAD_SPOT__ROLE);
-	returnValues.Pitch = calculate_control_value(ReaderValues.Pitch.FilteredOutput, &returnValues.error, RC_CONTROL_MIN__PITCH, RC_CONTROL_MAX__PITCH, RC_CONTROL_CENTER__PITCH, RC_CONTROL_DEAD_SPOT__PITCH);
-	returnValues.Yaw = calculate_control_value(ReaderValues.Yaw.FilteredOutput, &returnValues.error, RC_CONTROL_MIN__YAW, RC_CONTROL_MAX__YAW, RC_CONTROL_CENTER__YAW, RC_CONTROL_DEAD_SPOT__YAW);
+	FilteredValue = median_filter_get(&rcreader_filter_role);
+	returnValues.Role = calculate_control_value(FilteredValue, &returnValues.error, RC_CONTROL_MIN__ROLE, RC_CONTROL_MAX__ROLE, RC_CONTROL_CENTER__ROLE, RC_CONTROL_DEAD_SPOT__ROLE);
+	FilteredValue = median_filter_get(&rcreader_filter_pitch);
+	returnValues.Pitch = calculate_control_value(FilteredValue, &returnValues.error, RC_CONTROL_MIN__PITCH, RC_CONTROL_MAX__PITCH, RC_CONTROL_CENTER__PITCH, RC_CONTROL_DEAD_SPOT__PITCH);
+	FilteredValue = median_filter_get(&rcreader_filter_yaw);
+	returnValues.Yaw = calculate_control_value(ReaderValues.Yaw.LastMeasuredValue, &returnValues.error, RC_CONTROL_MIN__YAW, RC_CONTROL_MAX__YAW, RC_CONTROL_CENTER__YAW, RC_CONTROL_DEAD_SPOT__YAW);
 	//Gear:
-	if(ReaderValues.Gear.FilteredOutput < RC_CONTROL_MIN__GEAR || ReaderValues.Gear.FilteredOutput > RC_CONTROL_MAX__GEAR) // is out of range...
+	FilteredValue = median_filter_get(&rcreader_filter_gear);
+	if(FilteredValue < RC_CONTROL_MIN__GEAR || FilteredValue > RC_CONTROL_MAX__GEAR) // is out of range...
 	{
 		returnValues.Gear = false;	// ...so return 0 (min throttle)
 		returnValues.error = true;	//and indicate that there was an error
 	}
 	else
 	{
-		if(ReaderValues.Gear.FilteredOutput - RC_CONTROL_MIN__GEAR >= RC_CONTROL_THRESCHHOLD__GEAR)
+		if(FilteredValue - RC_CONTROL_MIN__GEAR >= RC_CONTROL_THRESCHHOLD__GEAR)
 			returnValues.Gear = true;
 		else
 			returnValues.Gear = false;
@@ -180,8 +185,8 @@ void Calculate_measurement(uint32_t status, uint32_t MeasurementPin, Measurement
 			}
 			else
 			{	// changed from high->low
-				median_filter_add(Filter, calculateTickDifference(ReadValues->mStartCount, TC0->TC_CHANNEL[0].TC_CV));
-				ReadValues->FilteredOutput = median_filter_get(Filter);
+				ReadValues->LastMeasuredValue = calculateTickDifference(ReadValues->mStartCount, TC0->TC_CHANNEL[0].TC_CV);
+				median_filter_add(Filter, ReadValues->LastMeasuredValue);
 			}
 		}
 	}

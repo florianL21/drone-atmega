@@ -38,10 +38,41 @@ uint8_t maximumControlDegree = 10;
 //PID Config:
 float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RoleInput = 0,	PID_RoleOutput = 0,		PID_RoleSetPoint = 0;
-float PitchKp = 0.5,	PitchKi = 0.3,		PitchKd = 0.008;
-float RoleKp = 0.5,		RoleKi = 0.3,		RoleKd = 0.008;
+float PitchKp = 0.5,	PitchKi = 0.3,		PitchKd = 0.8;
+float RoleKp = 0.5,		RoleKi = 0.3,		RoleKd = 0.8;
 pidData PitchPid;
 pidData RolePid;
+
+#define MAX_ERROR_COUNT 20
+StatusCode errorStack[MAX_ERROR_COUNT] = {0};
+uint8_t errorCount = 0;
+
+void error_handler_in(StatusCode errorIn)
+{
+	if(errorIn != SUCCESS && errorCount < MAX_ERROR_COUNT)
+	{
+		errorStack[errorCount++] = errorIn;
+	}
+}
+
+void error_handler_print()
+{
+	if(errorCount != 0)
+	{
+		char CharBuffer[100] = "";
+		char ErrorToCharBuffer[10] = "";
+		sprintf(CharBuffer,"\n\r\n\r\n\r%d Errors have been detected: \n\r", errorCount);
+		for (uint8_t i = 0; i < errorCount; i++)
+		{
+			itoa(errorStack[i], ErrorToCharBuffer, 16);
+			strcat(CharBuffer, ErrorToCharBuffer);
+			strcat(CharBuffer,", ");
+		}
+		errorCount = 0;
+		strcat(CharBuffer,"\n\r");
+		uart0_put_raw_data((uint8_t*) CharBuffer, strlen(CharBuffer));
+	}
+}
 
 void configure_wdt(void)
 {
@@ -51,13 +82,12 @@ void configure_wdt(void)
 void BNO_Error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
 {
 	if(Error == BNO_STATUS_BUS_OVER_RUN_ERROR && Transmit_error_code == BNO055_ERROR)
-		BNO055_start_euler_measurement(true,true);
+		error_handler_in(BNO055_start_euler_measurement(true,true));
 	else 
 	{
 		_Delay(840000);
-		UART0_puts("ERROR ");
-		UART0_put_int(Error);
-		UART0_puts("\n\r");
+		error_handler_in(BNO055_ERROR);
+		error_handler_in(Error);
 	}
 }
 
@@ -87,9 +117,9 @@ void DataReady()
 			
 			// Compute new PID output value
 			if (needComputePitch)
-				PID_Compute(&PitchPid);
+				error_handler_in(PID_Compute(&PitchPid));
 			if (needComputeRole)
-				PID_Compute(&RolePid);
+				error_handler_in(PID_Compute(&RolePid));
 
 			int16_t MappedPitch = map(PID_PitchOutput, -180, 180, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
 			int16_t MappedRole  = map(PID_RoleOutput, -90, 90, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
@@ -99,32 +129,41 @@ void DataReady()
 			Motor_speeds[2] = RemoteValues.Throttle + MappedPitch - MappedRole;// - MappedYaw;
 			Motor_speeds[3] = RemoteValues.Throttle + MappedPitch + MappedRole;// + MappedYaw;
 		
-			esc_set(1, Motor_speeds[0]);
-			esc_set(2, Motor_speeds[1]);
-			esc_set(3, Motor_speeds[2]);
-			esc_set(4, Motor_speeds[3]);
+			error_handler_in(esc_set(1, Motor_speeds[0]));
+			error_handler_in(esc_set(2, Motor_speeds[1]));
+			error_handler_in(esc_set(3, Motor_speeds[2]));
+			error_handler_in(esc_set(4, Motor_speeds[3]));
 		
 		
 			/*
 			if(UART0_is_idle())
 			{
 				char buffer[100] = "";
-				sprintf(buffer, "In: %3.3f\tOut: %3.3f\tSet: %3.3f\n\r", PID_RoleInput, PID_RoleOutput, PID_RoleSetPoint);
+				sprintf(buffer, "PID:\tPitch: %4d\tRole: %4d\n\r", MappedPitch, MappedRole);
 				UART0_puts(buffer);
+				sprintf(buffer, "Sensor:\tPitch: %3.3f\tRole: %3.3f\n\r", PID_PitchInput, PID_RoleInput);
+				error_handler_in(UART0_puts(buffer));
+			}//*/
+			/*
+			if(UART0_is_idle())
+			{
+				char buffer[100] = "";
+				sprintf(buffer, "In: %3.3f\tOut: %3.3f\tSet: %3.3f\n\r", PID_RoleInput, PID_RoleOutput, PID_RoleSetPoint);
+				error_handler_in(UART0_puts(buffer));
 			}//*/
 			/*
 			if(UART0_is_idle())
 			{
 				char buffer[100] = "";
 				sprintf(buffer, "role: %3.3f\tpitch: %3.3f\theading: %3.3f\n\r", SensorValues.role, SensorValues.pitch, SensorValues.heading);
-				UART0_puts(buffer);
+				error_handler_in(UART0_puts(buffer));
 			}//*/
-			//*
+			/*
 			if(UART0_is_idle())
 			{
 				char buffer[100] = "";
 				sprintf(buffer, "throttle: %6d\n\r", RemoteValues.Throttle);
-				UART0_puts(buffer);
+				error_handler_in(UART0_puts(buffer));
 			}//*/
 		}
 	}
@@ -134,26 +173,26 @@ int main(void)
 {
 	SystemInit();
 	configure_wdt();
-	UART0_init(115200,1);
-	UART0_puts("Go!\n\r");
+	error_handler_in(UART0_init(115200, 1));
+	error_handler_in(UART0_puts("Go!\n\r"));
 	//BNO init:
-	BNO055_init(false);
-	UART0_puts("Calib OK\n\r");
-	BNO055_register_error_callback(BNO_Error);
+	error_handler_in(BNO055_init(false));
+	error_handler_in(UART0_puts("Calib OK\n\r"));
+	error_handler_in(BNO055_register_error_callback(BNO_Error));
 	
-	BNO055_register_data_ready_callback(DataReady);
+	error_handler_in(BNO055_register_data_ready_callback(DataReady));
 	//rc control and esc init:
 	rc_init();
 	esc_init();
 	
 	PID_Init();
-	PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-180,180,10);
-	PID_Initialize(&RolePid, &PID_RoleInput, &PID_RoleOutput, &PID_RoleSetPoint, RoleKp, RoleKi, RoleKd,-90,90,10);
-	UART0_puts("ALL INITS DONE!\n\r");
-	BNO055_start_euler_measurement(true,true);
+	error_handler_in(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-180,180,10));
+	error_handler_in(PID_Initialize(&RolePid, &PID_RoleInput, &PID_RoleOutput, &PID_RoleSetPoint, RoleKp, RoleKi, RoleKd,-90,90,10));
+	error_handler_in(UART0_puts("ALL INITS DONE!\n\r"));
+	error_handler_in(BNO055_start_euler_measurement(true,true));
 	while(1)
 	{
-		
+		error_handler_print();
 	}
 }
 
