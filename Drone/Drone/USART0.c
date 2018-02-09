@@ -166,6 +166,7 @@ void USART0_Handler(void)
 			qData = queue_read(usart0SendQueue);
 			if(qData.Length != 0)
 				usart0_put_raw_data(qData.data, qData.Length);
+			free(qData.data);
 		}
 	}
 }

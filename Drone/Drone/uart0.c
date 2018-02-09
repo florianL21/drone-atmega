@@ -199,6 +199,7 @@ void UART_Handler(void)
 			qData = queue_read(uart0SendQueue);
 			if(qData.Length != 0)
 				uart0_put_raw_data(qData.data, qData.Length);
+			free(qData.data);
 		}
 	}
 }

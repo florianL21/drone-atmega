@@ -174,9 +174,9 @@ int main(void)
 	SystemInit();
 	configure_wdt();
 	error_handler_in(UART0_init(115200, 1));
-	error_handler_in(UART0_puts("Go!\n\r"));
+	/*error_handler_in(UART0_puts("Go!\n\r"));*/
 	//BNO init:
-	error_handler_in(BNO055_init(false));
+	/*error_handler_in(BNO055_init(false));
 	error_handler_in(UART0_puts("Calib OK\n\r"));
 	error_handler_in(BNO055_register_error_callback(BNO_Error));
 	
@@ -189,10 +189,14 @@ int main(void)
 	error_handler_in(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-180,180,10));
 	error_handler_in(PID_Initialize(&RolePid, &PID_RoleInput, &PID_RoleOutput, &PID_RoleSetPoint, RoleKp, RoleKi, RoleKd,-90,90,10));
 	error_handler_in(UART0_puts("ALL INITS DONE!\n\r"));
-	error_handler_in(BNO055_start_euler_measurement(true,true));
+	error_handler_in(BNO055_start_euler_measurement(true,true));*/
 	while(1)
 	{
 		error_handler_print();
+		if(UART0_is_idle())
+		{
+			error_handler_in(UART0_puts("0123456789012345678901234567890123456789\n\r"));
+		}
 	}
 }
 

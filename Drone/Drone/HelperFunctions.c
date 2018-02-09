@@ -128,7 +128,7 @@ StatusCode queue_write(Queue *queue, uint8_t* data, uint16_t Length)
 	node->next = NULL;
 	if (queue->back == NULL) {
 		queue->front = queue->back = node;
-		} else {
+	} else {
 		queue->back->next = node;
 		queue->back = node;
 	}
