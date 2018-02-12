@@ -66,6 +66,11 @@ bool UART0_has_space()
 	return queue_has_space(uart0SendQueue);
 }
 
+uint8_t UART0_get_space()
+{
+	return UART0_QUEUE_MAX_ITEMS - queue_get_item_count(uart0SendQueue);
+}
+
 StatusCode UART0_puts(char Data[])
 {
 	return UART0_put_data((uint8_t*)Data, strlen((char*)Data));

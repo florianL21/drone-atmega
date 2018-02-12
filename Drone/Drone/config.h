@@ -255,15 +255,6 @@ RC_ControlCenter
 
 /*
  *
- *	UARTCOM Configuration
- *
- */
-
-// Maximum amount of different reciver types that are used in the program
-#define UARTCOM_MAX_RECIVE_TYPES 20
-
-/*
- *
  *	BNO055 Configuration
  *
  */

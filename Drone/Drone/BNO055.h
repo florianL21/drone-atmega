@@ -15,6 +15,8 @@
 #include "config.h"
 #include "BNOCOM.h"
 #include "BNO055_reg_table.h"
+#include <stdio.h>
+#include "SerialCOM.h"
 
 struct BNO055_eulerData  
 {

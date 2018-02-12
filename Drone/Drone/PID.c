@@ -182,7 +182,7 @@ StatusCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction)
 {
 	if(pidController == NULL)
 		return PID_ERROR_GOT_NULL_POINTER;
-	if(Direction == 0 || Direction == 1)
+	if(Direction != 0 && Direction != 1)
 		return PID_ERROR_ARGUMENT_OUT_OF_RANGE;
 
 	if(Direction != pidController->controllerDirection)

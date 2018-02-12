@@ -143,15 +143,15 @@ StatusCode BNO055_calibrate()
 	bno_is_busy = true;
 	while(sys != 3)
 	{
-		UART0_puts("sys: ");
-		UART0_put_int(sys);
-		UART0_puts("\n\r");
+		char buffer[20] = "";
+		sprintf(buffer,"Sys: %d", sys);
+		SerialCOM_put_debug(buffer);
 		_Delay(252000);
 		StatusCode readReturn = BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CALIB_STAT, 0, &Data);
 		while(readReturn == BNO055_ERROR && Data == BNO_STATUS_BUS_OVER_RUN_ERROR)
 		{
 			readReturn = BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CALIB_STAT, 0, &Data);
-			UART0_puts("Bus Error\n\r");
+			SerialCOM_put_debug("Bus Error");
 			_Delay(840000);
 		}
 		if(readReturn != SUCCESS && Data != BNO_STATUS_BUS_OVER_RUN_ERROR)

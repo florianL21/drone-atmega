@@ -18,10 +18,9 @@ void message_received(uint8_t* message, uint16_t Length)
 		UART0_set_receiver_length(message[2]+1);
 	} else if(message[Length-1] == 0x03)
 	{
-		//SerialCOM_put_debug_n((char*)message,Length);
 		if(SerialCOM_reciveCallBack != NULL)
 		{
-			SerialCOM_reciveCallBack(Type, message);
+			SerialCOM_reciveCallBack(message, Type);
 		}
 		UART0_set_receiver_length(3);
 	} else
@@ -64,12 +63,44 @@ StatusCode SerialCOM_put_message(uint8_t message[], uint8_t Type, uint8_t Length
 	return errorReturn;
 }
 
+StatusCode SerialCOM_force_put_message(uint8_t message[], uint8_t Type, uint8_t Length)
+{
+	uint8_t *transmissionData = malloc((Length+4)*sizeof(uint8_t));
+	if(transmissionData == NULL)
+		return SerialCOM_ERROR_MALLOC_RETURNED_NULL;
+	if(Length == 0)
+		return SerialCOM_ERROR_INVALID_ARGUMENT;
+	transmissionData[0] = 0x02;
+	transmissionData[1] = Type;
+	transmissionData[2] = Length;
+	memcpy(&transmissionData[3],message, Length);
+	transmissionData[Length+3] = 0x03;
+	uart0_put_raw_data(transmissionData, Length+4);
+	free(transmissionData);
+	return SUCCESS;
+}
+
 StatusCode SerialCOM_put_debug(char Text[])
 {
-	return SerialCOM_put_message(((uint8_t*)Text), 0x01, strlen(Text));
+	return SerialCOM_put_message(((uint8_t*)Text), 0x00, strlen(Text));
 }
 
 StatusCode SerialCOM_put_debug_n(char Text[], uint8_t Length)
 {
-	return SerialCOM_put_message(((uint8_t*)Text), 0x01, Length);
+	return SerialCOM_put_message(((uint8_t*)Text), 0x00, Length);
+}
+
+StatusCode SerialCOM_put_error(char Text[])
+{
+	return SerialCOM_put_message(((uint8_t*)Text), 0x64, strlen(Text));
+}
+
+StatusCode SerialCOM_force_put_error(char Text[])
+{
+	return SerialCOM_force_put_message(((uint8_t*)Text), 0x64, strlen(Text));
+}
+
+uint8_t SerialCOM_get_free_space()
+{
+	return UART0_get_space();
 }

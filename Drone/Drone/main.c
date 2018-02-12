@@ -20,10 +20,7 @@ PIOB->PIO_CODR = PIO_PB27;
 
 
 #include "sam.h"
-#include "uart0.h"
-#include "USART0.h"
 #include "BNO055.h"
-#include "HelperFunctions.h"
 #include "ESCControl.h"
 #include "RCReader.h"
 #include "PID.h"
@@ -39,14 +36,22 @@ uint8_t maximumControlDegree = 10;
 //PID Config:
 float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RoleInput = 0,	PID_RoleOutput = 0,		PID_RoleSetPoint = 0;
+float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
+
 float PitchKp = 0.5,	PitchKi = 0.3,		PitchKd = 0.8;
 float RoleKp = 0.5,		RoleKi = 0.3,		RoleKd = 0.8;
+float YawKp = 0.5,		YawKi = 0.3,		YawKd = 0.8;
 pidData PitchPid;
 pidData RolePid;
 
 #define MAX_ERROR_COUNT 20
 StatusCode errorStack[MAX_ERROR_COUNT] = {0};
 uint8_t errorCount = 0;
+
+//Status variables for whitch values are printing:
+bool printSensorValues = 0;
+bool printRCValues = 0;
+bool printMotorValues = 0;
 
 void error_handler_in(StatusCode errorIn)
 {
@@ -60,18 +65,14 @@ void error_handler_print()
 {
 	if(errorCount != 0)
 	{
-		char CharBuffer[100] = "";
 		char ErrorToCharBuffer[10] = "";
-		sprintf(CharBuffer,"\n\r\n\r\n\r%d Errors have been detected: \n\r", errorCount);
 		for (uint8_t i = 0; i < errorCount; i++)
 		{
 			itoa(errorStack[i], ErrorToCharBuffer, 16);
-			strcat(CharBuffer, ErrorToCharBuffer);
-			strcat(CharBuffer,", ");
+			ErrorToCharBuffer[2]='\0';
+			SerialCOM_put_error(ErrorToCharBuffer);
 		}
 		errorCount = 0;
-		strcat(CharBuffer,"\n\r");
-		uart0_put_raw_data((uint8_t*) CharBuffer, strlen(CharBuffer));
 	}
 }
 
@@ -134,39 +135,104 @@ void DataReady()
 			error_handler_in(esc_set(2, Motor_speeds[1]));
 			error_handler_in(esc_set(3, Motor_speeds[2]));
 			error_handler_in(esc_set(4, Motor_speeds[3]));
-		
-		
-			/*
-			if(UART0_is_idle())
+			
+			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues)
 			{
-				char buffer[100] = "";
-				sprintf(buffer, "PID:\tPitch: %4d\tRole: %4d\n\r", MappedPitch, MappedRole);
-				UART0_puts(buffer);
-				sprintf(buffer, "Sensor:\tPitch: %3.3f\tRole: %3.3f\n\r", PID_PitchInput, PID_RoleInput);
-				error_handler_in(UART0_puts(buffer));
-			}//*/
-			/*
-			if(UART0_is_idle())
-			{
-				char buffer[100] = "";
-				sprintf(buffer, "In: %3.3f\tOut: %3.3f\tSet: %3.3f\n\r", PID_RoleInput, PID_RoleOutput, PID_RoleSetPoint);
-				error_handler_in(UART0_puts(buffer));
-			}//*/
-			/*
-			if(UART0_is_idle())
-			{
-				char buffer[100] = "";
-				sprintf(buffer, "role: %3.3f\tpitch: %3.3f\theading: %3.3f\n\r", SensorValues.role, SensorValues.pitch, SensorValues.heading);
-				error_handler_in(UART0_puts(buffer));
-			}//*/
-			/*
-			if(UART0_is_idle())
-			{
-				char buffer[100] = "";
-				sprintf(buffer, "throttle: %6d\n\r", RemoteValues.Throttle);
-				error_handler_in(UART0_puts(buffer));
-			}//*/
+				//char test = SerialCOM_get_free_space()+'0';
+				//SerialCOM_put_debug_n(&test,1);
+				//SerialCOM_put_debug("OK");
+				if(printMotorValues == true)
+				{
+					uint8_t buffer[12] = {0};
+					buffer[0] = '0';
+					buffer[1] = (Motor_speeds[0] >> 8) & 0x00FF;
+					buffer[2] = Motor_speeds[0] & 0x00FF;
+					buffer[3] = '1';
+					buffer[4] = (Motor_speeds[1] >> 8) & 0x00FF;
+					buffer[5] = Motor_speeds[1] & 0x00FF;
+					buffer[6] = '2';
+					buffer[7] = (Motor_speeds[2] >> 8) & 0x00FF;
+					buffer[8] = Motor_speeds[2] & 0x00FF;
+					buffer[9] = '3';
+					buffer[10] = (Motor_speeds[3] >> 8) & 0x00FF;
+					buffer[11] = Motor_speeds[3] & 0x00FF;
+					//SerialCOM_put_debug("OK");
+					SerialCOM_put_message(buffer, 0x01, 12);
+				}
+				
+				if(printRCValues == true)
+				{
+					uint8_t buffer[14] = {0};
+					buffer[0] = 'T';
+					buffer[1] = (RemoteValues.Throttle >> 8) & 0x00FF;
+					buffer[2] = RemoteValues.Throttle & 0x00FF;
+					buffer[3] = 'R';
+					buffer[4] = (RemoteValues.Role >> 8) & 0x00FF;
+					buffer[5] = RemoteValues.Role & 0x00FF;
+					buffer[6] = 'P';
+					buffer[7] = (RemoteValues.Pitch >> 8) & 0x00FF;
+					buffer[8] = RemoteValues.Pitch & 0x00FF;
+					buffer[9] = 'Y';
+					buffer[10] = (RemoteValues.Yaw >> 8) & 0x00FF;
+					buffer[11] = RemoteValues.Yaw & 0x00FF;
+					buffer[12] = 'G';
+					buffer[13] = RemoteValues.Gear;
+					SerialCOM_put_message(buffer, 0x02, 14);
+				}
+				
+				if(printSensorValues == true)
+				{
+					//multiplying float values with factor 100 for transmission
+					uint16_t role = SensorValues.pitch*100;
+					uint16_t pitch = SensorValues.role*100;
+					uint16_t yaw = SensorValues.heading*100;
+					
+					uint8_t buffer[9] = {0};
+					buffer[0] = 'R';
+					buffer[1] = (role >> 8) & 0x00FF;
+					buffer[2] = role & 0x00FF;
+					buffer[3] = 'P';
+					buffer[4] = (pitch >> 8) & 0x00FF;
+					buffer[5] = pitch & 0x00FF;
+					buffer[6] = 'P';
+					buffer[7] = (yaw >> 8) & 0x00FF;
+					buffer[8] = yaw & 0x00FF;
+					SerialCOM_put_message(buffer, 0x03, 9);
+				}
+			}
 		}
+	}
+}
+
+
+//0x01: Motor
+//0x02: RC
+//0x03: Sensor
+void message_from_PC(uint8_t* message, uint8_t Type)
+{
+	
+	switch(Type)
+	{
+		case 0x01:
+			if(message[0] == 'I')
+				printMotorValues = true;
+			else if(message[0] == 'O')
+				printMotorValues = false;
+		break;
+		case 0x02:
+			if(message[0] == 'I')
+				printRCValues = true;
+			else if(message[0] == 'O')
+				printRCValues = false;
+		break;
+		case 0x03:
+			if(message[0] == 'I')
+				printSensorValues = true;
+			else if(message[0] == 'O')
+				printSensorValues = false;
+		break;
+		default:
+		break;
 	}
 }
 
@@ -175,10 +241,11 @@ int main(void)
 	SystemInit();
 	configure_wdt();
 	error_handler_in(SerialCOM_init());
-	/*error_handler_in(UART0_puts("Go!\n\r"));*/
+	error_handler_in(SerialCOM_register_call_back(message_from_PC));
 	//BNO init:
-	/*error_handler_in(BNO055_init(false));
-	error_handler_in(UART0_puts("Calib OK\n\r"));
+	error_handler_in(SerialCOM_put_debug("Start BNO Init"));
+	error_handler_in(BNO055_init(false));
+	error_handler_in(SerialCOM_put_debug("Calib OK"));
 	error_handler_in(BNO055_register_error_callback(BNO_Error));
 	
 	error_handler_in(BNO055_register_data_ready_callback(DataReady));
@@ -189,13 +256,13 @@ int main(void)
 	PID_Init();
 	error_handler_in(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-180,180,10));
 	error_handler_in(PID_Initialize(&RolePid, &PID_RoleInput, &PID_RoleOutput, &PID_RoleSetPoint, RoleKp, RoleKi, RoleKd,-90,90,10));
-	error_handler_in(UART0_puts("ALL INITS DONE!\n\r"));
-	error_handler_in(BNO055_start_euler_measurement(true,true));*/
-	error_handler_in(SerialCOM_put_debug("ab"));
+	error_handler_in(BNO055_start_euler_measurement(true,true));
+	error_handler_print();
+	error_handler_in(SerialCOM_put_debug("Init Done!"));
 	while(1)
 	{
 		error_handler_print();
-		if(UART0_has_space())
+		//if(UART0_has_space())
 		{
 			//error_handler_in(SerialCOM_put_debug("This message tests the correctness of the memmory management"));
 			

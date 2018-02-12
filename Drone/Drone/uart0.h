@@ -26,8 +26,10 @@ StatusCode UART0_set_receiver_length(uint32_t Length);
 StatusCode UART0_register_received_callback(UART_RECV_CALLBACK callBack);
 bool UART0_has_space();
 bool UART0_is_idle();
+uint8_t UART0_get_space();
 StatusCode UART0_put_int(int num);
 StatusCode UART0_put_float(float num);
+
 
 StatusCode UART0_put_int_blocking(int num);
 StatusCode UART0_puts_blocking(char sendData[]);
