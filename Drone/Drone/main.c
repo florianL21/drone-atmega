@@ -27,6 +27,7 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "ESCControl.h"
 #include "RCReader.h"
 #include "PID.h"
+#include "SerialCOM.h"
 
 BNO055_eulerData SensorValues;
 //Init variables for the drone programm
@@ -173,7 +174,7 @@ int main(void)
 {
 	SystemInit();
 	configure_wdt();
-	error_handler_in(UART0_init(115200, 1));
+	error_handler_in(SerialCOM_init());
 	/*error_handler_in(UART0_puts("Go!\n\r"));*/
 	//BNO init:
 	/*error_handler_in(BNO055_init(false));
@@ -190,13 +191,16 @@ int main(void)
 	error_handler_in(PID_Initialize(&RolePid, &PID_RoleInput, &PID_RoleOutput, &PID_RoleSetPoint, RoleKp, RoleKi, RoleKd,-90,90,10));
 	error_handler_in(UART0_puts("ALL INITS DONE!\n\r"));
 	error_handler_in(BNO055_start_euler_measurement(true,true));*/
+	error_handler_in(SerialCOM_put_debug("ab"));
 	while(1)
 	{
 		error_handler_print();
-		if(UART0_is_idle())
+		if(UART0_has_space())
 		{
-			error_handler_in(UART0_puts("0123456789012345678901234567890123456789\n\r"));
+			//error_handler_in(SerialCOM_put_debug("This message tests the correctness of the memmory management"));
+			
 		}
+		//_Delay(1000000);
 	}
 }
 

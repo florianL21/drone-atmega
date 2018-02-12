@@ -87,7 +87,16 @@ typedef enum {
 	PID_ERROR										= 0x70,
 	PID_ERROR_ARGUMENT_OUT_OF_RANGE					= 0x73,
 	PID_ERROR_GOT_NULL_POINTER						= 0x74,
-	PID_ERROR_INVALID_ARGUMENT						= 0x77
+	PID_ERROR_INVALID_ARGUMENT						= 0x77,
+	
+	//SerialCOM:
+	SerialCOM_ERROR									= 0x80,
+	SerialCOM_ERROR_ARGUMENT_OUT_OF_RANGE			= 0x83,
+	SerialCOM_ERROR_GOT_NULL_POINTER				= 0x84,
+	SerialCOM_ERROR_MALLOC_RETURNED_NULL			= 0x85,
+	SerialCOM_ERROR_NOT_READY_FOR_OPERATION			= 0x86,
+	SerialCOM_ERROR_INVALID_ARGUMENT				= 0x87,
+	SerialCOM_ERROR_QUEUE_WAS_EMPTY					= 0x88
 
 }StatusCode;
 
@@ -105,7 +114,7 @@ typedef enum {
  */
 
 // CPU frequency
-#define F_CPU 16000000
+#define F_CPU 84000000
 
 
 /*

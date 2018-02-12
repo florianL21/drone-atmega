@@ -192,6 +192,12 @@
     <Compile Include="RCReader.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="SerialCOM.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="SerialCOM.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="syscalls.c">
       <SubType>compile</SubType>
     </Compile>
