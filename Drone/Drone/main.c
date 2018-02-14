@@ -52,6 +52,7 @@ uint8_t errorCount = 0;
 bool printSensorValues = 0;
 bool printRCValues = 0;
 bool printMotorValues = 0;
+uint8_t sendCount = 0;
 
 void error_handler_in(StatusCode errorIn)
 {
@@ -136,8 +137,9 @@ void DataReady()
 			error_handler_in(esc_set(3, Motor_speeds[2]));
 			error_handler_in(esc_set(4, Motor_speeds[3]));
 			
-			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues)
+			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
 			{
+				sendCount = 0;
 				//char test = SerialCOM_get_free_space()+'0';
 				//SerialCOM_put_debug_n(&test,1);
 				//SerialCOM_put_debug("OK");
@@ -183,21 +185,40 @@ void DataReady()
 				if(printSensorValues == true)
 				{
 					//multiplying float values with factor 100 for transmission
-					uint16_t role = SensorValues.pitch*100;
-					uint16_t pitch = SensorValues.role*100;
-					uint16_t yaw = SensorValues.heading*100;
+					bool roleIsNegative, pitchIsNegative, yawIsNegative;
+					roleIsNegative = SensorValues.pitch < 0;
+					pitchIsNegative = SensorValues.role < 0;
+					yawIsNegative = SensorValues.heading < 0;
 					
-					uint8_t buffer[9] = {0};
+					uint16_t role, pitch, yaw;
+					
+					if(roleIsNegative)
+						role = SensorValues.pitch*100*-1;
+					else
+						role = SensorValues.pitch*100;
+					if(pitchIsNegative)
+						pitch = SensorValues.role*100*-1;
+					else
+						pitch = SensorValues.role*100;
+					if(yawIsNegative)
+						yaw = SensorValues.heading*100*-1;
+					else
+						yaw = SensorValues.heading*100;
+					
+					uint8_t buffer[12] = {0};
 					buffer[0] = 'R';
-					buffer[1] = (role >> 8) & 0x00FF;
-					buffer[2] = role & 0x00FF;
-					buffer[3] = 'P';
-					buffer[4] = (pitch >> 8) & 0x00FF;
-					buffer[5] = pitch & 0x00FF;
-					buffer[6] = 'P';
-					buffer[7] = (yaw >> 8) & 0x00FF;
-					buffer[8] = yaw & 0x00FF;
-					SerialCOM_put_message(buffer, 0x03, 9);
+					buffer[1] = roleIsNegative;
+					buffer[2] = (role >> 8) & 0x00FF;
+					buffer[3] = role & 0x00FF;
+					buffer[4] = 'P';
+					buffer[5] = pitchIsNegative;
+					buffer[6] = (pitch >> 8) & 0x00FF;
+					buffer[7] = pitch & 0x00FF;
+					buffer[8] = 'Y';
+					buffer[9] = yawIsNegative;
+					buffer[10] = (yaw >> 8) & 0x00FF;
+					buffer[11] = yaw & 0x00FF;
+					SerialCOM_put_message(buffer, 0x03, 12);
 				}
 			}
 		}
