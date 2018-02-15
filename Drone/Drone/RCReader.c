@@ -143,7 +143,7 @@ RemoteControlValues rc_read_values()
 			returnValues.Throttle = FilteredValue - RC_CCONTROL_MIN__THROTTLE;
 	}
 	FilteredValue = median_filter_get(&rcreader_filter_role);
-	returnValues.Role = calculate_control_value(FilteredValue, &returnValues.error, RC_CONTROL_MIN__ROLE, RC_CONTROL_MAX__ROLE, RC_CONTROL_CENTER__ROLE, RC_CONTROL_DEAD_SPOT__ROLE);
+	returnValues.Roll = calculate_control_value(FilteredValue, &returnValues.error, RC_CONTROL_MIN__ROLE, RC_CONTROL_MAX__ROLE, RC_CONTROL_CENTER__ROLE, RC_CONTROL_DEAD_SPOT__ROLE);
 	FilteredValue = median_filter_get(&rcreader_filter_pitch);
 	returnValues.Pitch = calculate_control_value(FilteredValue, &returnValues.error, RC_CONTROL_MIN__PITCH, RC_CONTROL_MAX__PITCH, RC_CONTROL_CENTER__PITCH, RC_CONTROL_DEAD_SPOT__PITCH);
 	FilteredValue = median_filter_get(&rcreader_filter_yaw);

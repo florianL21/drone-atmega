@@ -8,13 +8,8 @@
 #include "BNO055.h"
 
 
-/*Predefined bno constants*/
-#define BNO055_ID			0xA0
-#define BNO_CONFIG_MODE		0x00
-#define BNO_PWR_MODE_NORMAL	0x00
-#define BNO_PAGE_ID0		0x00
-#define BNO_INTERNAL_OSC	0x00
-#define FUSION_MODE_NDOF	0x0C
+
+
 
 
 /***************************************************************************************************
@@ -38,13 +33,14 @@ BNO055_DATA_READY_CALLBACK bno_data_ready_callback = NULL;
 BNO055_ERROR_CALLBACK bno_error_callback = NULL;
 bool bno_measureContinous = false;
 bool bno_triggerCallback = false;
-BNO055_eulerData lastMeasuredData;
+BNO055_Data lastMeasuredData;
 bool bno_is_busy = false;
+uint8_t bnoReadRegister = 0;
 
 
 
 
-StatusCode BNO055_init(bool calibrationNeeded)
+StatusCode BNO055_init_fusion_mode(bool calibrationNeeded)
 {
 	bno_is_busy = true;
 	StatusCode error_return;
@@ -52,7 +48,6 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	DEFUALT_ERROR_HANDLER1(BNOCOM_Init(bno_runtime_success), error_return);
 	
 	DEFUALT_ERROR_HANDLER1(BNOCOM_register_error_callback(bno_runtime_error), error_return);
-	//UART0_puts("INIT\n\r");
 	//Wait for USART0 to clear its backlog if there is any
 	
 	while(!USART0_is_idle());
@@ -73,12 +68,11 @@ StatusCode BNO055_init(bool calibrationNeeded)
 	//sensor defaults to PAGE_ID -> PAGE0
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0), error_return);
 	
-	//UART0_puts("1");
 	//Set output units:
-	Data =	(0<<7) | //Orientation = Windows
+	Data =	(0<<7) | //Format = Windows
 			(0<<4) | //Temperature = Celsius
 			(0<<2) | //Euler = Degrees
-			(1<<1) | //Gyro = Rads
+			(1<<1) | //Gyro = Rad/s
 			(0<<0);  //Accelerometer = m/s^2
 	_Delay(1000000);
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data), error_return);
@@ -96,41 +90,79 @@ StatusCode BNO055_init(bool calibrationNeeded)
 		//Switch to Config Mode
 		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE), error_return);
 		
-		/*//read Calibration data
-		uint8_t dataLength = 22;
-		uint8_t CalibData[22] = {0};
-		DEFUALT_ERROR_HANDLER1(BNOCOM_read_and_wait_for_response(BNO_REG_ACC_OFFSET_X, 0, CalibData, &dataLength), error_return);
-		
-		//write Data to EEPROM
-		for(int i=0; i<=(CALIB_DATA_END-CALIB_DATA_START); i++)
-			EEPROM_write(CALIB_DATA_START+i, CalibData[i]);*/
+				
+		//TODO: write Data to EEPROM
 			
 		
 	}else{
-		/*//read calibration data from EEPROM
-		uint8_t CalibData[22] = {0};
-		for(int i=0; i<=(CALIB_DATA_END-CALIB_DATA_START); i++)
-		{
-			CalibData[i] = EEPROM_read(CALIB_DATA_START+i);
-		}
-	
-		//switch to config mode
-		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE), error_return);
-		
-		//write calibration data
-		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response(BNO_REG_ACC_OFFSET_X, 0, CalibData, 22), error_return);
-		*/
+		//TODO: read calibration data from EEPROM
 	}
 	
 	//Set Operation Mode to NDOF (nine degrees of freedom)
 	DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, FUSION_MODE_NDOF), error_return);
 	//Initialize data struct to zero
-	lastMeasuredData.role = 0;
-	lastMeasuredData.pitch = 0;
-	lastMeasuredData.heading = 0;
+	lastMeasuredData.X = 0;
+	lastMeasuredData.Y = 0;
+	lastMeasuredData.Z = 0;
 	bno_is_busy = false;
 	//Initialization finished
 	return SUCCESS;
+}
+
+StatusCode BNO055_init_non_fusion_mode(uint8_t bno_mode_register)
+{
+	if(bno_mode_register >= 0x01 && bno_mode_register <= 0x07)
+	{
+		bno_is_busy = true;
+		StatusCode error_return;
+		
+		DEFUALT_ERROR_HANDLER1(BNOCOM_Init(bno_runtime_success), error_return);
+		
+		DEFUALT_ERROR_HANDLER1(BNOCOM_register_error_callback(bno_runtime_error), error_return);
+		
+		//Wait for USART0 to clear its backlog if there is any
+		while(!USART0_is_idle());
+		
+		//Check for right device
+		//Read Chip-id
+		uint8_t Data = 0;
+		
+		DEFUALT_ERROR_HANDLER1(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, 0, &Data), error_return);
+		if(Data != BNO055_ID)
+		return BNO055_ERROR_WRONG_DEVICE_ID;
+		
+		//sensor defaults to OPR_MODE -> config mode
+		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE), error_return);
+		
+		//sensor defaults to PWR_MODE -> normal mode
+		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PWR_MODE, 0, BNO_PWR_MODE_NORMAL), error_return);
+		
+		//sensor defaults to PAGE_ID -> PAGE0
+		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0), error_return);
+		
+		//Set output units:
+		Data =	(0<<7) | //Format = Windows
+		(0<<4) | //Temperature = Celsius
+		(0<<2) | //Euler = Degrees
+		(0<<1) | //Gyro = Degrees/s
+		(0<<0);  //Accelerometer = m/s^2
+		_Delay(1000000);
+		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data), error_return);
+		_Delay(10000);
+		//sensor defaults to SYS_TRIGGER -> Internal oscillator
+		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_SYS_TRIGGER, 0, BNO_INTERNAL_OSC), error_return);
+		
+		//Set Operation Mode to NDOF (nine degrees of freedom)
+		DEFUALT_ERROR_HANDLER1(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, bno_mode_register), error_return);
+		//Initialize data struct to zero
+		lastMeasuredData.X = 0;
+		lastMeasuredData.Y = 0;
+		lastMeasuredData.Z = 0;
+		bno_is_busy = false;
+		//Initialization finished
+		return SUCCESS;
+	}
+	return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
 }
 
 StatusCode BNO055_calibrate()
@@ -206,29 +238,19 @@ void bno_runtime_success(uint8_t* sensorData, uint8_t Length)
 {
 	if((sensorData == NULL || Length == 0) && bno_error_callback != NULL)
 		bno_error_callback(BNO_TRANSMIT_ERROR, BNO055_ERROR_GOT_NULL_POINTER);
-	if(Length == 6) // Euler Data
-	{
-		int16_t mPitch = 0;
-		int16_t mRoll = 0;
-		int16_t mHeading = 0;
+	if(Length == 6) // Data
+	{ 
+		lastMeasuredData.X = (((uint16_t)sensorData[1]) << 8) | sensorData[0];
+		lastMeasuredData.Y = (((uint16_t)sensorData[3]) << 8) | sensorData[2];
+		lastMeasuredData.Z = (((uint16_t)sensorData[5]) << 8) | sensorData[4];
 		
-		//Convert the uint8_t datasets to int16_t
-		mHeading += (sensorData[1] << 8) + sensorData[0];
-		mRoll += (sensorData[3] << 8) + sensorData[2];
-		mPitch += (sensorData[5] << 8) + sensorData[4];
-			
-		//Convert to Degrees
-		//1 Degree = 16 LSB	
-		lastMeasuredData.heading = (float) mHeading / 16.0;
-		lastMeasuredData.role = (float) mRoll / 16.0;
-		lastMeasuredData.pitch = (float) mPitch / 16.0;
 	}
 
 	if(bno_data_ready_callback != NULL && bno_triggerCallback == true)
 		bno_data_ready_callback();
 	if(bno_measureContinous == true)
 	{
-		BNOCOM_register_read_by_table(BNO_REG_EUL_DATA_X, 0, 6);
+		BNOCOM_register_read_by_table(bnoReadRegister, 0, 6);
 		bno_is_busy = true;
 	}
 	bno_is_busy = false;
@@ -251,15 +273,22 @@ StatusCode BNO055_stop_continous_measurement()
 	return SUCCESS;
 }
 
-BNO055_eulerData BNO055_get_euler_measurement_data()
+BNO055_Data BNO055_get_measurement_data()
 {
 	return lastMeasuredData;
 }
 
-StatusCode BNO055_start_euler_measurement(bool measureContinous, bool triggerCallback)
+StatusCode BNO055_start_measurement(bool measureContinous, bool triggerCallback, uint8_t bnoMeasurementType)
 {
-	bno_is_busy = true;
-	bno_measureContinous = measureContinous;
-	bno_triggerCallback = triggerCallback;
-	return BNOCOM_register_read_by_table(BNO_REG_EUL_DATA_X, 0, 6);
+	if(bnoMeasurementType == BNO_REG_ACC_DATA_X || bnoMeasurementType == BNO_REG_MAG_DATA_X 
+		|| bnoMeasurementType == BNO_REG_GYR_DATA_X || bnoMeasurementType == BNO_REG_EUL_DATA_X 
+		|| bnoMeasurementType == BNO_REG_LIA_DATA_X || bnoMeasurementType == BNO_REG_GRV_DATA_X)
+	{
+		bno_is_busy = true;
+		bno_measureContinous = measureContinous;
+		bno_triggerCallback = triggerCallback;
+		bnoReadRegister = bnoMeasurementType;
+		return BNOCOM_register_read_by_table(bnoReadRegister, 0, 6);
+	}
+	return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
 }

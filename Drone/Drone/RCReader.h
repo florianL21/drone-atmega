@@ -17,7 +17,7 @@
 struct RemoteControlValues
 {
 	uint16_t Throttle;
-	uint16_t Role;
+	uint16_t Roll;
 	uint16_t Pitch;
 	uint16_t Yaw;
 	bool Gear;
