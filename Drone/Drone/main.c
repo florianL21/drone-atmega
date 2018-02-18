@@ -41,7 +41,7 @@ float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
 
 float PitchKp = 0.5,	PitchKi = 0.3,		PitchKd = 0.8;
-float RoleKp = 0.5,		RoleKi = 0.3,		RoleKd = 0.8;
+float RollKp = 0.5,		RollKi = 0.3,		RollKd = 0.8;
 float YawKp = 0.5,		YawKi = 0.3,		YawKd = 0.8;
 pidData PitchPid;
 pidData RolePid;
@@ -285,13 +285,99 @@ void DataReady()
 	}
 }
 
+void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
+{
+	uint8_t buffer[13] = {0};
+	bool IsNegative = kp < 0;
+	uint16_t NumValue;
+	
+	buffer[0] = PIDIdentifier;
+	buffer[1] = 'P';
+	buffer[2] = IsNegative;
+	if(IsNegative)
+	{
+		NumValue = kp * -100;
+	}
+	else
+	{
+		NumValue = kp * 100;
+	}
+	buffer[3] = (NumValue >> 8) & 0x00FF;
+	buffer[4] = NumValue & 0x00FF;
+	
+	buffer[5] = 'I';
+	IsNegative = ki < 0;
+	buffer[6] = IsNegative;
+	if(IsNegative)
+	{
+		NumValue = ki * -100;
+	}
+	else
+	{
+		NumValue = ki * 100;
+	}
+	buffer[7] = (NumValue >> 8) & 0x00FF;
+	buffer[8] = NumValue & 0x00FF;
+	
+	buffer[9] = 'D';
+	IsNegative = kd < 0;
+	buffer[10] = IsNegative;
+	if(IsNegative)
+	{
+		NumValue = kd * -100;
+	}
+	else
+	{
+		NumValue = kd * 100;
+	}
+	buffer[11] = (NumValue >> 8) & 0x00FF;
+	buffer[12] = NumValue & 0x00FF;
+	SerialCOM_put_message(buffer, 0x04, 13);
+}
+
+void gotValueFromPC(uint8_t Identifier, float recValue)
+{
+	switch(Identifier)
+	{
+		case 0x01: //Roll P
+			RollKp = recValue;
+		break;
+		case 0x02: //Roll I
+			RollKi = recValue;
+		break;
+		case 0x03: //Roll D
+			RollKd = recValue;
+		break;
+		case 0x04: //Pitch P
+			PitchKp = recValue;
+		break;
+		case 0x05: //Pitch I
+			PitchKi = recValue;
+		break;
+		case 0x06: //Pitch D
+			PitchKd = recValue;
+		break;
+		case 0x07: //Yaw P
+			YawKp = recValue;
+		break;
+		case 0x08: //Yaw I
+			YawKi = recValue;
+		break;
+		case 0x09: //Yaw D
+			YawKd = recValue;
+		break;
+	}
+}
 
 //0x01: Motor
 //0x02: RC
 //0x03: Sensor
+//0x04: Set current values as Sensor offset
+//0x05: Send PID Values to PC
+//0x06: Get Value from PC
 void message_from_PC(uint8_t* message, uint8_t Type)
 {
-	
+	float recValue;
 	switch(Type)
 	{
 		case 0x01:
@@ -318,6 +404,25 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				sensorOffsetX = SensorValues.X;
 				sensorOffsetY = SensorValues.Y;
 			}
+		break;
+		case 0x05:
+			if(message[0] == 'R')
+			{
+				sendPIDValuesToPC('R', RollKp, RollKi, RollKd);
+			} else if(message[0] == 'P')
+			{
+				sendPIDValuesToPC('P', PitchKp, PitchKi, PitchKd);
+			} else if(message[0] == 'Y')
+			{
+				sendPIDValuesToPC('Y', YawKp, YawKi, YawKd);
+			}
+		break;
+		case 0x06:
+			recValue = (message[2] << 8) & message[3];
+			recValue /= 100;
+			if(message[1] == 1)
+				recValue *= -1;
+			gotValueFromPC(message[0], recValue);
 		break;
 		default:
 		break;
@@ -354,7 +459,7 @@ int main(void)
 	
 	PID_Init();
 	error_handler_in(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-250,250,10));
-	error_handler_in(PID_Initialize(&RolePid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RoleKp, RoleKi, RoleKd,-250,250,10));
+	error_handler_in(PID_Initialize(&RolePid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd,-250,250,10));
 	error_handler_in(BNO055_start_measurement(true, true, BNO_MEASURE));
 	error_handler_print();
 	error_handler_in(SerialCOM_put_debug("Init Done!"));
