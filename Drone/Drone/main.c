@@ -418,7 +418,7 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			}
 		break;
 		case 0x06:
-			recValue = (message[2] << 8) & message[3];
+			recValue = (message[2] << 8) | message[3];
 			recValue /= 100;
 			if(message[1] == 1)
 				recValue *= -1;
