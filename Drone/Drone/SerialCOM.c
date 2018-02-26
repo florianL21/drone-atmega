@@ -56,7 +56,7 @@ StatusCode SerialCOM_put_message(uint8_t message[], uint8_t Type, uint8_t Length
 	transmissionData[0] = 0x02;
 	transmissionData[1] = Type;
 	transmissionData[2] = Length;
-	memcpy(&transmissionData[3],message, Length);
+	memcpy(&transmissionData[3], message, Length);
 	transmissionData[Length+3] = 0x03;
 	StatusCode errorReturn = UART0_put_data(transmissionData, Length+4);
 	free(transmissionData);

@@ -40,9 +40,9 @@ float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
 
-float PitchKp = 0.5,	PitchKi = 0.3,		PitchKd = 0.8;
-float RollKp = 0.5,		RollKi = 0.3,		RollKd = 0.8;
-float YawKp = 0.5,		YawKi = 0.3,		YawKd = 0.8;
+float PitchKp = 0.0,	PitchKi = 0.1,		PitchKd = 0.2;
+float RollKp = 12.34,		RollKi = 0.4,		RollKd = 0.5;
+float YawKp = 0.6,		YawKi = 0.7,		YawKd = 0.8;
 pidData PitchPid;
 pidData RolePid;
 
@@ -197,16 +197,16 @@ void DataReady()
 				{
 					uint8_t buffer[12] = {0};
 					buffer[0] = '0';
-					buffer[1] = (Motor_speeds[0] >> 8) & 0x00FF;
+					buffer[1] = (Motor_speeds[0] & 0xFF00) >> 8;
 					buffer[2] = Motor_speeds[0] & 0x00FF;
 					buffer[3] = '1';
-					buffer[4] = (Motor_speeds[1] >> 8) & 0x00FF;
+					buffer[4] = (Motor_speeds[1] & 0xFF00) >> 8;
 					buffer[5] = Motor_speeds[1] & 0x00FF;
 					buffer[6] = '2';
-					buffer[7] = (Motor_speeds[2] >> 8) & 0x00FF;
+					buffer[7] = (Motor_speeds[2] & 0xFF00) >> 8;
 					buffer[8] = Motor_speeds[2] & 0x00FF;
 					buffer[9] = '3';
-					buffer[10] = (Motor_speeds[3] >> 8) & 0x00FF;
+					buffer[10] = (Motor_speeds[3] & 0xFF00) >> 8;
 					buffer[11] = Motor_speeds[3] & 0x00FF;
 					//SerialCOM_put_debug("OK");
 					SerialCOM_put_message(buffer, 0x01, 12);
@@ -216,16 +216,16 @@ void DataReady()
 				{
 					uint8_t buffer[14] = {0};
 					buffer[0] = 'T';
-					buffer[1] = (RemoteValues.Throttle >> 8) & 0x00FF;
+					buffer[1] = (RemoteValues.Throttle & 0xFF00) >> 8;
 					buffer[2] = RemoteValues.Throttle & 0x00FF;
 					buffer[3] = 'R';
-					buffer[4] = (RemoteValues.Roll >> 8) & 0x00FF;
+					buffer[4] = (RemoteValues.Roll & 0xFF00) >> 8;
 					buffer[5] = RemoteValues.Roll & 0x00FF;
 					buffer[6] = 'P';
-					buffer[7] = (RemoteValues.Pitch >> 8) & 0x00FF;
+					buffer[7] = (RemoteValues.Pitch & 0xFF00) >> 8;
 					buffer[8] = RemoteValues.Pitch & 0x00FF;
 					buffer[9] = 'Y';
-					buffer[10] = (RemoteValues.Yaw >> 8) & 0x00FF;
+					buffer[10] = (RemoteValues.Yaw & 0xFF00) >> 8;
 					buffer[11] = RemoteValues.Yaw & 0x00FF;
 					buffer[12] = 'G';
 					buffer[13] = RemoteValues.Gear;
@@ -243,12 +243,12 @@ void DataReady()
 					buffer[1] = XIsNegative;
 					if(XIsNegative)
 					{
-						buffer[2] = (CorrectedValues.X*-1 >> 8) & 0x00FF;
+						buffer[2] = (CorrectedValues.X*-1 & 0xFF00) >> 8;
 						buffer[3] = CorrectedValues.X*-1 & 0x00FF;
 					}
 					else
 					{
-						buffer[2] = (CorrectedValues.X >> 8) & 0x00FF;
+						buffer[2] = (CorrectedValues.X & 0xFF00) >> 8;
 						buffer[3] = CorrectedValues.X & 0x00FF;
 					}
 					
@@ -256,12 +256,12 @@ void DataReady()
 					buffer[5] = YIsNegative;
 					if(YIsNegative)
 					{
-						buffer[6] = (CorrectedValues.Y*-1 >> 8) & 0x00FF;
+						buffer[6] = (CorrectedValues.Y*-1 & 0xFF00) >> 8;
 						buffer[7] = CorrectedValues.Y*-1 & 0x00FF;
 					}
 					else
 					{
-						buffer[6] = (CorrectedValues.Y >> 8) & 0x00FF;
+						buffer[6] = (CorrectedValues.Y & 0xFF00) >> 8;
 						buffer[7] = CorrectedValues.Y & 0x00FF;
 					}
 					
@@ -269,12 +269,12 @@ void DataReady()
 					buffer[9] = ZIsNegative;
 					if(ZIsNegative)
 					{
-						buffer[10] = (CorrectedValues.Z*-1 >> 8) & 0x00FF;
+						buffer[10] = (CorrectedValues.Z*-1 & 0xFF00) >> 8;
 						buffer[11] = CorrectedValues.Z*-1 & 0x00FF;
 					}
 					else
 					{
-						buffer[10] = (CorrectedValues.Z >> 8) & 0x00FF;
+						buffer[10] = (CorrectedValues.Z& 0xFF00) >> 8;
 						buffer[11] = CorrectedValues.Z & 0x00FF;
 					}
 					
@@ -302,7 +302,7 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 	{
 		NumValue = kp * 100;
 	}
-	buffer[3] = (NumValue >> 8) & 0x00FF;
+	buffer[3] = (NumValue & 0xFF00) >> 8;
 	buffer[4] = NumValue & 0x00FF;
 	
 	buffer[5] = 'I';
@@ -316,7 +316,7 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 	{
 		NumValue = ki * 100;
 	}
-	buffer[7] = (NumValue >> 8) & 0x00FF;
+	buffer[7] = (NumValue & 0xFF00) >> 8;
 	buffer[8] = NumValue & 0x00FF;
 	
 	buffer[9] = 'D';
@@ -330,7 +330,7 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 	{
 		NumValue = kd * 100;
 	}
-	buffer[11] = (NumValue >> 8) & 0x00FF;
+	buffer[11] = (NumValue & 0xFF00) >> 8;
 	buffer[12] = NumValue & 0x00FF;
 	SerialCOM_put_message(buffer, 0x04, 13);
 }
