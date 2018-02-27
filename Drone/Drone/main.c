@@ -40,9 +40,9 @@ float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
 
-float PitchKp = 0.0,	PitchKi = 0.1,		PitchKd = 0.2;
-float RollKp = 12.34,		RollKi = 0.4,		RollKd = 0.5;
-float YawKp = 0.6,		YawKi = 0.7,		YawKd = 0.8;
+float PitchKp = 0.1,	PitchKi = 0.1,		PitchKd = 0.1;
+float RollKp = 0.1,		RollKi = 0.1,		RollKd = 0.1;
+float YawKp = 0.1,		YawKi = 0.1,		YawKd = 0.1;
 pidData PitchPid;
 pidData RolePid;
 
@@ -114,28 +114,29 @@ void DataReady()
 		if(RemoteValues.error != true)
 		{
 			BNO055_Data CorrectedValues;
-			CorrectedValues.X = SensorValues.X - sensorOffsetX;
-			CorrectedValues.Y = SensorValues.Y - sensorOffsetY;
-			CorrectedValues.Z = SensorValues.Z;
+			CorrectedValues.X	= SensorValues.X - sensorOffsetX;
+			CorrectedValues.Y	= SensorValues.Y - sensorOffsetY;
+			CorrectedValues.Z	= SensorValues.Z;
 			
 			PID_PitchInput		= CorrectedValues.X;
 			PID_RollInput		= CorrectedValues.Y;
-			PID_PitchSetPoint	= 0;
-			PID_RollSetPoint	= 0;
+			
+			PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -50, 50);
+			PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -50, 50);
 			
 			// Compute new PID output value
 			if (needComputePitch)
-			error_handler_in(PID_Compute(&PitchPid));
+				error_handler_in(PID_Compute(&PitchPid));
 			if (needComputeRole)
-			error_handler_in(PID_Compute(&RolePid));
-			float factor = 0.0005;
-			int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
-			int16_t RoleAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
+				error_handler_in(PID_Compute(&RolePid));
+			//float factor = 0.0005;
+			//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
+			//int16_t RoleAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
 			
-			Motor_speeds[0] = RemoteValues.Throttle + PitchAdjust + RoleAdjust;// - MappedYaw;
-			Motor_speeds[1] = RemoteValues.Throttle + PitchAdjust - RoleAdjust;// + MappedYaw;
-			Motor_speeds[2] = RemoteValues.Throttle - PitchAdjust + RoleAdjust;// - MappedYaw;
-			Motor_speeds[3] = RemoteValues.Throttle - PitchAdjust - RoleAdjust;// + MappedYaw;
+			Motor_speeds[0] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// - MappedYaw;
+			Motor_speeds[1] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// + MappedYaw;
+			Motor_speeds[2] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// - MappedYaw;
+			Motor_speeds[3] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// + MappedYaw;
 			
 			if(Motor_speeds[0] < 0)
 				Motor_speeds[0] = 0;
@@ -190,9 +191,6 @@ void DataReady()
 			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
 			{
 				sendCount = 0;
-				//char test = SerialCOM_get_free_space()+'0';
-				//SerialCOM_put_debug_n(&test,1);
-				//SerialCOM_put_debug("OK");
 				if(printMotorValues == true)
 				{
 					uint8_t buffer[12] = {0};
@@ -208,7 +206,6 @@ void DataReady()
 					buffer[9] = '3';
 					buffer[10] = (Motor_speeds[3] & 0xFF00) >> 8;
 					buffer[11] = Motor_speeds[3] & 0x00FF;
-					//SerialCOM_put_debug("OK");
 					SerialCOM_put_message(buffer, 0x01, 12);
 				}
 				

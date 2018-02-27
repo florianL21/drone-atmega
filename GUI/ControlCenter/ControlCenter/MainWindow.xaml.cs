@@ -181,7 +181,7 @@ namespace ControlCenter
             {
                 case 0x00:
                     LogDebug(receivedText);
-                    Dispatcher.BeginInvoke((Action)(() => StatusText.Text = DateTime.Now.ToString("h:mm:ttss") + ": " + receivedText));
+                    SetStatus(DateTime.Now.ToString("h:mm:ttss") + ": " + receivedText);
                     break;
                 case 0x01:
                     int[] Motor_speeds = { 0, 0, 0, 0 };
@@ -262,12 +262,15 @@ namespace ControlCenter
                         switch(receivedText[0])
                         {
                             case 'R':
+                                SetStatus("Received Roll Data.");
                                 DisplayRollPIDData(kp, ki, kd);
                                 break;
                             case 'P':
+                                SetStatus("Received Pitch Data.");
                                 DisplayPitchPIDData(kp, ki, kd);
                                 break;
                             case 'Y':
+                                SetStatus("Received Yaw Data.");
                                 DisplayYawPIDData(kp, ki, kd);
                                 break;
                         }
@@ -279,11 +282,11 @@ namespace ControlCenter
                     break;
                 case 0x64:
                     LogError(receivedText, "ArduinoBoard");
-                    Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "An error occured"));
+                    SetStatus("The Arduino reportet an error");
                     break;
                 default:
                     LogError("Unspecified Type received. Should not be possible!!!", "processData");
-                    Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "An error occured"));
+                    SetStatus("An error occured");
                     break;
             }
         }
@@ -425,7 +428,9 @@ namespace ControlCenter
 
         void DisplayRollPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "Received Roll Data."));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_P.Background = Brushes.LightGreen));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_I.Background = Brushes.LightGreen));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_D.Background = Brushes.LightGreen));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_P.Text = string.Format("{0:N2}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_I.Text = string.Format("{0:N2}", ki)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_D.Text = string.Format("{0:N2}", kd)));
@@ -433,7 +438,9 @@ namespace ControlCenter
 
         void DisplayPitchPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "Received Pitch Data."));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_P.Background = Brushes.LightGreen));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_I.Background = Brushes.LightGreen));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_D.Background = Brushes.LightGreen));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_P.Text = string.Format("{0:N2}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_I.Text = string.Format("{0:N2}", ki)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_D.Text = string.Format("{0:N2}", kd)));
@@ -441,7 +448,9 @@ namespace ControlCenter
 
         void DisplayYawPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "Received Yaw Data."));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_P.Background = Brushes.LightGreen));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_I.Background = Brushes.LightGreen));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_D.Background = Brushes.LightGreen));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_P.Text = string.Format("{0:N2}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_I.Text = string.Format("{0:N2}", ki)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_D.Text = string.Format("{0:N2}", kd)));
@@ -465,6 +474,15 @@ namespace ControlCenter
             Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "[" + DateTime.Now.ToString("h:mm:ttss") + "]: " + statusText));
         }
 
+        /* Misc Functions:
+         */
+        void RefreshPIDValues()
+        {
+            sendMessage(0x05, 'Y');
+            sendMessage(0x05, 'P');
+            sendMessage(0x05, 'R');
+        }
+
         /*Button Clicks:
          */
 
@@ -478,7 +496,7 @@ namespace ControlCenter
                     sendMessage(0x02, 'O');
                     sendMessage(0x03, 'O');
                     Connect_DisconnectButton.Content = "Connect";
-                    StatusText.Text = "Disconnected";
+                    SetStatus("Disconnected");
                     GroupBox_MotorValues.IsEnabled = false;
                     GroupBox_RCReceiverValues.IsEnabled = false;
                     GroupBox_SensorValues.IsEnabled = false;
@@ -498,7 +516,7 @@ namespace ControlCenter
                 catch (Exception Error)
                 {
                     LogError("Exception Thrown: " + Error.ToString(), "Connect_DisconnectButton_Click");
-                    StatusText.Text = "An error occured";
+                    SetStatus("Error opening serial COM");
                 }
             }
             else
@@ -510,40 +528,40 @@ namespace ControlCenter
                         mySerialPort.PortName = PortNameTextbox.Text;
                         mySerialPort.Open();
                         Connect_DisconnectButton.Content = "Disconnect";
-                        StatusText.Text = "Connected";
+                        SetStatus("Connected");
                         GroupBox_MotorValues.IsEnabled = true;
                         GroupBox_RCReceiverValues.IsEnabled = true;
                         GroupBox_SensorValues.IsEnabled = true;
                         GroupBox_PIDValues.IsEnabled = true;
                         PortNameTextbox.IsEnabled = false;
-                        Button_RefreshYawPID_Click(sender, e);
-
+                        RefreshPIDValues();
                     }
                     catch (Exception Error)
                     {
                         LogError("Exception Thrown: " + Error.ToString(), "Connect_DisconnectButton_Click");
-                        StatusText.Text = "An error occured";
+                        SetStatus("Error closing serial COM");
                     }
                 }
                 else
                 {
-                    StatusText.Text = "Please specify a port";
+                    SetStatus("Please specify a port");
                 }
             }
         }
 
         private void Button_RollPIDSave_Click(object sender, RoutedEventArgs e)
         {
-            
             float kp, ki, kd;
             short Value;
             byte[] buffer = new byte[4];
             kp = float.Parse(TextBox_Roll_P.Text) * 100;
             ki = float.Parse(TextBox_Roll_I.Text) * 100;
             kd = float.Parse(TextBox_Roll_D.Text) * 100;
-            if (kp > 32767 || ki >32767 || kd >32767)
-            {
 
+            if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
+            {
+                SetStatus("Value has to be in between -327,67 and 327,67");
+                return;
             }
 
             buffer[0] = 0x01;
@@ -588,10 +606,10 @@ namespace ControlCenter
             buffer[3] = (byte)(Value & 0x00FF);
             sendMessage(0x06, buffer);
 
-            Button_RefreshYawPID_Click(sender, e);
+            RefreshPIDValues();
 
 
-            StatusText.Text = "Roll PID Values Saved\tP: " + TextBox_Roll_P.Text + "\tI: " + TextBox_Roll_I.Text + "\tD: " + TextBox_Roll_D.Text;
+            SetStatus("Roll PID Values Saved\tP: " + TextBox_Roll_P.Text + "\tI: " + TextBox_Roll_I.Text + "\tD: " + TextBox_Roll_D.Text);
         }
 
         private void Button_PitchPIDSave_Click(object sender, RoutedEventArgs e)
@@ -602,6 +620,13 @@ namespace ControlCenter
             kp = float.Parse(TextBox_Pitch_P.Text) * 100;
             ki = float.Parse(TextBox_Pitch_I.Text) * 100;
             kd = float.Parse(TextBox_Pitch_D.Text) * 100;
+
+            if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
+            {
+                SetStatus("Value has to be in between -327,67 and 327,67");
+                return;
+            }
+
             buffer[0] = 0x04;
             if (kp < 0)
             {
@@ -647,9 +672,9 @@ namespace ControlCenter
             buffer[3] = (byte)(Value & 0x00FF);
             sendMessage(0x06, buffer);
 
-            Button_RefreshYawPID_Click(sender, e);
+            RefreshPIDValues();
 
-            StatusText.Text = "Pitch PID Values Saved\tP: " + TextBox_Pitch_P.Text + "\tI: " + TextBox_Pitch_I.Text + "\tD: " + TextBox_Pitch_D.Text;
+            SetStatus("Pitch PID Values Saved\tP: " + TextBox_Pitch_P.Text + "\tI: " + TextBox_Pitch_I.Text + "\tD: " + TextBox_Pitch_D.Text);
         }
 
         private void Button_YawPIDSave_Click(object sender, RoutedEventArgs e)
@@ -660,6 +685,13 @@ namespace ControlCenter
             kp = float.Parse(TextBox_Yaw_P.Text) * 100;
             ki = float.Parse(TextBox_Yaw_I.Text) * 100;
             kd = float.Parse(TextBox_Yaw_D.Text) * 100;
+
+            if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
+            {
+                SetStatus("Value has to be in between -327,67 and 327,67");
+                return;
+            }
+
             buffer[0] = 0x07;
             if (kp < 0)
             {
@@ -705,9 +737,9 @@ namespace ControlCenter
             buffer[3] = (byte)(Value & 0x00FF);
             sendMessage(0x06, buffer);
 
-            Button_RefreshYawPID_Click(sender, e);
+            RefreshPIDValues();
 
-            StatusText.Text = "Yaw PID Values Saved\tP: " + TextBox_Yaw_P.Text + "\tI: " + TextBox_Yaw_I.Text + "\tD: " + TextBox_Yaw_D.Text;
+            SetStatus("Yaw PID Values Saved\tP: " + TextBox_Yaw_P.Text + "\tI: " + TextBox_Yaw_I.Text + "\tD: " + TextBox_Yaw_D.Text);
         }
 
 
@@ -718,23 +750,17 @@ namespace ControlCenter
 
         private void Button_RefreshYawPID_Click(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x05, 'Y');
-            sendMessage(0x05, 'P');
-            sendMessage(0x05, 'R');
+            RefreshPIDValues();
         }
 
         private void Button_RefreshPitchPID_Click(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x05, 'Y');
-            sendMessage(0x05, 'P');
-            sendMessage(0x05, 'R');
+            RefreshPIDValues();
         }
 
         private void Button_RefreshRollPID_Click(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x05, 'Y');
-            sendMessage(0x05, 'P');
-            sendMessage(0x05, 'R');
+            RefreshPIDValues();
         }
 
         /*Checkboxes:
@@ -743,40 +769,88 @@ namespace ControlCenter
         private void CheckBox_SensorValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
             sendMessage(0x03, 'I');
-            StatusText.Text = "Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString();
+            SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
         }
 
         private void CheckBox_SensorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
             sendMessage(0x03, 'O');
-            StatusText.Text = "Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString();
+            SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
             DisplaySensorData(-100000, -100000, -100000);
         }
 
         private void CheckBox_MotorValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
             sendMessage(0x01, 'I');
-            StatusText.Text = "Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString();
+            SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
         }
 
         private void CheckBox_MotorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
             sendMessage(0x01, 'O');
-            StatusText.Text = "Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString();
+            SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
             DisplayMotorData(-100000, -100000, -100000, -100000);
         }
 
         private void CheckBox_RCReceiverValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
             sendMessage(0x02, 'I');
-            StatusText.Text = "RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString();
+            SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
         }
 
         private void CheckBox_RCReceiverValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
             sendMessage(0x02, 'O');
-            StatusText.Text = "RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString();
+            SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
             DisplayRCReaderData(-100000, -100000, -100000, -100000, -100000);
+        }
+
+        /*Textbox changes:
+         */
+
+        private void TextBox_Pitch_P_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Pitch_P.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Pitch_I_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Pitch_I.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Pitch_D_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Pitch_D.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Roll_P_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Roll_P.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Roll_I_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Roll_I.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Roll_D_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Roll_D.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Yaw_P_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Yaw_P.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Yaw_I_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Yaw_I.Background = Brushes.OrangeRed;
+        }
+
+        private void TextBox_Yaw_D_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox_Yaw_D.Background = Brushes.OrangeRed;
         }
 
         /* Special:
@@ -784,7 +858,7 @@ namespace ControlCenter
 
         private void TextBox_ErrorLog_TextChanged(object sender, TextChangedEventArgs e)
         {
-            //TextBox_ErrorLog.ScrollToEnd();
+            TextBox_ErrorLog.ScrollToEnd();
         }
         private void StatusTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -797,7 +871,7 @@ namespace ControlCenter
             sendMessage(0x02, 'O');
             sendMessage(0x03, 'O');
             Connect_DisconnectButton.Content = "Connect";
-            StatusText.Text = "Disconnected";
+            SetStatus("Disconnected");
             GroupBox_MotorValues.IsEnabled = false;
             GroupBox_RCReceiverValues.IsEnabled = false;
             GroupBox_SensorValues.IsEnabled = false;
@@ -811,6 +885,5 @@ namespace ControlCenter
             DisplaySensorData(-100000, -100000, -100000);
             mySerialPort.Close();
         }
-
     }
 }

@@ -24,9 +24,9 @@
                         <GroupBox x:Name="GroupBox_SensorValues" Header="Sensor Values" HorizontalAlignment="Left" Height="197" Margin="10,101,0,0" VerticalAlignment="Top" Width="273" IsEnabled="False">
                             <Grid Margin="4,-6,-2,-2">
                                 <CheckBox x:Name="CheckBox_SensorValuesEnable" Content="Enable Logging" HorizontalAlignment="Left" Margin="78,10,0,0" VerticalAlignment="Top" Unchecked="CheckBox_SensorValuesEnable_Unchecked" Checked="CheckBox_SensorValuesEnable_Checked"/>
-                                <ProgressBar x:Name="ProgressBar_SensorValuesRoll" Height="30" Margin="49,34,10,0" VerticalAlignment="Top" Maximum="180" Minimum="-180"/>
-                                <ProgressBar x:Name="ProgressBar_SensorValuesPitch" HorizontalAlignment="Left" Height="30" Margin="49,68,0,0" VerticalAlignment="Top" Width="200" Maximum="90" Minimum="-90"/>
-                                <ProgressBar x:Name="ProgressBar_SensorValuesYaw" HorizontalAlignment="Left" Height="30" Margin="49,103,0,0" VerticalAlignment="Top" Width="200" Maximum="360"/>
+                                <ProgressBar x:Name="ProgressBar_SensorValuesRoll" Height="30" Margin="49,34,10,0" VerticalAlignment="Top" Maximum="1000" Minimum="-1000"/>
+                                <ProgressBar x:Name="ProgressBar_SensorValuesPitch" HorizontalAlignment="Left" Height="30" Margin="49,68,0,0" VerticalAlignment="Top" Width="200" Maximum="1000" Minimum="-1000"/>
+                                <ProgressBar x:Name="ProgressBar_SensorValuesYaw" HorizontalAlignment="Left" Height="30" Margin="49,103,0,0" VerticalAlignment="Top" Width="200" Maximum="1000" Minimum="-1000"/>
                                 <TextBlock x:Name="TextBlock_SensorValuesRoll" HorizontalAlignment="Left" Margin="49,34,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
                                 <TextBlock x:Name="TextBlock_SensorValuesPitch" HorizontalAlignment="Left" Margin="49,68,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
                                 <TextBlock x:Name="TextBlock_SensorValuesYaw" HorizontalAlignment="Left" Margin="49,103,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
@@ -77,9 +77,9 @@
                             <TabControl>
                                 <TabItem Header="Pitch">
                                     <Grid Background="#FFE5E5E5">
-                                        <TextBox x:Name="TextBox_Pitch_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Pitch_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Pitch_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Pitch_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Pitch_P_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Pitch_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Pitch_I_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Pitch_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Pitch_D_TextChanged"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
@@ -89,9 +89,9 @@
                                 </TabItem>
                                 <TabItem Header="Roll">
                                     <Grid Background="#FFE5E5E5">
-                                        <TextBox x:Name="TextBox_Roll_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Roll_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Roll_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Roll_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Roll_P_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Roll_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Roll_I_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Roll_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Roll_D_TextChanged"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
@@ -101,9 +101,9 @@
                                 </TabItem>
                                 <TabItem Header="Yaw">
                                     <Grid Background="#FFE5E5E5">
-                                        <TextBox x:Name="TextBox_Yaw_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Yaw_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Yaw_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Yaw_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Yaw_P_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Yaw_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Yaw_I_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Yaw_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Yaw_D_TextChanged"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
