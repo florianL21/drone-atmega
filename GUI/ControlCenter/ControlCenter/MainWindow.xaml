@@ -75,18 +75,6 @@
                         </GroupBox>
                         <GroupBox x:Name="GroupBox_PIDValues" Header="PID" HorizontalAlignment="Left" Height="177" Margin="10,536,0,-63" VerticalAlignment="Top" Width="153" IsEnabled="False">
                             <TabControl>
-                                <TabItem Header="Roll">
-                                    <Grid Background="#FFE5E5E5">
-                                        <TextBox x:Name="TextBox_Roll_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Roll_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBox x:Name="TextBox_Roll_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
-                                        <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
-                                        <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
-                                        <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
-                                        <Button x:Name="Button_RollPIDSave" Content="Save" HorizontalAlignment="Left" Margin="10,78,0,0" VerticalAlignment="Top" Width="115" Click="Button_RollPIDSave_Click"/>
-                                        <Button x:Name="Button_RefreshRollPID" Content="Refresh" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Width="115" Click="Button_RefreshRollPID_Click"/>
-                                    </Grid>
-                                </TabItem>
                                 <TabItem Header="Pitch">
                                     <Grid Background="#FFE5E5E5">
                                         <TextBox x:Name="TextBox_Pitch_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
@@ -98,7 +86,18 @@
                                         <Button x:Name="Button_PitchPIDSave" Content="Save" HorizontalAlignment="Left" Margin="10,78,0,0" VerticalAlignment="Top" Width="115" Click="Button_PitchPIDSave_Click"/>
                                         <Button x:Name="Button_RefreshPitchPID" Content="Refresh" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Width="115" Click="Button_RefreshPitchPID_Click"/>
                                     </Grid>
-
+                                </TabItem>
+                                <TabItem Header="Roll">
+                                    <Grid Background="#FFE5E5E5">
+                                        <TextBox x:Name="TextBox_Roll_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Roll_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Roll_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0.00" VerticalAlignment="Top" Width="101"/>
+                                        <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
+                                        <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
+                                        <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
+                                        <Button x:Name="Button_RollPIDSave" Content="Save" HorizontalAlignment="Left" Margin="10,78,0,0" VerticalAlignment="Top" Width="115" Click="Button_RollPIDSave_Click"/>
+                                        <Button x:Name="Button_RefreshRollPID" Content="Refresh" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Width="115" Click="Button_RefreshRollPID_Click"/>
+                                    </Grid>
                                 </TabItem>
                                 <TabItem Header="Yaw">
                                     <Grid Background="#FFE5E5E5">
