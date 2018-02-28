@@ -31,7 +31,7 @@ namespace ControlCenter
             InitializeComponent();
             StatusText = StatusTextBox as TextBox;
 
-            mySerialPort = new SerialPort("COM3");
+            mySerialPort = new SerialPort("COM5");
             mySerialPort.BaudRate = 115200;
             mySerialPort.Parity = Parity.None;
             mySerialPort.StopBits = StopBits.One;
@@ -77,7 +77,15 @@ namespace ControlCenter
                 mySerialPort.Write(sendMessage, 0, sendMessage.Length);
         }
 
-        
+        public void Dispose()
+        {
+            if (mySerialPort != null)
+            {
+                mySerialPort.Dispose();
+            }
+        }
+
+
         /* Helper Functions:
          */
 
@@ -96,7 +104,7 @@ namespace ControlCenter
 
         bool IsTypeValid(int Type)
         {
-            int[] validTypes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x64 };
+            int[] validTypes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x64 };
             for (int i = 0; i < validTypes.Length; i++)
             {
                 if (Type == validTypes[i])
@@ -280,9 +288,16 @@ namespace ControlCenter
                         LogError("PID transmission has errors, discarding Data.", "processData");
                     }
                     break;
+                case 0x05:
+                    if (receivedText[0] == 'R')
+                    {
+                        Dispatcher.BeginInvoke((Action)(() => ResetGUI()));
+                        RefreshPIDValues();
+                    }
+                    break;
                 case 0x64:
                     LogError(receivedText, "ArduinoBoard");
-                    SetStatus("The Arduino reportet an error");
+                    SetStatus("The Arduino reported an error");
                     break;
                 default:
                     LogError("Unspecified Type received. Should not be possible!!!", "processData");
@@ -483,6 +498,19 @@ namespace ControlCenter
             sendMessage(0x05, 'R');
         }
 
+        void ResetGUI()
+        {
+            CheckBox_SensorValuesEnable.IsChecked = false;
+            CheckBox_RCReceiverValuesEnable.IsChecked = false;
+            CheckBox_MotorValuesEnable.IsChecked = false;
+            DisplayMotorData(-100000, -100000, -100000, -100000);
+            DisplayRCReaderData(-100000, -100000, -100000, -100000, -100000);
+            DisplaySensorData(-100000, -100000, -100000);
+            DisplayRollPIDData(0, 0, 0);
+            DisplayPitchPIDData(0, 0, 0);
+            DisplayYawPIDData(0, 0, 0);
+        }
+
         /*Button Clicks:
          */
 
@@ -501,16 +529,8 @@ namespace ControlCenter
                     GroupBox_RCReceiverValues.IsEnabled = false;
                     GroupBox_SensorValues.IsEnabled = false;
                     GroupBox_PIDValues.IsEnabled = false;
-                    CheckBox_SensorValuesEnable.IsChecked = false;
-                    CheckBox_RCReceiverValuesEnable.IsChecked = false;
-                    CheckBox_MotorValuesEnable.IsChecked = false;
                     PortNameTextbox.IsEnabled = true;
-                    DisplayMotorData(-100000, -100000, -100000, -100000);
-                    DisplayRCReaderData(-100000, -100000, -100000, -100000, -100000);
-                    DisplaySensorData(-100000, -100000, -100000);
-                    DisplayRollPIDData(0, 0, 0);
-                    DisplayPitchPIDData(0, 0, 0);
-                    DisplayYawPIDData(0, 0, 0);
+                    ResetGUI();
                     mySerialPort.Close();
                 }
                 catch (Exception Error)
@@ -858,7 +878,10 @@ namespace ControlCenter
 
         private void TextBox_ErrorLog_TextChanged(object sender, TextChangedEventArgs e)
         {
-            TextBox_ErrorLog.ScrollToEnd();
+            if (TabControl_MainModes.SelectedIndex == 1)
+            {
+                TextBox_ErrorLog.ScrollToEnd();
+            }
         }
         private void StatusTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -872,18 +895,17 @@ namespace ControlCenter
             sendMessage(0x03, 'O');
             Connect_DisconnectButton.Content = "Connect";
             SetStatus("Disconnected");
-            GroupBox_MotorValues.IsEnabled = false;
-            GroupBox_RCReceiverValues.IsEnabled = false;
-            GroupBox_SensorValues.IsEnabled = false;
-            GroupBox_PIDValues.IsEnabled = false;
-            CheckBox_SensorValuesEnable.IsChecked = false;
-            CheckBox_RCReceiverValuesEnable.IsChecked = false;
-            CheckBox_MotorValuesEnable.IsChecked = false;
-            PortNameTextbox.IsEnabled = true;
-            DisplayMotorData(-100000, -100000, -100000, -100000);
-            DisplayRCReaderData(-100000, -100000, -100000, -100000, -100000);
-            DisplaySensorData(-100000, -100000, -100000);
+            ResetGUI();
             mySerialPort.Close();
+            Dispose();
+        }
+
+        private void TabControl_MainModes_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if(TabControl_MainModes.SelectedIndex == 1)
+            {
+                TextBox_ErrorLog.ScrollToEnd();
+            }
         }
     }
 }

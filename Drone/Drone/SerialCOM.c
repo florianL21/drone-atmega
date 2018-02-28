@@ -80,6 +80,11 @@ StatusCode SerialCOM_force_put_message(uint8_t message[], uint8_t Type, uint8_t 
 	return SUCCESS;
 }
 
+StatusCode SerialCOM_put_Command(char CommandChar, uint8_t Type)
+{
+	return SerialCOM_put_message(((uint8_t*)&CommandChar), Type, 1);
+}
+
 StatusCode SerialCOM_put_debug(char Text[])
 {
 	return SerialCOM_put_message(((uint8_t*)Text), 0x00, strlen(Text));

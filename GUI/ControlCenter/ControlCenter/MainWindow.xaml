@@ -9,7 +9,7 @@
         Closing="Window_Closing">
 
     <Grid>
-        <TabControl Margin="10,10,0,0" HorizontalAlignment="Left" Width="567" Height="752" VerticalAlignment="Top">
+        <TabControl x:Name="TabControl_MainModes" Margin="10,10,0,0" HorizontalAlignment="Left" Width="567" Height="752" VerticalAlignment="Top" SelectionChanged="TabControl_MainModes_SelectionChanged">
             <TabItem Header="Home">
                 <Grid Background="#FFE5E5E5" Margin="0,0,-2,-3" HorizontalAlignment="Left" Width="563">
                     <Grid HorizontalAlignment="Left" Width="564" Margin="0,0,-1,77">
@@ -17,7 +17,7 @@
                             <Grid HorizontalAlignment="Left" Height="76" Margin="0,0,-2,-12" VerticalAlignment="Top" Width="516">
                                 <TextBox x:Name="StatusTextBox" HorizontalAlignment="Left" Height="48" Margin="121,10,0,0" TextWrapping="Wrap" Text="Status Text" VerticalAlignment="Top" Width="386" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" TextChanged="StatusTextBox_TextChanged" IsEnabled="False"/>
                                 <Button x:Name="Connect_DisconnectButton" Content="Connect" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="106" Click="Connect_DisconnectButton_Click"/>
-                                <TextBox x:Name="PortNameTextbox" HorizontalAlignment="Left" Height="23" Margin="69,10,0,0" TextWrapping="Wrap" Text="COM3" VerticalAlignment="Top" Width="47" RenderTransformOrigin="0.506,0.471"/>
+                                <TextBox x:Name="PortNameTextbox" HorizontalAlignment="Left" Height="23" Margin="69,10,0,0" TextWrapping="Wrap" Text="COM5" VerticalAlignment="Top" Width="47" RenderTransformOrigin="0.506,0.471"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="COM Port:" VerticalAlignment="Top"/>
                             </Grid>
                         </GroupBox>
@@ -117,7 +117,7 @@
 
                 </Grid>
             </TabItem>
-            <TabItem Header="Error log">
+            <TabItem Header="Error log" Margin="-2,-2,-2,2">
                 <Grid Background="#FFE5E5E5">
                     <TextBox x:Name="TextBox_ErrorLog" Margin="10" TextWrapping="Wrap" Text="Begin of Error log: &#xD;&#xA;" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" TextChanged="TextBox_ErrorLog_TextChanged"/>
 

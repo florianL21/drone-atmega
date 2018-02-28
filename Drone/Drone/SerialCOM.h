@@ -30,6 +30,7 @@ StatusCode SerialCOM_put_error(char Text[]);
 StatusCode SerialCOM_force_put_error(char Text[]);
 uint8_t SerialCOM_get_free_space();
 StatusCode SerialCOM_put_message(uint8_t message[], uint8_t Type, uint8_t Length);
+StatusCode SerialCOM_put_Command(char CommandChar, uint8_t Type);
 
 
 #endif /* SERIALCOM_H_ */

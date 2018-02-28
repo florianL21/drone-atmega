@@ -138,13 +138,13 @@ typedef enum {
  */
 
 // M1 ESC Timer OCR Offset
-#define ESC_Offset_M1 10
+#define ESC_Offset_M1 380
 // M2 ESC Timer OCR Offset
-#define ESC_Offset_M2 390
+#define ESC_Offset_M2 370
 // M3 ESC Timer OCR Offset
-#define ESC_Offset_M3 390
+#define ESC_Offset_M3 580
 // M4 ESC Timer OCR Offset
-#define ESC_Offset_M4 390
+#define ESC_Offset_M4 20
 
 // M1 ESC Slope Compensation Factor
 #define ESC_SlopeComp_M1 0
@@ -173,7 +173,7 @@ typedef enum {
 #define RC_CONTROL_DIFF (RC_ControlMax - RC_ControlMin)
 
 //Dead spot of the joystick before values begin to change
-#define RC_CONTROL_DEAD_SPOT__THROTTLE	60
+#define RC_CONTROL_DEAD_SPOT__THROTTLE	30
 // Minimum Control Value Input (2625 = 1ms, 5250 = 2ms)
 #define RC_CCONTROL_MIN__THROTTLE		2840
 // Maximum Control Value Input (2625 = 1ms, 5250 = 2ms)
@@ -181,17 +181,17 @@ typedef enum {
 
 //Defines the value of the Input when the joystick is centered
 #define RC_CONTROL_CENTER__PITCH		1075
-#define RC_CONTROL_DEAD_SPOT__PITCH		40
+#define RC_CONTROL_DEAD_SPOT__PITCH		20
 #define RC_CONTROL_MIN__PITCH			2850
 #define RC_CONTROL_MAX__PITCH			5200
 
 #define RC_CONTROL_CENTER__ROLE			1075
-#define RC_CONTROL_DEAD_SPOT__ROLE		40
+#define RC_CONTROL_DEAD_SPOT__ROLE		20
 #define RC_CONTROL_MIN__ROLE			2875
 #define RC_CONTROL_MAX__ROLE			5200
 
 #define RC_CONTROL_CENTER__YAW			1075
-#define RC_CONTROL_DEAD_SPOT__YAW		40
+#define RC_CONTROL_DEAD_SPOT__YAW		20
 #define RC_CONTROL_MIN__YAW				2865
 #define RC_CONTROL_MAX__YAW				5200
 

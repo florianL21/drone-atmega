@@ -44,7 +44,8 @@ float PitchKp = 0.1,	PitchKi = 0.1,		PitchKd = 0.1;
 float RollKp = 0.1,		RollKi = 0.1,		RollKd = 0.1;
 float YawKp = 0.1,		YawKi = 0.1,		YawKd = 0.1;
 pidData PitchPid;
-pidData RolePid;
+pidData RollPid;
+pidData YawPid;
 
 #define MAX_ERROR_COUNT 20
 StatusCode errorStack[MAX_ERROR_COUNT] = {0};
@@ -59,6 +60,8 @@ bool printSensorValues = 0;
 bool printRCValues = 0;
 bool printMotorValues = 0;
 uint8_t sendCount = 0;
+
+bool ArmMotors = false;
 
 void error_handler_in(StatusCode errorIn)
 {
@@ -102,15 +105,26 @@ void BNO_Error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
 
 void DataReady()
 {
+	static bool GearStateOld = false;
 	bool needComputePitch = PID_need_compute(&PitchPid);
-	bool needComputeRole = PID_need_compute(&RolePid);
-	if(needComputeRole == true || needComputePitch == true)
+	bool needComputeRoll = PID_need_compute(&RollPid);
+	if(needComputeRoll == true || needComputePitch == true)
 	{
 		
 		//read Values from sensor and remote control:
 		SensorValues = BNO055_get_measurement_data();
 
 		RemoteValues = rc_read_values();
+		if(GearStateOld == false && RemoteValues.Gear == true && RemoteValues.Throttle == 0)
+		{
+			GearStateOld = true;
+			ArmMotors = true;
+		} else if(RemoteValues.Gear == false)
+		{
+			ArmMotors = false;
+			GearStateOld = false;
+		}
+		
 		if(RemoteValues.error != true)
 		{
 			BNO055_Data CorrectedValues;
@@ -127,16 +141,25 @@ void DataReady()
 			// Compute new PID output value
 			if (needComputePitch)
 				error_handler_in(PID_Compute(&PitchPid));
-			if (needComputeRole)
-				error_handler_in(PID_Compute(&RolePid));
+			if (needComputeRoll)
+				error_handler_in(PID_Compute(&RollPid));
 			//float factor = 0.0005;
 			//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
-			//int16_t RoleAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
+			//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
 			
-			Motor_speeds[0] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// - MappedYaw;
-			Motor_speeds[1] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// + MappedYaw;
-			Motor_speeds[2] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// - MappedYaw;
-			Motor_speeds[3] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// + MappedYaw;
+			
+			Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
+			Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
+			Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
+			Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
+			
+			/*
+			Motor_speeds[0] = RemoteValues.Throttle;
+			Motor_speeds[1] = RemoteValues.Throttle;
+			Motor_speeds[2] = RemoteValues.Throttle;
+			Motor_speeds[3] = RemoteValues.Throttle;
+			*/
+			
 			
 			if(Motor_speeds[0] < 0)
 				Motor_speeds[0] = 0;
@@ -147,46 +170,23 @@ void DataReady()
 			if(Motor_speeds[3] < 0)
 				Motor_speeds[3] = 0;
 			
-			error_handler_in(esc_set(1, Motor_speeds[0]));
-			error_handler_in(esc_set(2, Motor_speeds[1]));
-			error_handler_in(esc_set(3, Motor_speeds[2]));
-			error_handler_in(esc_set(4, Motor_speeds[3]));
 			
-			//PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, RC_CONTROL_CENTER__PITCH * 2, -maximumControlDegree, maximumControlDegree);
-			//PID_RoleSetPoint	= map(RemoteValues.Roll, 0, RC_CONTROL_CENTER__PITCH * 2, -maximumControlDegree, maximumControlDegree);
 			
-			/*char buffer[100] = "";
-			sprintf(buffer,"X:%6d\tY:%6d\t%6d\n\r",SensorValues.X,SensorValues.Y,SensorValues.Z);
-			UART0_puts(buffer);*/
 			
-			//int16_t MappedYaw   = map(RemoteValues.Yaw, 0, RC_CONTROL_CENTER__PITCH * 2, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
-			
-			//pitch --> role: 180;-180
-			//role --> pitch: 90;-90
-			
-			/*PID_PitchInput		= correctedPitch;
-			PID_RoleInput		= correctedRoll;
-			PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, RC_CONTROL_CENTER__PITCH * 2, -maximumControlDegree, maximumControlDegree);
-			PID_RoleSetPoint	= map(RemoteValues.Roll, 0, RC_CONTROL_CENTER__PITCH * 2, -maximumControlDegree, maximumControlDegree);
-			
-			// Compute new PID output value
-			if (needComputePitch)
-				error_handler_in(PID_Compute(&PitchPid));
-			if (needComputeRole)
-				error_handler_in(PID_Compute(&RolePid));
-
-			int16_t MappedPitch = map(PID_PitchOutput, -180, 180, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
-			int16_t MappedRole  = map(PID_RoleOutput, -90, 90, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
-			//int16_t MappedYaw   = map(PID_YawOutput, -1000, 1000, -(RemoteValues.Throttle * ValueMapFactor), (RemoteValues.Throttle * ValueMapFactor));
-			Motor_speeds[0] = RemoteValues.Throttle - MappedPitch - MappedRole;// - MappedYaw;
-			Motor_speeds[1] = RemoteValues.Throttle - MappedPitch + MappedRole;// + MappedYaw;
-			Motor_speeds[2] = RemoteValues.Throttle + MappedPitch - MappedRole;// - MappedYaw;
-			Motor_speeds[3] = RemoteValues.Throttle + MappedPitch + MappedRole;// + MappedYaw;
-		
-			error_handler_in(esc_set(1, Motor_speeds[0]));
-			error_handler_in(esc_set(2, Motor_speeds[1]));
-			error_handler_in(esc_set(3, Motor_speeds[2]));
-			error_handler_in(esc_set(4, Motor_speeds[3]));*/
+			if(ArmMotors == true)
+			{
+				error_handler_in(esc_set(1, Motor_speeds[0]));
+				error_handler_in(esc_set(2, Motor_speeds[1]));
+				error_handler_in(esc_set(3, Motor_speeds[2]));
+				error_handler_in(esc_set(4, Motor_speeds[3]));
+			}
+			else
+			{
+				error_handler_in(esc_set(1, 0));
+				error_handler_in(esc_set(2, 0));
+				error_handler_in(esc_set(3, 0));
+				error_handler_in(esc_set(4, 0));
+			}
 			
 			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
 			{
@@ -338,40 +338,60 @@ void gotValueFromPC(uint8_t Identifier, float recValue)
 	{
 		case 0x01: //Roll P
 			RollKp = recValue;
+			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x02: //Roll I
 			RollKi = recValue;
+			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x03: //Roll D
 			RollKd = recValue;
+			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x04: //Pitch P
 			PitchKp = recValue;
+			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x05: //Pitch I
 			PitchKi = recValue;
+			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x06: //Pitch D
 			PitchKd = recValue;
+			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x07: //Yaw P
 			YawKp = recValue;
+			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 		case 0x08: //Yaw I
 			YawKi = recValue;
+			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 		case 0x09: //Yaw D
 			YawKd = recValue;
+			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 	}
+	
 }
 
+//Receive:
 //0x01: Motor
 //0x02: RC
 //0x03: Sensor
 //0x04: Set current values as Sensor offset
 //0x05: Send PID Values to PC
 //0x06: Get Value from PC
+
+//Send:
+//0x00: Debug message
+//0x01: Motor Values
+//0x02: RC Values
+//0x03: Sensor Values
+//0x04: PID Values
+//0x05: Reset GUI
+//0x64: Error Message
 void message_from_PC(uint8_t* message, uint8_t Type)
 {
 	float recValue;
@@ -448,6 +468,8 @@ int main(void)
 	configure_wdt();
 	error_handler_in(SerialCOM_init());
 	error_handler_in(SerialCOM_register_call_back(message_from_PC));
+	error_handler_in(SerialCOM_put_Command('R', 0x05));			//Reset GUI
+	_Delay(8400000);
 	config_BNO();
 	
 	//rc control and esc init:
@@ -456,7 +478,7 @@ int main(void)
 	
 	PID_Init();
 	error_handler_in(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-250,250,10));
-	error_handler_in(PID_Initialize(&RolePid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd,-250,250,10));
+	error_handler_in(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd,-250,250,10));
 	error_handler_in(BNO055_start_measurement(true, true, BNO_MEASURE));
 	error_handler_print();
 	error_handler_in(SerialCOM_put_debug("Init Done!"));
