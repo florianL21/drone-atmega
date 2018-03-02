@@ -119,6 +119,12 @@ StatusCode PID_Compute(pidData* pidController)
 	return SUCCESS;
 }
 
+void PID_Reset(pidData* pidController)
+{
+	pidController->lastInput = 0;
+	pidController->ITerm = 0;
+}
+
 StatusCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd)
 {
 	if(pidController == NULL)
@@ -130,6 +136,8 @@ StatusCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd)
 	pidController->kp = Kp;
 	pidController->ki = Ki * SampleTimeInSec;
 	pidController->kd = Kd / SampleTimeInSec;
+	
+	PID_Reset(pidController);
 	
 	if(pidController->controllerDirection == REVERSE)
 	{

@@ -40,8 +40,8 @@ float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
 
-float PitchKp = 0.1,	PitchKi = 0.1,		PitchKd = 0.1;
-float RollKp = 0.1,		RollKi = 0.1,		RollKd = 0.1;
+float PitchKp = 0.75,	PitchKi = 0.05,		PitchKd = 0.1;
+float RollKp = 0.75,	RollKi = 0.05,		RollKd = 0.1;
 float YawKp = 0.1,		YawKi = 0.1,		YawKd = 0.1;
 pidData PitchPid;
 pidData RollPid;
@@ -52,8 +52,8 @@ StatusCode errorStack[MAX_ERROR_COUNT] = {0};
 uint8_t errorCount = 0;
 
 //sonsor offsetValues:
-float sensorOffsetY = 0;
-float sensorOffsetX = 0;
+float sensorOffsetY = 39;
+float sensorOffsetX = -28;
 
 //Status variables for whitch values are printing:
 bool printSensorValues = 0;
@@ -158,8 +158,7 @@ void DataReady()
 			Motor_speeds[1] = RemoteValues.Throttle;
 			Motor_speeds[2] = RemoteValues.Throttle;
 			Motor_speeds[3] = RemoteValues.Throttle;
-			*/
-			
+			*/			
 			
 			if(Motor_speeds[0] < 0)
 				Motor_speeds[0] = 0;
@@ -169,9 +168,6 @@ void DataReady()
 				Motor_speeds[2] = 0;
 			if(Motor_speeds[3] < 0)
 				Motor_speeds[3] = 0;
-			
-			
-			
 			
 			if(ArmMotors == true)
 			{
@@ -420,6 +416,8 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			{
 				sensorOffsetX = SensorValues.X;
 				sensorOffsetY = SensorValues.Y;
+				PID_Reset(&RollPid);
+				PID_Reset(&PitchPid);
 			}
 		break;
 		case 0x05:

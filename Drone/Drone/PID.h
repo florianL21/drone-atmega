@@ -45,5 +45,6 @@ StatusCode PID_SetOutputLimits(pidData* pidController, float Min, float Max);
 StatusCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction);
 void PID_Init();
 bool PID_need_compute(pidData* pidController);
+void PID_Reset(pidData* pidController);
 
 #endif /* PID_H_ */
