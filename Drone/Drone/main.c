@@ -41,8 +41,8 @@ float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
 
-float PitchKp = 0.75,	PitchKi = 0.05,		PitchKd = 0.05;
-float RollKp = 0.75,	RollKi = 0.05,		RollKd = 0.05;
+float PitchKp = 0.1,	PitchKi = 0.05,		PitchKd = 0.05;
+float RollKp = 0.1,	RollKi = 0.05,		RollKd = 0.05;
 float YawKp = 0.1,		YawKi = 0.1,		YawKd = 0.1;
 pidData PitchPid;
 pidData RollPid;
@@ -147,6 +147,12 @@ void LoadValuesFromFlash()
 
 void DataReady()
 {
+	/*static uint16_t count1 = 0;
+	if(count1++ >= 100)
+	{
+		error_handler_in(SerialCOM_put_debug("S"));
+		count1 = 0;
+	}*/
 	static bool GearStateOld = false;
 	bool needComputePitch = PID_need_compute(&PitchPid);
 	bool needComputeRoll = PID_need_compute(&RollPid);
@@ -189,7 +195,6 @@ void DataReady()
 			//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
 			//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
 			
-			
 			Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
 			Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
 			Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
@@ -228,6 +233,7 @@ void DataReady()
 			
 			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
 			{
+				
 				sendCount = 0;
 				if(printMotorValues == true)
 				{
@@ -376,42 +382,42 @@ void gotValueFromPC(uint8_t Identifier, float recValue)
 	{
 		case 0x01: //Roll P
 			RollKp = recValue;
-			SaveValuesToFlash(0x01);
+			//SaveValuesToFlash(0x01);
 			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x02: //Roll I
 			RollKi = recValue;
-			SaveValuesToFlash(0x02);
+			//SaveValuesToFlash(0x02);
 			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x03: //Roll D
 			RollKd = recValue;
-			SaveValuesToFlash(0x03);
+			//SaveValuesToFlash(0x03);
 			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x04: //Pitch P
 			PitchKp = recValue;
-			SaveValuesToFlash(0x04);
+			//SaveValuesToFlash(0x04);
 			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x05: //Pitch I
 			PitchKi = recValue;
-			SaveValuesToFlash(0x05);
+			//SaveValuesToFlash(0x05);
 			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x06: //Pitch D
 			PitchKd = recValue;
-			SaveValuesToFlash(0x06);
+			//SaveValuesToFlash(0x06);
 			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x07: //Yaw P
 			YawKp = recValue;
-			SaveValuesToFlash(0x07);
+			//SaveValuesToFlash(0x07);
 			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 		case 0x08: //Yaw I
 			YawKi = recValue;
-			SaveValuesToFlash(0x08);
+			//SaveValuesToFlash(0x08);
 			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 		case 0x09: //Yaw D
@@ -429,6 +435,7 @@ void gotValueFromPC(uint8_t Identifier, float recValue)
 //0x04: Set current values as Sensor offset
 //0x05: Send PID Values to PC
 //0x06: Get Value from PC
+//0x07: Save Values to Flash
 
 //Send:
 //0x00: Debug message
@@ -468,10 +475,10 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			{
 				sensorOffsetX = SensorValues.X;
 				sensorOffsetY = SensorValues.Y;
+				//SaveValuesToFlash(0x0A);
+				//SaveValuesToFlash(0x0B);
 				PID_Reset(&RollPid);
 				PID_Reset(&PitchPid);
-				SaveValuesToFlash(0x0A);
-				SaveValuesToFlash(0x0B);
 			}
 		break;
 		case 0x05:
@@ -485,6 +492,12 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			{
 				sendPIDValuesToPC('Y', YawKp, YawKi, YawKd);
 			}
+			if(BNO055_is_busy() == false)
+			{
+				error_handler_in(BNO055_start_measurement(true, true, BNO_MEASURE));
+				error_handler_in(SerialCOM_put_debug("Restart BNO"));
+				
+			}
 		break;
 		case 0x06:
 			recValue = (message[2] << 8) | message[3];
@@ -492,6 +505,12 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			if(message[1] == 1)
 				recValue *= -1;
 			gotValueFromPC(message[0], recValue);
+		break;
+		case 0x07:
+			if(message[0] == 'S')
+			{
+				SaveValuesToFlash(0x00);
+			}
 		break;
 		default:
 		break;
@@ -527,18 +546,13 @@ int main(void)
 
 	if(FlashStorage_read(0))
 	{
-		error_handler_in(SerialCOM_put_debug("Running for the first time, population Flash with default values"));
+		error_handler_in(SerialCOM_put_debug("Running for the first time, populating Flash with default values"));
 		SaveValuesToFlash(0x00);
-		//error_handler_in(FlashStorage_write_float(4, 0.15));
+		//LoadValuesFromFlash();
 		error_handler_in(FlashStorage_write_uint8_t(0,0));
 	}else
 	{
-		error_handler_in(SerialCOM_put_debug("loading values from flash"));
-		/*char buffer[20]={0};
-		float test = FlashStorage_read_float(4);
-		sprintf(buffer, "Val: %f; %d", test, sizeof(test));
-		error_handler_in(SerialCOM_put_debug(buffer));*/
-		
+		error_handler_in(SerialCOM_put_debug("loading values from flash"));		
 		LoadValuesFromFlash();
 	}
 	_Delay(8400000);

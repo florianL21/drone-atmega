@@ -178,6 +178,37 @@ StatusCode UART0_register_received_callback(UART_RECV_CALLBACK callBack)
 	return SUCCESS;
 }
 
+uint32_t uart0_calculateTicks(uint32_t start, uint32_t stop)
+{
+	if(stop > start) // no overflow
+		return (stop - start);
+	else if(stop < start) // overflow
+		return (stop + (4294967295 - start));
+	else if(stop == start) // perfect overflow
+		return 4294967295;
+	return 0;
+}
+
+uint32_t uart0_getTicks()
+{
+	return TC0->TC_CHANNEL[0].TC_CV;
+}
+
+void Uart0_check_for_timeout()
+{
+	static uint32_t RCR_old = 0;
+	static uint32_t time_old = 0;
+	if(RCR_old != UART->UART_RCR)
+	{
+		RCR_old = UART->UART_RCR;
+		time_old = uart0_getTicks();
+	} else if(uart0_calculateTicks(time_old, uart0_getTicks()) >= 16800000)
+	{
+		//Timeout Error
+		//TODO: fire UART_error callback
+	}
+}
+
 void UART_Handler(void)
 {
 	UART->UART_CR = UART_CR_RSTSTA; // Clear receiver errors (if any)

@@ -17,7 +17,7 @@
                             <Grid HorizontalAlignment="Left" Height="76" Margin="0,0,-2,-12" VerticalAlignment="Top" Width="516">
                                 <TextBox x:Name="StatusTextBox" HorizontalAlignment="Left" Height="48" Margin="121,10,0,0" TextWrapping="Wrap" Text="Status Text" VerticalAlignment="Top" Width="386" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" TextChanged="StatusTextBox_TextChanged" IsEnabled="False"/>
                                 <Button x:Name="Connect_DisconnectButton" Content="Connect" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="106" Click="Connect_DisconnectButton_Click"/>
-                                <TextBox x:Name="PortNameTextbox" HorizontalAlignment="Left" Height="23" Margin="69,10,0,0" TextWrapping="Wrap" Text="COM5" VerticalAlignment="Top" Width="47" RenderTransformOrigin="0.506,0.471"/>
+                                <TextBox x:Name="PortNameTextbox" HorizontalAlignment="Left" Height="23" Margin="69,10,0,0" TextWrapping="Wrap" Text="COM3" VerticalAlignment="Top" Width="47" RenderTransformOrigin="0.506,0.471"/>
                                 <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="COM Port:" VerticalAlignment="Top"/>
                             </Grid>
                         </GroupBox>
@@ -73,42 +73,54 @@
                                 <TextBlock HorizontalAlignment="Left" Margin="-1,145,0,0" TextWrapping="Wrap" Text="M3:" VerticalAlignment="Top"/>
                             </Grid>
                         </GroupBox>
-                        <GroupBox x:Name="GroupBox_PIDValues" Header="PID" HorizontalAlignment="Left" Height="177" Margin="10,536,0,-63" VerticalAlignment="Top" Width="153" IsEnabled="False">
-                            <TabControl>
+                        <GroupBox x:Name="GroupBox_PIDValues" Header="PID" HorizontalAlignment="Left" Height="177" Margin="10,536,0,-63" VerticalAlignment="Top" Width="254" IsEnabled="False">
+                            <TabControl Margin="0,0,-2,0">
                                 <TabItem Header="Pitch">
                                     <Grid Background="#FFE5E5E5">
-                                        <TextBox x:Name="TextBox_Pitch_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Pitch_P_TextChanged"/>
-                                        <TextBox x:Name="TextBox_Pitch_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Pitch_I_TextChanged"/>
-                                        <TextBox x:Name="TextBox_Pitch_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Pitch_D_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Pitch_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Pitch_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Pitch_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
                                         <Button x:Name="Button_PitchPIDSave" Content="Save" HorizontalAlignment="Left" Margin="10,78,0,0" VerticalAlignment="Top" Width="115" Click="Button_PitchPIDSave_Click"/>
-                                        <Button x:Name="Button_RefreshPitchPID" Content="Refresh" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Width="115" Click="Button_RefreshPitchPID_Click"/>
+                                        <Button x:Name="Button_RefreshPitchPID" Content="Refresh" HorizontalAlignment="Left" Margin="130,103,0,0" VerticalAlignment="Top" Width="101" Click="Button_RefreshPitchPID_Click"/>
+                                        <Label x:Name="Label_Pitch_P_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,10,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Label x:Name="Label_Pitch_I_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,31,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Label x:Name="Label_Pitch_D_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,52,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Button x:Name="Button_PitchPIDSaveToFlash" Content="Save to flash" HorizontalAlignment="Left" Margin="130,78,0,0" VerticalAlignment="Top" Width="101" Click="Button_PIDSaveToFlash_Click"/>
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="Roll">
                                     <Grid Background="#FFE5E5E5">
-                                        <TextBox x:Name="TextBox_Roll_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Roll_P_TextChanged"/>
-                                        <TextBox x:Name="TextBox_Roll_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Roll_I_TextChanged"/>
-                                        <TextBox x:Name="TextBox_Roll_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Roll_D_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Roll_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Roll_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Roll_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
                                         <Button x:Name="Button_RollPIDSave" Content="Save" HorizontalAlignment="Left" Margin="10,78,0,0" VerticalAlignment="Top" Width="115" Click="Button_RollPIDSave_Click"/>
-                                        <Button x:Name="Button_RefreshRollPID" Content="Refresh" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Width="115" Click="Button_RefreshRollPID_Click"/>
+                                        <Button x:Name="Button_RefreshRollPID" Content="Refresh" HorizontalAlignment="Left" Margin="130,103,0,0" VerticalAlignment="Top" Width="101" Click="Button_RefreshRollPID_Click"/>
+                                        <Label x:Name="Label_Roll_P_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,10,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Label x:Name="Label_Roll_I_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,31,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Label x:Name="Label_Roll_D_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,52,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Button x:Name="Button_RollPIDSaveToFlash" Content="Save to flash" HorizontalAlignment="Left" Margin="130,78,0,0" VerticalAlignment="Top" Width="101" Click="Button_PIDSaveToFlash_Click"/>
                                     </Grid>
                                 </TabItem>
                                 <TabItem Header="Yaw">
                                     <Grid Background="#FFE5E5E5">
-                                        <TextBox x:Name="TextBox_Yaw_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Yaw_P_TextChanged"/>
-                                        <TextBox x:Name="TextBox_Yaw_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Yaw_I_TextChanged"/>
-                                        <TextBox x:Name="TextBox_Yaw_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101" TextChanged="TextBox_Yaw_D_TextChanged"/>
+                                        <TextBox x:Name="TextBox_Yaw_P" HorizontalAlignment="Left" Height="23" Margin="24,10,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Yaw_I" HorizontalAlignment="Left" Height="23" Margin="24,31,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
+                                        <TextBox x:Name="TextBox_Yaw_D" HorizontalAlignment="Left" Height="23" Margin="24,52,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="101"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="P:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,32,0,0" TextWrapping="Wrap" Text="I:" VerticalAlignment="Top"/>
                                         <TextBlock HorizontalAlignment="Left" Margin="10,53,0,0" TextWrapping="Wrap" Text="D:" VerticalAlignment="Top"/>
                                         <Button x:Name="Button_YawPIDSave" Content="Save" HorizontalAlignment="Left" Margin="10,78,0,0" VerticalAlignment="Top" Width="115" Click="Button_YawPIDSave_Click"/>
-                                        <Button x:Name="Button_RefreshYawPID" Content="Refresh" HorizontalAlignment="Left" Margin="10,103,0,0" VerticalAlignment="Top" Width="115" Click="Button_RefreshYawPID_Click"/>
+                                        <Button x:Name="Button_RefreshYawPID" Content="Refresh" HorizontalAlignment="Left" Margin="130,103,0,0" VerticalAlignment="Top" Width="101" Click="Button_RefreshYawPID_Click"/>
+                                        <Label x:Name="Label_Yaw_P_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,10,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Label x:Name="Label_Yaw_I_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,31,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Label x:Name="Label_Yaw_D_Arduino" HorizontalAlignment="Left" Height="23" Margin="130,52,0,0" VerticalAlignment="Top" Width="101" Content="0,00"/>
+                                        <Button x:Name="Button_YawPIDSaveToFlash" Content="Save to flash" HorizontalAlignment="Left" Margin="130,78,0,0" VerticalAlignment="Top" Width="101" Click="Button_PIDSaveToFlash_Click"/>
                                     </Grid>
                                 </TabItem>
                             </TabControl>

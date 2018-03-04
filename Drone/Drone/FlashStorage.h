@@ -36,5 +36,7 @@ StatusCode FlashStorage_write_uint8_t(uint32_t address, uint8_t Value);
 StatusCode FlashStorage_write_float(uint32_t address, float Value);
 float FlashStorage_read_float(uint32_t address);
 uint16_t FlashStorage_read_uint16_t(uint32_t address);
+StatusCode FlashStorage_unlock(uint32_t address, uint32_t dataLength);
+StatusCode FlashStorage_lock(uint32_t address, uint32_t dataLength);
 
 #endif

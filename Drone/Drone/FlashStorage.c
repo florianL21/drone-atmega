@@ -15,6 +15,51 @@ uint8_t* FlashStorage_readAddress(uint32_t address) {
   return FLASH_START+address;
 }
 
+StatusCode FlashStorage_lock(uint32_t address, uint32_t dataLength)
+{
+	uint32_t retCode;
+	if ((uint32_t)FLASH_START+address < IFLASH1_ADDR) {
+		return FlashStorage_ERROR_ADDRESS_TOO_LOW;
+	}
+
+	if ((uint32_t)FLASH_START+address >= (IFLASH1_ADDR + IFLASH1_SIZE)) {
+		return FlashStorage_ERROR_ADDRESS_TOO_HIGH;
+	}
+
+	if ((((uint32_t)FLASH_START+address) & 3) != 0) {
+		return FlashStorage_ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
+	}
+	
+	 // Lock page
+	 retCode = flash_lock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
+	 if (retCode != FLASH_RC_OK) {
+		 return FlashStorage_ERROR_FAILED_TO_LOCK_FLASH;
+	 }
+	return SUCCESS;
+}
+
+StatusCode FlashStorage_unlock(uint32_t address, uint32_t dataLength)
+{
+	uint32_t retCode;
+	if ((uint32_t)FLASH_START+address < IFLASH1_ADDR) {
+		return FlashStorage_ERROR_ADDRESS_TOO_LOW;
+	}
+
+	if ((uint32_t)FLASH_START+address >= (IFLASH1_ADDR + IFLASH1_SIZE)) {
+		return FlashStorage_ERROR_ADDRESS_TOO_HIGH;
+	}
+
+	if ((((uint32_t)FLASH_START+address) & 3) != 0) {
+		return FlashStorage_ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
+	}
+	
+	retCode = flash_unlock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
+	if (retCode != FLASH_RC_OK) {
+		return FlashStorage_ERROR_FAILED_TO_UNLOCK_FLASH;
+	}
+	return SUCCESS;
+}
+
 StatusCode FlashStorage_write(uint32_t address, uint8_t *data, uint32_t dataLength) {
   uint32_t retCode;
 
@@ -48,7 +93,7 @@ StatusCode FlashStorage_write(uint32_t address, uint8_t *data, uint32_t dataLeng
   if (retCode != FLASH_RC_OK) {
     return FlashStorage_ERROR_FAILED_TO_LOCK_FLASH;
   }
-  return true;
+  return SUCCESS;
 }
 
 StatusCode FlashStorage_write_unlocked(uint32_t address, uint8_t *data, uint32_t dataLength) {
@@ -73,7 +118,7 @@ StatusCode FlashStorage_write_unlocked(uint32_t address, uint8_t *data, uint32_t
     return FlashStorage_ERROR_WRITE_FAILED;
   }
 
-  return true;
+  return SUCCESS;
 }
 
 StatusCode FlashStorage_write_uint8_t(uint32_t address, uint8_t Value)

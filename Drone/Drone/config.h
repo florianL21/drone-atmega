@@ -147,13 +147,13 @@ typedef enum {
  */
 
 // M1 ESC Timer OCR Offset
-#define ESC_Offset_M1 380
+#define ESC_Offset_M1 400
 // M2 ESC Timer OCR Offset
-#define ESC_Offset_M2 370
+#define ESC_Offset_M2 400
 // M3 ESC Timer OCR Offset
-#define ESC_Offset_M3 580
+#define ESC_Offset_M3 400
 // M4 ESC Timer OCR Offset
-#define ESC_Offset_M4 20
+#define ESC_Offset_M4 400
 
 // M1 ESC Slope Compensation Factor
 #define ESC_SlopeComp_M1 0

@@ -26,6 +26,8 @@ namespace ControlCenter
         private Queue<byte[]> sendQueue = new Queue<byte[]>();
         bool readyToSend = true;
 
+        System.Windows.Threading.DispatcherTimer dispatcherACKTimeout = new System.Windows.Threading.DispatcherTimer();
+
         static TextBox StatusText;
 
         public MainWindow()
@@ -44,11 +46,32 @@ namespace ControlCenter
             mySerialPort.ReadTimeout = 10;
             mySerialPort.DataReceived += new SerialDataReceivedEventHandler(serialPort_DataReceived);
             StatusText.Text = "";
-            
+
+
+            dispatcherACKTimeout.Tick += new EventHandler(ACK_timeout);
+            dispatcherACKTimeout.Interval = new TimeSpan(0, 0, 1);
         }
 
         /*Send Message Functions:
          */
+
+        void ACK_timeout(object s, EventArgs e)
+        {
+            dispatcherACKTimeout.Stop();
+            LogError("ACK Timeout", "ACK:timeout");
+            if (sendQueue.Count == 0)
+                readyToSend = true;
+            else
+            {
+                if (mySerialPort.IsOpen)
+                {
+                    byte[] sendMessage = sendQueue.Dequeue();
+                    mySerialPort.Write(sendMessage, 0, sendMessage.Length);
+                    dispatcherACKTimeout.Start();
+                }
+            }
+
+        }
 
         void sendMessage(byte Type, char message)
         {
@@ -75,14 +98,41 @@ namespace ControlCenter
                 sendMessage[i + 3] = message[i];
             }
             sendMessage[message.Length + 3] = 0x03;
-            if(readyToSend == true)
+            if (mySerialPort.IsOpen)
+                mySerialPort.Write(sendMessage, 0, sendMessage.Length);
+        }
+
+        void sendMessage_and_wait_for_ack(byte Type, char message)
+        {
+            byte[] msg = new byte[1];
+            msg[0] = (byte)message;
+            sendMessage_and_wait_for_ack(Type, msg);
+        }
+
+        void sendMessage_and_wait_for_ack(byte Type, byte[] message)
+        {
+            if (mySerialPort.IsOpen)
             {
-                if (mySerialPort.IsOpen)
+                byte[] sendMessage = new byte[message.Length + 4];
+                sendMessage[0] = 0x02;
+                sendMessage[1] = Type;
+                sendMessage[2] = (byte)message.Length;
+                for (int i = 0; i < message.Length; i++)
+                {
+                    sendMessage[i + 3] = message[i];
+                }
+                sendMessage[message.Length + 3] = 0x03;
+
+                if(readyToSend == true)
+                {
                     mySerialPort.Write(sendMessage, 0, sendMessage.Length);
-                readyToSend = false;
-            } else
-            {
-                sendQueue.Enqueue(sendMessage);
+                    dispatcherACKTimeout.Start();
+                    readyToSend = false;
+                }
+                else
+                {
+                    sendQueue.Enqueue(sendMessage);
+                }
             }
         }
 
@@ -308,17 +358,21 @@ namespace ControlCenter
                 case 0x06:
                     if (receivedText[0] == 'A')
                     {
-                        if(readyToSend == false && sendQueue.Count >= 1)
+                        dispatcherACKTimeout.Stop();
+                        if (sendQueue.Count == 0)
+                        {
+                            readyToSend = true;
+                        }
+                        else
                         {
                             byte[] sendMessage = sendQueue.Dequeue();
-                            if (mySerialPort.IsOpen)
-                                mySerialPort.Write(sendMessage, 0, sendMessage.Length);
+                            mySerialPort.Write(sendMessage, 0, sendMessage.Length);
+                            dispatcherACKTimeout.Start();
                             if (sendQueue.Count == 0)
+                            {
                                 readyToSend = true;
+                            }
                         }
-                    } else if(receivedText[0] == 'N')
-                    {
-                        LogError("Got NACK", "processData");
                     }
                     break;
                 case 0x64:
@@ -469,32 +523,32 @@ namespace ControlCenter
 
         void DisplayRollPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_P.Background = Brushes.LightGreen));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_I.Background = Brushes.LightGreen));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_D.Background = Brushes.LightGreen));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_P.Text = string.Format("{0:N2}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_I.Text = string.Format("{0:N2}", ki)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_D.Text = string.Format("{0:N2}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Roll_P_Arduino.Content = string.Format("{0:N2}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Roll_I_Arduino.Content = string.Format("{0:N2}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Roll_D_Arduino.Content = string.Format("{0:N2}", kd)));
         }
 
         void DisplayPitchPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_P.Background = Brushes.LightGreen));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_I.Background = Brushes.LightGreen));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_D.Background = Brushes.LightGreen));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_P.Text = string.Format("{0:N2}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_I.Text = string.Format("{0:N2}", ki)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_D.Text = string.Format("{0:N2}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_P_Arduino.Content = string.Format("{0:N2}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_I_Arduino.Content = string.Format("{0:N2}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_D_Arduino.Content = string.Format("{0:N2}", kd)));
         }
 
         void DisplayYawPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_P.Background = Brushes.LightGreen));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_I.Background = Brushes.LightGreen));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_D.Background = Brushes.LightGreen));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_P.Text = string.Format("{0:N2}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_I.Text = string.Format("{0:N2}", ki)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_D.Text = string.Format("{0:N2}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_P_Arduino.Content = string.Format("{0:N2}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_I_Arduino.Content = string.Format("{0:N2}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_D_Arduino.Content = string.Format("{0:N2}", kd)));
         }
 
         /* Logging Functions:
@@ -519,9 +573,9 @@ namespace ControlCenter
          */
         void RefreshPIDValues()
         {
-            sendMessage(0x05, 'Y');
-            sendMessage(0x05, 'P');
-            sendMessage(0x05, 'R');
+            sendMessage_and_wait_for_ack(0x05, 'Y');
+            sendMessage_and_wait_for_ack(0x05, 'P');
+            sendMessage_and_wait_for_ack(0x05, 'R');
         }
 
         void ResetGUI()
@@ -542,6 +596,8 @@ namespace ControlCenter
 
         private void Connect_DisconnectButton_Click(object sender, RoutedEventArgs e)
         {
+            sendQueue.Clear();
+            recievedData.Clear();
             if (mySerialPort.IsOpen)
             {
                 try
@@ -622,7 +678,7 @@ namespace ControlCenter
             Value = Convert.ToInt16(kp);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             buffer[0] = 0x02;
             if (ki < 0)
@@ -636,7 +692,10 @@ namespace ControlCenter
             Value = Convert.ToInt16(ki);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+
+            sendMessage_and_wait_for_ack(0x06, buffer);
+            
+            
 
             buffer[0] = 0x03;
             if (kd < 0)
@@ -650,7 +709,7 @@ namespace ControlCenter
             Value = Convert.ToInt16(kd);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             RefreshPIDValues();
 
@@ -686,7 +745,7 @@ namespace ControlCenter
             Value = Convert.ToInt16(kp);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             buffer[0] = 0x05;
             if (ki < 0)
@@ -701,7 +760,7 @@ namespace ControlCenter
             Value = Convert.ToInt16(ki);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             buffer[0] = 0x06;
             if (kd < 0)
@@ -716,7 +775,7 @@ namespace ControlCenter
             Value = Convert.ToInt16(kd);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             RefreshPIDValues();
 
@@ -751,7 +810,7 @@ namespace ControlCenter
             Value = Convert.ToInt16(kp);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             buffer[0] = 0x08;
             if (ki < 0)
@@ -766,7 +825,7 @@ namespace ControlCenter
             Value = Convert.ToInt16(ki);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             buffer[0] = 0x09;
             if (kd < 0)
@@ -781,13 +840,17 @@ namespace ControlCenter
             Value = Convert.ToInt16(kd);
             buffer[2] = (byte)((Value & 0xFF00) >> 8);
             buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage(0x06, buffer);
+            sendMessage_and_wait_for_ack(0x06, buffer);
 
             RefreshPIDValues();
 
             SetStatus("Yaw PID Values Saved\tP: " + TextBox_Yaw_P.Text + "\tI: " + TextBox_Yaw_I.Text + "\tD: " + TextBox_Yaw_D.Text);
         }
 
+        private void Button_PIDSaveToFlash_Click(object sender, RoutedEventArgs e)
+        {
+            sendMessage(0x07, 'S');
+        }
 
         private void Button_setSensorOffsets_Click(object sender, RoutedEventArgs e)
         {
@@ -814,89 +877,41 @@ namespace ControlCenter
 
         private void CheckBox_SensorValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x03, 'I');
+            sendMessage_and_wait_for_ack(0x03, 'I');
             SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
         }
 
         private void CheckBox_SensorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x03, 'O');
+            sendMessage_and_wait_for_ack(0x03, 'O');
             SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
             DisplaySensorData(-100000, -100000, -100000);
         }
 
         private void CheckBox_MotorValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x01, 'I');
+            sendMessage_and_wait_for_ack(0x01, 'I');
             SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
         }
 
         private void CheckBox_MotorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x01, 'O');
+            sendMessage_and_wait_for_ack(0x01, 'O');
             SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
             DisplayMotorData(-100000, -100000, -100000, -100000);
         }
 
         private void CheckBox_RCReceiverValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x02, 'I');
+            sendMessage_and_wait_for_ack(0x02, 'I');
             SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
         }
 
         private void CheckBox_RCReceiverValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x02, 'O');
+            sendMessage_and_wait_for_ack(0x02, 'O');
             SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
             DisplayRCReaderData(-100000, -100000, -100000, -100000, -100000);
-        }
-
-        /*Textbox changes:
-         */
-
-        private void TextBox_Pitch_P_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Pitch_P.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Pitch_I_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Pitch_I.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Pitch_D_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Pitch_D.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Roll_P_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Roll_P.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Roll_I_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Roll_I.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Roll_D_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Roll_D.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Yaw_P_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Yaw_P.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Yaw_I_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Yaw_I.Background = Brushes.OrangeRed;
-        }
-
-        private void TextBox_Yaw_D_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            TextBox_Yaw_D.Background = Brushes.OrangeRed;
         }
 
         /* Special:
@@ -933,5 +948,7 @@ namespace ControlCenter
                 TextBox_ErrorLog.ScrollToEnd();
             }
         }
+
+        
     }
 }
