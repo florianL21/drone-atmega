@@ -23,10 +23,12 @@ void message_received(uint8_t* message, uint16_t Length)
 			SerialCOM_reciveCallBack(message, Type);
 		}
 		UART0_set_receiver_length(3);
+		SerialCOM_put_Command('A', 0x06);	//ACK
 	} else
 	{
 		UART0_set_receiver_length(3);
 		SerialCOM_put_debug("error");
+		SerialCOM_put_Command('N', 0x06);	//NACK
 	}
 }
 

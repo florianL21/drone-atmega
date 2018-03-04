@@ -25,6 +25,7 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "RCReader.h"
 #include "PID.h"
 #include "SerialCOM.h"
+#include "FlashStorage.h"
 
 #define BNO_MEASURE BNO_REG_GRV_DATA
 
@@ -40,8 +41,8 @@ float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
 
-float PitchKp = 0.75,	PitchKi = 0.05,		PitchKd = 0.1;
-float RollKp = 0.75,	RollKi = 0.05,		RollKd = 0.1;
+float PitchKp = 0.75,	PitchKi = 0.05,		PitchKd = 0.05;
+float RollKp = 0.75,	RollKi = 0.05,		RollKd = 0.05;
 float YawKp = 0.1,		YawKi = 0.1,		YawKd = 0.1;
 pidData PitchPid;
 pidData RollPid;
@@ -101,6 +102,47 @@ void BNO_Error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
 		error_handler_in(BNO055_ERROR);
 		error_handler_in(Error);
 	}
+}
+
+void SaveValuesToFlash(uint8_t type)
+{
+	if(type == 0x00 || type == 0x01)
+		error_handler_in(FlashStorage_write_float(4, RollKp));
+	if(type == 0x00 || type == 0x02)
+		error_handler_in(FlashStorage_write_float(8, RollKi));
+	if(type == 0x00 || type == 0x03)
+		error_handler_in(FlashStorage_write_float(12, RollKd));
+	if(type == 0x00 || type == 0x04)
+		error_handler_in(FlashStorage_write_float(16, PitchKp));
+	if(type == 0x00 || type == 0x05)
+		error_handler_in(FlashStorage_write_float(20, PitchKi));
+	if(type == 0x00 || type == 0x06)
+		error_handler_in(FlashStorage_write_float(24, PitchKd));
+	if(type == 0x00 || type == 0x07)
+		error_handler_in(FlashStorage_write_float(28, YawKp));
+	if(type == 0x00 || type == 0x08)
+		error_handler_in(FlashStorage_write_float(32, YawKi));
+	if(type == 0x00 || type == 0x09)
+		error_handler_in(FlashStorage_write_float(36, YawKd));
+	if(type == 0x00 || type == 0x0A)
+		error_handler_in(FlashStorage_write_float(40, sensorOffsetX));
+	if(type == 0x00 || type == 0x0B)
+		error_handler_in(FlashStorage_write_float(44, sensorOffsetY));
+}
+
+void LoadValuesFromFlash()
+{
+	RollKp = FlashStorage_read_float(4);
+	RollKi = FlashStorage_read_float(8);
+	RollKd = FlashStorage_read_float(12);
+	PitchKp = FlashStorage_read_float(16);
+	PitchKi = FlashStorage_read_float(20);
+	PitchKd = FlashStorage_read_float(24);
+	YawKp = FlashStorage_read_float(28);
+	YawKi = FlashStorage_read_float(32);
+	YawKd = FlashStorage_read_float(36);
+	sensorOffsetX = FlashStorage_read_float(40);
+	sensorOffsetY = FlashStorage_read_float(44);
 }
 
 void DataReady()
@@ -334,42 +376,50 @@ void gotValueFromPC(uint8_t Identifier, float recValue)
 	{
 		case 0x01: //Roll P
 			RollKp = recValue;
+			SaveValuesToFlash(0x01);
 			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x02: //Roll I
 			RollKi = recValue;
+			SaveValuesToFlash(0x02);
 			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x03: //Roll D
 			RollKd = recValue;
+			SaveValuesToFlash(0x03);
 			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
 		break;
 		case 0x04: //Pitch P
 			PitchKp = recValue;
+			SaveValuesToFlash(0x04);
 			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x05: //Pitch I
 			PitchKi = recValue;
+			SaveValuesToFlash(0x05);
 			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x06: //Pitch D
 			PitchKd = recValue;
+			SaveValuesToFlash(0x06);
 			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
 		break;
 		case 0x07: //Yaw P
 			YawKp = recValue;
+			SaveValuesToFlash(0x07);
 			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 		case 0x08: //Yaw I
 			YawKi = recValue;
+			SaveValuesToFlash(0x08);
 			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 		case 0x09: //Yaw D
 			YawKd = recValue;
+			//SaveValuesToFlash(0x09);
 			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
 		break;
 	}
-	
 }
 
 //Receive:
@@ -387,9 +437,11 @@ void gotValueFromPC(uint8_t Identifier, float recValue)
 //0x03: Sensor Values
 //0x04: PID Values
 //0x05: Reset GUI
+//0x06: ACK
 //0x64: Error Message
 void message_from_PC(uint8_t* message, uint8_t Type)
 {
+	//error_handler_in(SerialCOM_put_debug("GR"));
 	float recValue;
 	switch(Type)
 	{
@@ -418,6 +470,8 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				sensorOffsetY = SensorValues.Y;
 				PID_Reset(&RollPid);
 				PID_Reset(&PitchPid);
+				SaveValuesToFlash(0x0A);
+				SaveValuesToFlash(0x0B);
 			}
 		break;
 		case 0x05:
@@ -444,6 +498,8 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 	}
 }
 
+
+
 void config_BNO()
 {
 	error_handler_in(SerialCOM_put_debug("Start BNO Init"));
@@ -467,6 +523,24 @@ int main(void)
 	error_handler_in(SerialCOM_init());
 	error_handler_in(SerialCOM_register_call_back(message_from_PC));
 	error_handler_in(SerialCOM_put_Command('R', 0x05));			//Reset GUI
+	error_handler_in(FlashStorage_Init());
+
+	if(FlashStorage_read(0))
+	{
+		error_handler_in(SerialCOM_put_debug("Running for the first time, population Flash with default values"));
+		SaveValuesToFlash(0x00);
+		//error_handler_in(FlashStorage_write_float(4, 0.15));
+		error_handler_in(FlashStorage_write_uint8_t(0,0));
+	}else
+	{
+		error_handler_in(SerialCOM_put_debug("loading values from flash"));
+		/*char buffer[20]={0};
+		float test = FlashStorage_read_float(4);
+		sprintf(buffer, "Val: %f; %d", test, sizeof(test));
+		error_handler_in(SerialCOM_put_debug(buffer));*/
+		
+		LoadValuesFromFlash();
+	}
 	_Delay(8400000);
 	config_BNO();
 	

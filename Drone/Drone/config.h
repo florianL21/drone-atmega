@@ -96,7 +96,16 @@ typedef enum {
 	SerialCOM_ERROR_MALLOC_RETURNED_NULL			= 0x85,
 	SerialCOM_ERROR_NOT_READY_FOR_OPERATION			= 0x86,
 	SerialCOM_ERROR_INVALID_ARGUMENT				= 0x87,
-	SerialCOM_ERROR_QUEUE_WAS_EMPTY					= 0x88
+	SerialCOM_ERROR_QUEUE_WAS_EMPTY					= 0x88,
+	
+	//FlashStorage
+	FlashStorage_ERROR								= 0x90,
+	FlashStorage_ERROR_WRITE_FAILED					= 0x93,
+	FlashStorage_ERROR_ADDRESS_TOO_LOW				= 0x94,
+	FlashStorage_ERROR_ADDRESS_TOO_HIGH				= 0x95,
+	FlashStorage_ERROR_FAILED_TO_LOCK_FLASH			= 0x96,
+	FlashStorage_ERROR_FAILED_TO_UNLOCK_FLASH		= 0x97,
+	FlashStorage_ERROR_ADDRESS_NOT_4_BYTE_BOUDARY	= 0x98
 
 }StatusCode;
 

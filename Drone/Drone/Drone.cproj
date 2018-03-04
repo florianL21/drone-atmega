@@ -143,6 +143,18 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ASF_files\efc.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ASF_files\efc.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ASF_files\flash_efc.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ASF_files\flash_efc.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="BNO055.c">
       <SubType>compile</SubType>
     </Compile>
@@ -171,6 +183,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="ESCControl.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="FlashStorage.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="FlashStorage.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="HelperFunctions.c">
@@ -218,6 +236,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Device_Startup\" />
+    <Folder Include="ASF_files" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Device_Startup\sam3x8e_flash.ld">

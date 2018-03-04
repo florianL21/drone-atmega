@@ -23,6 +23,8 @@ namespace ControlCenter
     {
         public SerialPort mySerialPort;
         private Queue<byte> recievedData = new Queue<byte>();
+        private Queue<byte[]> sendQueue = new Queue<byte[]>();
+        bool readyToSend = true;
 
         static TextBox StatusText;
 
@@ -73,8 +75,15 @@ namespace ControlCenter
                 sendMessage[i + 3] = message[i];
             }
             sendMessage[message.Length + 3] = 0x03;
-            if (mySerialPort.IsOpen)
-                mySerialPort.Write(sendMessage, 0, sendMessage.Length);
+            if(readyToSend == true)
+            {
+                if (mySerialPort.IsOpen)
+                    mySerialPort.Write(sendMessage, 0, sendMessage.Length);
+                readyToSend = false;
+            } else
+            {
+                sendQueue.Enqueue(sendMessage);
+            }
         }
 
         public void Dispose()
@@ -104,7 +113,8 @@ namespace ControlCenter
 
         bool IsTypeValid(int Type)
         {
-            int[] validTypes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x64 };
+            //                                                       ACK  ERROR
+            int[] validTypes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x64 };
             for (int i = 0; i < validTypes.Length; i++)
             {
                 if (Type == validTypes[i])
@@ -293,6 +303,22 @@ namespace ControlCenter
                     {
                         Dispatcher.BeginInvoke((Action)(() => ResetGUI()));
                         RefreshPIDValues();
+                    }
+                    break;
+                case 0x06:
+                    if (receivedText[0] == 'A')
+                    {
+                        if(readyToSend == false && sendQueue.Count >= 1)
+                        {
+                            byte[] sendMessage = sendQueue.Dequeue();
+                            if (mySerialPort.IsOpen)
+                                mySerialPort.Write(sendMessage, 0, sendMessage.Length);
+                            if (sendQueue.Count == 0)
+                                readyToSend = true;
+                        }
+                    } else if(receivedText[0] == 'N')
+                    {
+                        LogError("Got NACK", "processData");
                     }
                     break;
                 case 0x64:
