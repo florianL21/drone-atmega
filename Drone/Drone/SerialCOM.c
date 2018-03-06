@@ -111,3 +111,25 @@ uint8_t SerialCOM_get_free_space()
 {
 	return UART0_get_space();
 }
+
+StatusCode SerialCOM_print_debug(const char *fmt, ...)
+{
+	char buffer[SERIALCOM_MAX_PRINT_CHARS];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+	StatusCode rt = SerialCOM_put_debug(buffer);
+	return rt;
+}
+
+StatusCode SerialCOM_print_error(const char *fmt, ...)
+{
+	char buffer[SERIALCOM_MAX_PRINT_CHARS];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+	StatusCode rt = SerialCOM_put_error(buffer);
+	return rt;
+}

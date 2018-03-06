@@ -273,4 +273,13 @@ RC_ControlCenter
 // thus resulting in higher CPU usage and slower Communication with the BNO.
 //#define BNO_USE_REGISTER_VALIDATION
 
+/*
+ *
+ *	SerialCOM
+ *
+ */
+
+//Maximum amount  of chars allowed for the print function
+#define SERIALCOM_MAX_PRINT_CHARS	100
+
 #endif /* CONFIG_H_ */

@@ -527,13 +527,13 @@ int main(void)
 
 	if(FlashStorage_read(0))
 	{
-		error_handler_in(SerialCOM_put_debug("Running for the first time, populating Flash with default values"));
+		error_handler_in(SerialCOM_print_debug("Running for the first time, populating Flash with default values"));
 		SaveValuesToFlash(0x00);
 		//LoadValuesFromFlash();
 		error_handler_in(FlashStorage_write_uint8_t(0,0));
 	}else
 	{
-		error_handler_in(SerialCOM_put_debug("loading values from flash"));		
+		error_handler_in(SerialCOM_print_debug("loading values from flash"));		
 		LoadValuesFromFlash();
 	}
 	_Delay(8400000);
