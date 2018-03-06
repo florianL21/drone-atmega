@@ -41,9 +41,9 @@ float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
 
-float PitchKp = 0.1,	PitchKi = 0.05,		PitchKd = 0.05;
-float RollKp = 0.1,	RollKi = 0.05,		RollKd = 0.05;
-float YawKp = 0.1,		YawKi = 0.1,		YawKd = 0.1;
+float PitchKp = 0.1,  PitchKi = 0.05,    PitchKd = 0.05;
+float RollKp = 0.1,  RollKi = 0.05,    RollKd = 0.05;
+float YawKp = 0.1,    YawKi = 0.1,    YawKd = 0.1;
 pidData PitchPid;
 pidData RollPid;
 pidData YawPid;
@@ -328,104 +328,34 @@ void DataReady()
 
 void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 {
-	uint8_t buffer[13] = {0};
-	bool IsNegative = kp < 0;
-	uint16_t NumValue;
+	uint8_t buffer[16] = {0};
+	uint32_t NumValue;
 	
 	buffer[0] = PIDIdentifier;
 	buffer[1] = 'P';
-	buffer[2] = IsNegative;
-	if(IsNegative)
-	{
-		NumValue = kp * -100;
-	}
-	else
-	{
-		NumValue = kp * 100;
-	}
-	buffer[3] = (NumValue & 0xFF00) >> 8;
-	buffer[4] = NumValue & 0x00FF;
+	memcpy(&NumValue, &kp, 4);
+	/*char temp[20] = "";
+	sprintf(temp,"%.4f: %lu", kp, NumValue);
+	SerialCOM_put_debug(temp);*/
+	buffer[2] = (NumValue & 0xFF000000) >> 24;
+	buffer[3] = (NumValue & 0x00FF0000) >> 16;
+	buffer[4] = (NumValue & 0x0000FF00) >> 8;
+	buffer[5] =  NumValue & 0x000000FF;
 	
-	buffer[5] = 'I';
-	IsNegative = ki < 0;
-	buffer[6] = IsNegative;
-	if(IsNegative)
-	{
-		NumValue = ki * -100;
-	}
-	else
-	{
-		NumValue = ki * 100;
-	}
-	buffer[7] = (NumValue & 0xFF00) >> 8;
-	buffer[8] = NumValue & 0x00FF;
+	buffer[6] = 'I';
+	memcpy(&NumValue, &ki, 4);
+	buffer[7] = (NumValue & 0xFF000000) >> 24;
+	buffer[8] = (NumValue & 0x00FF0000) >> 16;
+	buffer[9] = (NumValue & 0x0000FF00) >> 8;
+	buffer[10]=  NumValue & 0x000000FF;
 	
-	buffer[9] = 'D';
-	IsNegative = kd < 0;
-	buffer[10] = IsNegative;
-	if(IsNegative)
-	{
-		NumValue = kd * -100;
-	}
-	else
-	{
-		NumValue = kd * 100;
-	}
-	buffer[11] = (NumValue & 0xFF00) >> 8;
-	buffer[12] = NumValue & 0x00FF;
-	SerialCOM_put_message(buffer, 0x04, 13);
-}
-
-void gotValueFromPC(uint8_t Identifier, float recValue)
-{
-	switch(Identifier)
-	{
-		case 0x01: //Roll P
-			RollKp = recValue;
-			//SaveValuesToFlash(0x01);
-			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
-		break;
-		case 0x02: //Roll I
-			RollKi = recValue;
-			//SaveValuesToFlash(0x02);
-			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
-		break;
-		case 0x03: //Roll D
-			RollKd = recValue;
-			//SaveValuesToFlash(0x03);
-			PID_SetTunings(&RollPid, RollKp, RollKi, RollKd);
-		break;
-		case 0x04: //Pitch P
-			PitchKp = recValue;
-			//SaveValuesToFlash(0x04);
-			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
-		break;
-		case 0x05: //Pitch I
-			PitchKi = recValue;
-			//SaveValuesToFlash(0x05);
-			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
-		break;
-		case 0x06: //Pitch D
-			PitchKd = recValue;
-			//SaveValuesToFlash(0x06);
-			PID_SetTunings(&PitchPid, PitchKp, PitchKi, PitchKd);
-		break;
-		case 0x07: //Yaw P
-			YawKp = recValue;
-			//SaveValuesToFlash(0x07);
-			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
-		break;
-		case 0x08: //Yaw I
-			YawKi = recValue;
-			//SaveValuesToFlash(0x08);
-			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
-		break;
-		case 0x09: //Yaw D
-			YawKd = recValue;
-			//SaveValuesToFlash(0x09);
-			//PID_SetTunings(&YawPid, YawKp, YawKi, YawKd);
-		break;
-	}
+	buffer[11] = 'D';
+	memcpy(&NumValue, &kd, 4);
+	buffer[12] = (NumValue & 0xFF000000) >> 24;
+	buffer[13] = (NumValue & 0x00FF0000) >> 16;
+	buffer[14] = (NumValue & 0x0000FF00) >> 8;
+	buffer[15] =  NumValue & 0x000000FF;
+	SerialCOM_put_message(buffer, 0x04, 16);
 }
 
 //Receive:
@@ -449,7 +379,8 @@ void gotValueFromPC(uint8_t Identifier, float recValue)
 void message_from_PC(uint8_t* message, uint8_t Type)
 {
 	//error_handler_in(SerialCOM_put_debug("GR"));
-	float recValue;
+	float kp, ki, kd;
+	uint32_t Value;
 	switch(Type)
 	{
 		case 0x01:
@@ -479,6 +410,10 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				//SaveValuesToFlash(0x0B);
 				PID_Reset(&RollPid);
 				PID_Reset(&PitchPid);
+			} 
+			else
+			{
+				error_handler_in(SerialCOM_put_error("SetSensorOffsets command has errors"));
 			}
 		break;
 		case 0x05:
@@ -492,27 +427,73 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			{
 				sendPIDValuesToPC('Y', YawKp, YawKi, YawKd);
 			}
+			else
+			{
+				error_handler_in(SerialCOM_put_error("SendPIDValues command has errors"));
+			}
+			//restart BNO measurement if necessary
 			if(BNO055_is_busy() == false)
 			{
 				error_handler_in(BNO055_start_measurement(true, true, BNO_MEASURE));
 				error_handler_in(SerialCOM_put_debug("Restart BNO"));
-				
 			}
 		break;
 		case 0x06:
-			recValue = (message[2] << 8) | message[3];
-			recValue /= 100;
-			if(message[1] == 1)
-				recValue *= -1;
-			gotValueFromPC(message[0], recValue);
+			//check message integrity:
+			if(message[1] == 'P' && message[6] == 'I' && message[11] == 'D')
+			{
+				Value  = ((message[2] << 24) | (message[3] << 16) | (message[4] << 8) | message[5]);
+				memcpy(&kp, &Value, 4);
+				Value  = ((message[7] << 24) | (message[8] << 16) | (message[9] << 8) | message[10]);
+				memcpy(&ki, &Value, 4);
+				Value  = ((message[12] << 24) | (message[13] << 16) | (message[14] << 8) | message[15]);
+				memcpy(&kd, &Value, 4);
+				
+				switch(message[0])
+				{
+					case 'P':
+						PitchKd = kd;
+						PitchKi = ki;
+						PitchKp = kp;
+						PID_SetTunings(&PitchPid, PitchKd, PitchKi, PitchKp);
+					break;
+					case 'R':
+						RollKd = kd;
+						RollKi = ki;
+						RollKp = kp;
+						PID_SetTunings(&RollPid, RollKd, RollKi, RollKp);
+					break;
+					case 'Y':
+						YawKd = kd;
+						YawKi = ki;
+						YawKp = kp;
+						PID_SetTunings(&YawPid, YawKd, YawKi, YawKp);
+					break;
+					default:
+						error_handler_in(SerialCOM_put_error("SetPIDValues command has a wrong PID identifier"));
+					break;
+				}
+			} 
+			else
+			{
+				error_handler_in(SerialCOM_put_error("SetPIDValues command has errors"));
+			}
 		break;
 		case 0x07:
 			if(message[0] == 'S')
 			{
-				SaveValuesToFlash(0x00);
+				//BNO055_stop_continous_measurement();	//stop BNO measurement
+				//while(BNO055_is_busy() == true);		//wait for a bit to make sure that all measurements are finished
+				SaveValuesToFlash(0x00);				//save Values
+				//BNO055_start_measurement(true,true,BNO_MEASURE);	//resume Measurement
+				error_handler_in(SerialCOM_put_debug("Saved values to flash"));
+			}else
+			{
+				error_handler_in(SerialCOM_put_error("SaveToFlash command has errors"));
 			}
 		break;
 		default:
+			error_handler_in(SerialCOM_put_error("Unknown command!"));
 		break;
 	}
 }

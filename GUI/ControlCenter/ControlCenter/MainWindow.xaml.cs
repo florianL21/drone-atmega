@@ -50,6 +50,7 @@ namespace ControlCenter
 
             dispatcherACKTimeout.Tick += new EventHandler(ACK_timeout);
             dispatcherACKTimeout.Interval = new TimeSpan(0, 0, 1);
+            
         }
 
         /*Send Message Functions:
@@ -156,6 +157,16 @@ namespace ControlCenter
                 cArray[i] = (char)bArray[i];
             }
             return new string(cArray);
+        }
+
+        byte[] charArrayToByteArray(char[] Array)
+        {
+            byte[] bArray = new byte[Array.Length];
+            for(int i = 0; i < Array.Length; i++)
+            {
+                bArray[i] = (byte)Array[i];
+            }
+            return bArray;
         }
 
         /* Data receive processing:
@@ -308,26 +319,27 @@ namespace ControlCenter
                     }
                     break;
                 case 0x04:
-                    
                     float kp, ki, kd;
-                    if(receivedText[1] == 'P' && receivedText[5] == 'I' && receivedText[9] == 'D')
+                    if (receivedText[1] == 'P' && receivedText[6] == 'I' && receivedText[11] == 'D')
                     {
-                        kp = ((receivedText[3] << 8) | receivedText[4]);
-                        ki = ((receivedText[7] << 8) | receivedText[8]);
-                        kd = ((receivedText[11] << 8) | receivedText[12]);
+                        byte[] array = new byte[4];
+                        array[0] = (byte)receivedText[5];
+                        array[1] = (byte)receivedText[4];
+                        array[2] = (byte)receivedText[3];
+                        array[3] = (byte)receivedText[2];
+                        kp = BitConverter.ToSingle(array, 0);
+                        array[0] = (byte)receivedText[10];
+                        array[1] = (byte)receivedText[9];
+                        array[2] = (byte)receivedText[8];
+                        array[3] = (byte)receivedText[7];
+                        ki = BitConverter.ToSingle(array, 0);
+                        array[0] = (byte)receivedText[15];
+                        array[1] = (byte)receivedText[14];
+                        array[2] = (byte)receivedText[13];
+                        array[3] = (byte)receivedText[12];
+                        kd = BitConverter.ToSingle(array, 0);                        
 
-                        kp /= 100;
-                        ki /= 100;
-                        kd /= 100;
-
-                        if (receivedText[2] == 1)
-                            kp *= -1;
-                        if (receivedText[6] == 1)
-                            ki *= -1;
-                        if (receivedText[10] == 1)
-                            kd *= -1;
-
-                        switch(receivedText[0])
+                        switch (receivedText[0])
                         {
                             case 'R':
                                 SetStatus("Received Roll Data.");
@@ -523,32 +535,32 @@ namespace ControlCenter
 
         void DisplayRollPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_P.Text = string.Format("{0:N2}", kp)));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_I.Text = string.Format("{0:N2}", ki)));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_D.Text = string.Format("{0:N2}", kd)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Roll_P_Arduino.Content = string.Format("{0:N2}", kp)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Roll_I_Arduino.Content = string.Format("{0:N2}", ki)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Roll_D_Arduino.Content = string.Format("{0:N2}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_P.Text = string.Format("{0:N4}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_I.Text = string.Format("{0:N4}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_D.Text = string.Format("{0:N4}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Roll_P_Arduino.Content = string.Format("{0:N4}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Roll_I_Arduino.Content = string.Format("{0:N4}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Roll_D_Arduino.Content = string.Format("{0:N4}", kd)));
         }
 
         void DisplayPitchPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_P.Text = string.Format("{0:N2}", kp)));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_I.Text = string.Format("{0:N2}", ki)));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_D.Text = string.Format("{0:N2}", kd)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_P_Arduino.Content = string.Format("{0:N2}", kp)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_I_Arduino.Content = string.Format("{0:N2}", ki)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_D_Arduino.Content = string.Format("{0:N2}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_P.Text = string.Format("{0:N4}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_I.Text = string.Format("{0:N4}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_D.Text = string.Format("{0:N4}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_P_Arduino.Content = string.Format("{0:N4}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_I_Arduino.Content = string.Format("{0:N4}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Pitch_D_Arduino.Content = string.Format("{0:N4}", kd)));
         }
 
         void DisplayYawPIDData(float kp, float ki, float kd)
         {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_P.Text = string.Format("{0:N2}", kp)));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_I.Text = string.Format("{0:N2}", ki)));
-            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_D.Text = string.Format("{0:N2}", kd)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_P_Arduino.Content = string.Format("{0:N2}", kp)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_I_Arduino.Content = string.Format("{0:N2}", ki)));
-            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_D_Arduino.Content = string.Format("{0:N2}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_P.Text = string.Format("{0:N4}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_I.Text = string.Format("{0:N4}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_D.Text = string.Format("{0:N4}", kd)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_P_Arduino.Content = string.Format("{0:N4}", kp)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_I_Arduino.Content = string.Format("{0:N4}", ki)));
+            Dispatcher.BeginInvoke((Action)(() => Label_Yaw_D_Arduino.Content = string.Format("{0:N4}", kd)));
         }
 
         /* Logging Functions:
@@ -589,6 +601,36 @@ namespace ControlCenter
             DisplayRollPIDData(0, 0, 0);
             DisplayPitchPIDData(0, 0, 0);
             DisplayYawPIDData(0, 0, 0);
+        }
+
+        void sendPIDValuesToArduino(byte PIDIdentifier, float kp, float ki, float kd)
+        {
+            byte[] buffer = new byte[16];
+            byte[] Value = new byte[4];
+
+            buffer[0] = PIDIdentifier;
+            buffer[1] = (byte)'P';
+            Value = BitConverter.GetBytes(kp);
+            buffer[2] = Value[3];
+            buffer[3] = Value[2];
+            buffer[4] = Value[1];
+            buffer[5] = Value[0];
+
+            buffer[6] = (byte)'I';
+            Value = BitConverter.GetBytes(ki);
+            buffer[7] = Value[3];
+            buffer[8] = Value[2];
+            buffer[9] = Value[1];
+            buffer[10] = Value[0];
+
+            buffer[11] = (byte)'D';
+            Value = BitConverter.GetBytes(kd);
+            buffer[12] = Value[3];
+            buffer[13] = Value[2];
+            buffer[14] = Value[1];
+            buffer[15] = Value[0];
+
+            sendMessage_and_wait_for_ack(0x06, buffer);
         }
 
         /*Button Clicks:
@@ -654,128 +696,38 @@ namespace ControlCenter
         private void Button_RollPIDSave_Click(object sender, RoutedEventArgs e)
         {
             float kp, ki, kd;
-            short Value;
-            byte[] buffer = new byte[4];
-            kp = float.Parse(TextBox_Roll_P.Text) * 100;
-            ki = float.Parse(TextBox_Roll_I.Text) * 100;
-            kd = float.Parse(TextBox_Roll_D.Text) * 100;
+            kp = float.Parse(TextBox_Roll_P.Text);
+            ki = float.Parse(TextBox_Roll_I.Text);
+            kd = float.Parse(TextBox_Roll_D.Text);
 
-            if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
+            /*if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
             {
                 SetStatus("Value has to be in between -327,67 and 327,67");
                 return;
-            }
+            }*/
 
-            buffer[0] = 0x01;
-            if (kp < 0)
-            {
-                kp *= -1;
-                buffer[1] = 1;
-            } else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(kp);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
-
-            buffer[0] = 0x02;
-            if (ki < 0)
-            {
-                ki *= -1;
-                buffer[1] = 1;
-            } else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(ki);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-
-            sendMessage_and_wait_for_ack(0x06, buffer);
-            
-            
-
-            buffer[0] = 0x03;
-            if (kd < 0)
-            {
-                kd *= -1;
-                buffer[1] = 1;
-            } else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(kd);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
+            sendPIDValuesToArduino((byte)'R', kp, ki, kd);
 
             RefreshPIDValues();
-
 
             SetStatus("Roll PID Values Saved\tP: " + TextBox_Roll_P.Text + "\tI: " + TextBox_Roll_I.Text + "\tD: " + TextBox_Roll_D.Text);
         }
 
         private void Button_PitchPIDSave_Click(object sender, RoutedEventArgs e)
         {
-            float kp, ki, kd;
-            short Value;
-            byte[] buffer = new byte[4];
-            kp = float.Parse(TextBox_Pitch_P.Text) * 100;
-            ki = float.Parse(TextBox_Pitch_I.Text) * 100;
-            kd = float.Parse(TextBox_Pitch_D.Text) * 100;
 
-            if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
+            float kp, ki, kd;
+            kp = float.Parse(TextBox_Pitch_P.Text);
+            ki = float.Parse(TextBox_Pitch_I.Text);
+            kd = float.Parse(TextBox_Pitch_D.Text);
+
+            /*if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
             {
                 SetStatus("Value has to be in between -327,67 and 327,67");
                 return;
-            }
+            }*/
 
-            buffer[0] = 0x04;
-            if (kp < 0)
-            {
-                kp *= -1;
-                buffer[1] = 1;
-            }
-            else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(kp);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
-
-            buffer[0] = 0x05;
-            if (ki < 0)
-            {
-                ki *= -1;
-                buffer[1] = 1;
-            }
-            else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(ki);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
-
-            buffer[0] = 0x06;
-            if (kd < 0)
-            {
-                kd *= -1;
-                buffer[1] = 1;
-            }
-            else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(kd);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
+            sendPIDValuesToArduino((byte)'P', kp, ki, kd);
 
             RefreshPIDValues();
 
@@ -785,62 +737,17 @@ namespace ControlCenter
         private void Button_YawPIDSave_Click(object sender, RoutedEventArgs e)
         {
             float kp, ki, kd;
-            short Value;
-            byte[] buffer = new byte[4];
-            kp = float.Parse(TextBox_Yaw_P.Text) * 100;
-            ki = float.Parse(TextBox_Yaw_I.Text) * 100;
-            kd = float.Parse(TextBox_Yaw_D.Text) * 100;
+            kp = float.Parse(TextBox_Yaw_P.Text);
+            ki = float.Parse(TextBox_Yaw_I.Text);
+            kd = float.Parse(TextBox_Yaw_D.Text);
 
-            if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
+            /*if ((kp >= 32768 || ki >= 32768 || kd >= 32768) || (kp <= -32768 || ki <= -32768 || kd <= -32768))
             {
                 SetStatus("Value has to be in between -327,67 and 327,67");
                 return;
-            }
+            }*/
 
-            buffer[0] = 0x07;
-            if (kp < 0)
-            {
-                kp *= -1;
-                buffer[1] = 1;
-            }
-            else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(kp);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
-
-            buffer[0] = 0x08;
-            if (ki < 0)
-            {
-                ki *= -1;
-                buffer[1] = 1;
-            }
-            else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(ki);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
-
-            buffer[0] = 0x09;
-            if (kd < 0)
-            {
-                kd *= -1;
-                buffer[1] = 1;
-            }
-            else
-            {
-                buffer[1] = 0;
-            }
-            Value = Convert.ToInt16(kd);
-            buffer[2] = (byte)((Value & 0xFF00) >> 8);
-            buffer[3] = (byte)(Value & 0x00FF);
-            sendMessage_and_wait_for_ack(0x06, buffer);
+            sendPIDValuesToArduino((byte)'Y', kp, ki, kd);
 
             RefreshPIDValues();
 
