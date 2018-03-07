@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "config.h"
+#include "ErrorHandling.h"
 
 //SampleTime in ms
 
@@ -37,12 +38,12 @@ struct pidData
 typedef struct pidData pidData;
 
 
-StatusCode PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime);
-StatusCode PID_Compute(pidData* pidController);
-StatusCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd);
-StatusCode PID_SetSampleTime(pidData* pidController, float NewSampleTime);
-StatusCode PID_SetOutputLimits(pidData* pidController, float Min, float Max);
-StatusCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction);
+ErrorCode PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime);
+ErrorCode PID_Compute(pidData* pidController);
+ErrorCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd);
+ErrorCode PID_SetSampleTime(pidData* pidController, float NewSampleTime);
+ErrorCode PID_SetOutputLimits(pidData* pidController, float Min, float Max);
+ErrorCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction);
 void PID_Init();
 bool PID_need_compute(pidData* pidController);
 void PID_Reset(pidData* pidController);

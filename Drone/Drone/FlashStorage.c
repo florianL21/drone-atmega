@@ -1,9 +1,9 @@
 #include "FlashStorage.h"
 
-StatusCode FlashStorage_Init()
+ErrorCode FlashStorage_Init()
 {
 	if(flash_init(FLASH_ACCESS_MODE_128, 6) != FLASH_RC_OK)
-		return FlashStorage_ERROR;
+		return MODULE_FLASHSTORAGE | FUNCTION_Init | ERROR_GENERIC;
 	return SUCCESS;
 }
 
@@ -15,120 +15,120 @@ uint8_t* FlashStorage_readAddress(uint32_t address) {
   return FLASH_START+address;
 }
 
-StatusCode FlashStorage_lock(uint32_t address, uint32_t dataLength)
+ErrorCode FlashStorage_lock(uint32_t address, uint32_t dataLength)
 {
 	uint32_t retCode;
 	if ((uint32_t)FLASH_START+address < IFLASH1_ADDR) {
-		return FlashStorage_ERROR_ADDRESS_TOO_LOW;
+		return MODULE_FLASHSTORAGE | FUNCTION_lock | ERROR_ADDRESS_TOO_LOW;
 	}
 
 	if ((uint32_t)FLASH_START+address >= (IFLASH1_ADDR + IFLASH1_SIZE)) {
-		return FlashStorage_ERROR_ADDRESS_TOO_HIGH;
+		return MODULE_FLASHSTORAGE | FUNCTION_lock | ERROR_ADDRESS_TOO_HIGH;
 	}
 
 	if ((((uint32_t)FLASH_START+address) & 3) != 0) {
-		return FlashStorage_ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
+		return MODULE_FLASHSTORAGE | FUNCTION_lock | ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
 	}
 	
 	 // Lock page
 	 retCode = flash_lock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
 	 if (retCode != FLASH_RC_OK) {
-		 return FlashStorage_ERROR_FAILED_TO_LOCK_FLASH;
+		 return MODULE_FLASHSTORAGE | FUNCTION_lock | ERROR_FAILED_TO_LOCK_FLASH;
 	 }
 	return SUCCESS;
 }
 
-StatusCode FlashStorage_unlock(uint32_t address, uint32_t dataLength)
+ErrorCode FlashStorage_unlock(uint32_t address, uint32_t dataLength)
 {
 	uint32_t retCode;
 	if ((uint32_t)FLASH_START+address < IFLASH1_ADDR) {
-		return FlashStorage_ERROR_ADDRESS_TOO_LOW;
+		return MODULE_FLASHSTORAGE | FUNCTION_unlock | ERROR_ADDRESS_TOO_LOW;
 	}
 
 	if ((uint32_t)FLASH_START+address >= (IFLASH1_ADDR + IFLASH1_SIZE)) {
-		return FlashStorage_ERROR_ADDRESS_TOO_HIGH;
+		return MODULE_FLASHSTORAGE | FUNCTION_unlock | ERROR_ADDRESS_TOO_HIGH;
 	}
 
 	if ((((uint32_t)FLASH_START+address) & 3) != 0) {
-		return FlashStorage_ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
+		return MODULE_FLASHSTORAGE | FUNCTION_unlock | ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
 	}
 	
 	retCode = flash_unlock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
 	if (retCode != FLASH_RC_OK) {
-		return FlashStorage_ERROR_FAILED_TO_UNLOCK_FLASH;
+		return MODULE_FLASHSTORAGE | FUNCTION_unlock | ERROR_FAILED_TO_UNLOCK_FLASH;
 	}
 	return SUCCESS;
 }
 
-StatusCode FlashStorage_write(uint32_t address, uint8_t *data, uint32_t dataLength) {
+ErrorCode FlashStorage_write(uint32_t address, uint8_t *data, uint32_t dataLength) {
   uint32_t retCode;
 
   if ((uint32_t)FLASH_START+address < IFLASH1_ADDR) {
-    return FlashStorage_ERROR_ADDRESS_TOO_LOW;
+    return MODULE_FLASHSTORAGE | FUNCTION_write | ERROR_ADDRESS_TOO_LOW;
   }
 
   if ((uint32_t)FLASH_START+address >= (IFLASH1_ADDR + IFLASH1_SIZE)) {
-    return FlashStorage_ERROR_ADDRESS_TOO_HIGH;
+    return MODULE_FLASHSTORAGE | FUNCTION_write | ERROR_ADDRESS_TOO_HIGH;
   }
 
   if ((((uint32_t)FLASH_START+address) & 3) != 0) {
-    return FlashStorage_ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
+    return MODULE_FLASHSTORAGE | FUNCTION_write | ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
   }
 
   // Unlock page
   retCode = flash_unlock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
   if (retCode != FLASH_RC_OK) {
-    return FlashStorage_ERROR_FAILED_TO_UNLOCK_FLASH;
+    return MODULE_FLASHSTORAGE | FUNCTION_write | ERROR_FAILED_TO_UNLOCK_FLASH;
   }
 
   // write data
   retCode = flash_write((uint32_t)FLASH_START+address, data, dataLength, 1);
 
   if (retCode != FLASH_RC_OK) {
-    return FlashStorage_ERROR_WRITE_FAILED;
+    return MODULE_FLASHSTORAGE | FUNCTION_write | ERROR_WRITE_FAILED;
   }
 
   // Lock page
     retCode = flash_lock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
   if (retCode != FLASH_RC_OK) {
-    return FlashStorage_ERROR_FAILED_TO_LOCK_FLASH;
+    return MODULE_FLASHSTORAGE | FUNCTION_write | ERROR_FAILED_TO_LOCK_FLASH;
   }
   return SUCCESS;
 }
 
-StatusCode FlashStorage_write_unlocked(uint32_t address, uint8_t *data, uint32_t dataLength) {
+ErrorCode FlashStorage_write_unlocked(uint32_t address, uint8_t *data, uint32_t dataLength) {
   uint32_t retCode;
 
   if ((uint32_t)FLASH_START+address < IFLASH1_ADDR) {
-    return FlashStorage_ERROR_ADDRESS_TOO_LOW;
+    return MODULE_FLASHSTORAGE | FUNCTION_write_unlocked | ERROR_ADDRESS_TOO_LOW;
   }
 
   if ((uint32_t)FLASH_START+address >= (IFLASH1_ADDR + IFLASH1_SIZE)) {
-    return FlashStorage_ERROR_ADDRESS_TOO_HIGH;
+    return MODULE_FLASHSTORAGE | FUNCTION_write_unlocked | ERROR_ADDRESS_TOO_HIGH;
   }
 
   if ((((uint32_t)FLASH_START+address) & 3) != 0) {
-    return FlashStorage_ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
+    return MODULE_FLASHSTORAGE | FUNCTION_write_unlocked | ERROR_ADDRESS_NOT_4_BYTE_BOUDARY;
   }
 
   // write data
   retCode = flash_write((uint32_t)FLASH_START+address, data, dataLength, 1);
 
   if (retCode != FLASH_RC_OK) {
-    return FlashStorage_ERROR_WRITE_FAILED;
+    return MODULE_FLASHSTORAGE | FUNCTION_write_unlocked | ERROR_WRITE_FAILED;
   }
 
   return SUCCESS;
 }
 
-StatusCode FlashStorage_write_uint8_t(uint32_t address, uint8_t Value)
+ErrorCode FlashStorage_write_uint8_t(uint32_t address, uint8_t Value)
 {
 	uint8_t b2[sizeof(Value)];
 	memcpy(b2, &Value, sizeof(Value));
 	return FlashStorage_write(address, b2, sizeof(Value));
 }
 
-StatusCode FlashStorage_write_float(uint32_t address, float Value)
+ErrorCode FlashStorage_write_float(uint32_t address, float Value)
 {
 	uint8_t b2[sizeof(Value)];
 	memcpy(b2, &Value, sizeof(Value));

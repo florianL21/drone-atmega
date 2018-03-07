@@ -179,6 +179,12 @@
     <Compile Include="Device_Startup\system_sam3xa.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="ErrorHandling.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ErrorHandling.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="ESCControl.c">
       <SubType>compile</SubType>
     </Compile>

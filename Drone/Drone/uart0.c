@@ -18,13 +18,13 @@ bool uart0_transmitInProgress = false;
 
 void uart0_put_raw_data_(uint8_t* sendData, uint16_t Length);
 
-StatusCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
+ErrorCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
-		return UART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_UART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFUALT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength),error_return);
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength));
 	
 	PMC->PMC_PCER0 = 1 << ID_UART;
 	// Set pin in peripheral mode
@@ -52,7 +52,7 @@ StatusCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	
 	uart0SendQueue = queue_new(UART0_QUEUE_MAX_ITEMS);
 	if(uart0SendQueue == NULL)
-		return HelperFunctions_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_UART0 | FUNCTION_Init | ERROR_MALLOC_RETURNED_NULL;
 	return SUCCESS;
 }
 
@@ -71,19 +71,19 @@ uint8_t UART0_get_space()
 	return UART0_QUEUE_MAX_ITEMS - queue_get_item_count(uart0SendQueue);
 }
 
-StatusCode UART0_puts(char Data[])
+ErrorCode UART0_puts(char Data[])
 {
 	return UART0_put_data((uint8_t*)Data, strlen((char*)Data));
 }
 
-StatusCode UART0_put_float(float num)
+ErrorCode UART0_put_float(float num)
 {
 	char buffer[20] = "";
 	sprintf(buffer,"%.4f",num);
 	return UART0_puts(buffer);
 }
 
-StatusCode UART0_put_int(int num)
+ErrorCode UART0_put_int(int num)
 {
 	char buffer[20] = "";
 	sprintf(buffer,"%d",num);
@@ -102,15 +102,15 @@ void uart0_put_raw_data(uint8_t* sendData, uint16_t Length)
 	UART->UART_IER = UART_IER_ENDTX;		//activate Transmit done interrupt
 }
 
-StatusCode UART0_put_data(uint8_t* sendData, uint16_t Length)
+ErrorCode UART0_put_data(uint8_t* sendData, uint16_t Length)
 {
 	if(sendData == NULL)
 	{
-		return UART0_ERROR_GOT_NULL_POINTER;
+		return MODULE_UART0 | FUNCTION_put_data | ERROR_GOT_NULL_POINTER;
 	}
 	if(Length == 0)
 	{
-		return UART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_UART0 | FUNCTION_put_data | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
 	if(uart0_transmitInProgress == false)
 	{
@@ -123,23 +123,23 @@ StatusCode UART0_put_data(uint8_t* sendData, uint16_t Length)
 			return queue_write(uart0SendQueue, sendData, Length);
 		}else
 		{
-			return UART0_ERROR_NOT_READY_FOR_OPERATION;
+			return MODULE_UART0 | FUNCTION_put_data | ERROR_NOT_READY_FOR_OPERATION;
 		}
 	}
 }
 
-StatusCode UART0_put_int_blocking(int num)
+ErrorCode UART0_put_int_blocking(int num)
 {
 	char buffer[50] = "";
 	sprintf(buffer,"%d",num);
 	return UART0_puts_blocking(buffer);
 }
 
-StatusCode UART0_puts_blocking(char sendData[])
+ErrorCode UART0_puts_blocking(char sendData[])
 {
 	if(sendData == NULL)
 	{
-		return UART0_ERROR_GOT_NULL_POINTER;
+		return MODULE_UART0 | FUNCTION_puts_blocking | ERROR_GOT_NULL_POINTER;
 	}
 	while(uart0_transmitInProgress);
 	uart0_transmitInProgress = true;
@@ -147,11 +147,11 @@ StatusCode UART0_puts_blocking(char sendData[])
 	return SUCCESS;
 }
 
-StatusCode UART0_set_receiver_length(uint32_t Length)
+ErrorCode UART0_set_receiver_length(uint32_t Length)
 {
 	if(Length == 0)
 	{
-		return UART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_UART0 | FUNCTION_set_receiver_length | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
 	if(uart0_ReceivePtr != NULL)
 	{
@@ -162,17 +162,17 @@ StatusCode UART0_set_receiver_length(uint32_t Length)
 	uart0_ReceivePtr = malloc(Length*sizeof(uint8_t));
 	if(uart0_ReceivePtr == NULL)
 	{
-		return UART0_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_UART0 | FUNCTION_set_receiver_length | ERROR_MALLOC_RETURNED_NULL;
 	}
 	UART->UART_RPR = (uint32_t)uart0_ReceivePtr;
 	return SUCCESS;
 }
 
-StatusCode UART0_register_received_callback(UART_RECV_CALLBACK callBack)
+ErrorCode UART0_register_received_callback(UART_RECV_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
-		return UART0_ERROR_GOT_NULL_POINTER;
+		return MODULE_UART0 | FUNCTION_register_received_callback | ERROR_GOT_NULL_POINTER;
 	}
 	uart_reciveCallBack = callBack;
 	return SUCCESS;

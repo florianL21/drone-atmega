@@ -32,46 +32,46 @@ void message_received(uint8_t* message, uint16_t Length)
 	}
 }
 
-StatusCode SerialCOM_register_call_back(SerialCOM_RECV_CALLBACK callback)
+ErrorCode SerialCOM_register_call_back(SerialCOM_RECV_CALLBACK callback)
 {
 	if(callback == NULL)
-		return SerialCOM_ERROR_GOT_NULL_POINTER;
+		return MODULE_SERIALCOM | FUNCTION_register_call_back | ERROR_GOT_NULL_POINTER;
 	SerialCOM_reciveCallBack = callback;
 	return SUCCESS;
 }
 
-StatusCode SerialCOM_init()
+ErrorCode SerialCOM_init()
 {
-	DEFUALT_ERROR_HANDLER(UART0_init(115200, 1), errorReturn);
-	DEFUALT_ERROR_HANDLER1(UART0_set_receiver_length(3), errorReturn);
-	DEFUALT_ERROR_HANDLER1(UART0_register_received_callback(message_received), errorReturn);
+	DEFAULT_ERROR_HANDLER(UART0_init(115200, 1));
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(3));
+	DEFAULT_ERROR_HANDLER(UART0_register_received_callback(message_received));
 	return SUCCESS;
 }
 
-StatusCode SerialCOM_put_message(uint8_t message[], uint8_t Type, uint8_t Length)
+ErrorCode SerialCOM_put_message(uint8_t message[], uint8_t Type, uint8_t Length)
 {
 	uint8_t *transmissionData = malloc((Length+4)*sizeof(uint8_t));
 	if(transmissionData == NULL)
 	{
-		return SerialCOM_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_SERIALCOM | FUNCTION_put_message | ERROR_MALLOC_RETURNED_NULL;
 	}
 	transmissionData[0] = 0x02;
 	transmissionData[1] = Type;
 	transmissionData[2] = Length;
 	memcpy(&transmissionData[3], message, Length);
 	transmissionData[Length+3] = 0x03;
-	StatusCode errorReturn = UART0_put_data(transmissionData, Length+4);
+	ErrorCode errorReturn = UART0_put_data(transmissionData, Length+4);
 	free(transmissionData);
 	return errorReturn;
 }
 
-StatusCode SerialCOM_force_put_message(uint8_t message[], uint8_t Type, uint8_t Length)
+ErrorCode SerialCOM_force_put_message(uint8_t message[], uint8_t Type, uint8_t Length)
 {
 	uint8_t *transmissionData = malloc((Length+4)*sizeof(uint8_t));
 	if(transmissionData == NULL)
-		return SerialCOM_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_SERIALCOM | FUNCTION_force_put_message | ERROR_MALLOC_RETURNED_NULL;
 	if(Length == 0)
-		return SerialCOM_ERROR_INVALID_ARGUMENT;
+		return MODULE_SERIALCOM | FUNCTION_force_put_message | ERROR_INVALID_ARGUMENT;
 	transmissionData[0] = 0x02;
 	transmissionData[1] = Type;
 	transmissionData[2] = Length;
@@ -82,27 +82,27 @@ StatusCode SerialCOM_force_put_message(uint8_t message[], uint8_t Type, uint8_t 
 	return SUCCESS;
 }
 
-StatusCode SerialCOM_put_Command(char CommandChar, uint8_t Type)
+ErrorCode SerialCOM_put_Command(char CommandChar, uint8_t Type)
 {
 	return SerialCOM_put_message(((uint8_t*)&CommandChar), Type, 1);
 }
 
-StatusCode SerialCOM_put_debug(char Text[])
+ErrorCode SerialCOM_put_debug(char Text[])
 {
 	return SerialCOM_put_message(((uint8_t*)Text), 0x00, strlen(Text));
 }
 
-StatusCode SerialCOM_put_debug_n(char Text[], uint8_t Length)
+ErrorCode SerialCOM_put_debug_n(char Text[], uint8_t Length)
 {
 	return SerialCOM_put_message(((uint8_t*)Text), 0x00, Length);
 }
 
-StatusCode SerialCOM_put_error(char Text[])
+ErrorCode SerialCOM_put_error(char Text[])
 {
 	return SerialCOM_put_message(((uint8_t*)Text), 0x64, strlen(Text));
 }
 
-StatusCode SerialCOM_force_put_error(char Text[])
+ErrorCode SerialCOM_force_put_error(char Text[])
 {
 	return SerialCOM_force_put_message(((uint8_t*)Text), 0x64, strlen(Text));
 }
@@ -112,24 +112,24 @@ uint8_t SerialCOM_get_free_space()
 	return UART0_get_space();
 }
 
-StatusCode SerialCOM_print_debug(const char *fmt, ...)
+ErrorCode SerialCOM_print_debug(const char *fmt, ...)
 {
 	char buffer[SERIALCOM_MAX_PRINT_CHARS];
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
-	StatusCode rt = SerialCOM_put_debug(buffer);
+	ErrorCode rt = SerialCOM_put_debug(buffer);
 	return rt;
 }
 
-StatusCode SerialCOM_print_error(const char *fmt, ...)
+ErrorCode SerialCOM_print_error(const char *fmt, ...)
 {
 	char buffer[SERIALCOM_MAX_PRINT_CHARS];
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
-	StatusCode rt = SerialCOM_put_error(buffer);
+	ErrorCode rt = SerialCOM_put_error(buffer);
 	return rt;
 }

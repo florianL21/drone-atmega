@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "config.h"
+#include "ErrorHandling.h"
 
 struct queue_node {
 	struct queue_node *next;
@@ -81,7 +82,7 @@ queue_node queue_read(Queue *queue);
  * Writes a Value to the top of the queue
  * returns 0 if an error occures
  */
-StatusCode queue_write(Queue* writeQueue, uint8_t* writeWalue, uint16_t Length);
+ErrorCode queue_write(Queue* writeQueue, uint8_t* writeWalue, uint16_t Length);
 
 /*
  * 
@@ -95,12 +96,12 @@ uint32_t queue_get_item_count(Queue* queue);
  * Deletes the queue and all its elements.
  * 
  */
-StatusCode queue_delete(Queue* queue);
+ErrorCode queue_delete(Queue* queue);
 
 
 
-StatusCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue);
-StatusCode median_filter_add(MedianFilter* Filter, uint16_t newValue);
+ErrorCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue);
+ErrorCode median_filter_add(MedianFilter* Filter, uint16_t newValue);
 uint16_t median_filter_get(MedianFilter* Filter);
 
 

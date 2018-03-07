@@ -19,6 +19,7 @@ Rewritten and modified by Sebastian Nilsson
 #include <stdbool.h>
 #include "config.h"
 #include <string.h>
+#include "ErrorHandling.h"
 
 // 1Kb of data
 #define DATA_LENGTH   ((IFLASH1_PAGE_SIZE/sizeof(uint8_t))*4)
@@ -27,16 +28,16 @@ Rewritten and modified by Sebastian Nilsson
 #define  FLASH_START  ((uint8_t *)IFLASH1_ADDR)
 
 
-StatusCode FlashStorage_Init();
+ErrorCode FlashStorage_Init();
 uint8_t FlashStorage_read(uint32_t address);
 uint8_t* FlashStorage_readAddress(uint32_t address);
-StatusCode FlashStorage_write(uint32_t address, uint8_t *data, uint32_t dataLength);
-StatusCode FlashStorage_write_unlocked(uint32_t address, uint8_t *data, uint32_t dataLength);
-StatusCode FlashStorage_write_uint8_t(uint32_t address, uint8_t Value);
-StatusCode FlashStorage_write_float(uint32_t address, float Value);
+ErrorCode FlashStorage_write(uint32_t address, uint8_t *data, uint32_t dataLength);
+ErrorCode FlashStorage_write_unlocked(uint32_t address, uint8_t *data, uint32_t dataLength);
+ErrorCode FlashStorage_write_uint8_t(uint32_t address, uint8_t Value);
+ErrorCode FlashStorage_write_float(uint32_t address, float Value);
 float FlashStorage_read_float(uint32_t address);
 uint16_t FlashStorage_read_uint16_t(uint32_t address);
-StatusCode FlashStorage_unlock(uint32_t address, uint32_t dataLength);
-StatusCode FlashStorage_lock(uint32_t address, uint32_t dataLength);
+ErrorCode FlashStorage_unlock(uint32_t address, uint32_t dataLength);
+ErrorCode FlashStorage_lock(uint32_t address, uint32_t dataLength);
 
 #endif

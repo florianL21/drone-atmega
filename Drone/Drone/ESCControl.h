@@ -12,6 +12,7 @@
 #include "sam.h"
 #include <stdbool.h>
 #include "config.h"
+#include "ErrorHandling.h"
 
 /*	MOTOR LAYOUT
 
@@ -39,7 +40,7 @@ void esc_init();
 /*
  *	Sets the duty cycle of the corresponding Timer from the motor
  */
-StatusCode esc_set(uint8_t MotorNum,int16_t speed);
+ErrorCode esc_set(uint8_t MotorNum,int16_t speed);
 
 
 

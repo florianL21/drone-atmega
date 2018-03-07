@@ -32,6 +32,7 @@
  *	Error Codes
  *
  */
+/*
 
 typedef enum {
 	//General:
@@ -112,6 +113,7 @@ typedef enum {
 
 #define DEFUALT_ERROR_HANDLER(x,y)		StatusCode y = x;if(y != SUCCESS){return y;}
 #define DEFUALT_ERROR_HANDLER1(x,y)		y = x;if(y != SUCCESS){return y;}
+*/
 
 
 
@@ -281,5 +283,14 @@ RC_ControlCenter
 
 //Maximum amount  of chars allowed for the print function
 #define SERIALCOM_MAX_PRINT_CHARS	100
+
+/*
+ *
+ *	ErrorHandling
+ *
+ */
+
+//defines the maximum amount of errors that get stored in the error array
+#define MAX_ERROR_COUNT 20
 
 #endif /* CONFIG_H_ */

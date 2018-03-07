@@ -48,10 +48,6 @@ pidData PitchPid;
 pidData RollPid;
 pidData YawPid;
 
-#define MAX_ERROR_COUNT 20
-StatusCode errorStack[MAX_ERROR_COUNT] = {0};
-uint8_t errorCount = 0;
-
 //sonsor offsetValues:
 float sensorOffsetY = 39;
 float sensorOffsetX = -28;
@@ -64,70 +60,78 @@ uint8_t sendCount = 0;
 
 bool ArmMotors = false;
 
-void error_handler_in(StatusCode errorIn)
-{
-	if(errorIn != SUCCESS && errorCount < MAX_ERROR_COUNT)
-	{
-		errorStack[errorCount++] = errorIn;
-	}
-}
-
-void error_handler_print()
-{
-	if(errorCount != 0)
-	{
-		char ErrorToCharBuffer[10] = "";
-		for (uint8_t i = 0; i < errorCount; i++)
-		{
-			itoa(errorStack[i], ErrorToCharBuffer, 16);
-			ErrorToCharBuffer[2]='\0';
-			SerialCOM_put_error(ErrorToCharBuffer);
-		}
-		errorCount = 0;
-	}
-}
-
 void configure_wdt(void)
 {
 	WDT->WDT_MR = 0x00000000; // disable WDT
 }
 
-void BNO_Error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
+void BNO_Error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
 {
-	if(Error == BNO_STATUS_BUS_OVER_RUN_ERROR && Transmit_error_code == BNO055_ERROR)
-		error_handler_in(BNO055_start_measurement(true,true,BNO_MEASURE));
+	if(Error == BNO_STATUS_BUS_OVER_RUN_ERROR && (Transmit_error_code & 0xFF) == ERROR_GENERIC)
+		ErrorHandling_throw(BNO055_start_measurement(true,true,BNO_MEASURE));
 	else 
 	{
 		_Delay(840000);
-		error_handler_in(BNO055_ERROR);
-		error_handler_in(Error);
+		ErrorHandling_throw_b(MODULE_MAIN, FUNCTION_error, ERROR_GENERIC); //TODO: process Error
+	}
+}
+
+void error_handler_print()
+{
+	ErrorCode Error;
+	char module[20] = "";
+	char function[20] = "";
+	char error[20] = "";
+	if(ErrorHandling_catch(&Error) == true)
+	{
+		//error
+		switch(Error&0xFF)
+		{
+			default:
+			break;
+		}
+		//Function
+		switch(Error&0xFF00)
+		{
+			default:
+			break;
+		}
+		//Module
+		switch(Error&0xFF0000)
+		{
+			case MODULE_BNO055:
+			break;
+			default:
+			break;
+		}
+		
 	}
 }
 
 void SaveValuesToFlash(uint8_t type)
 {
 	if(type == 0x00 || type == 0x01)
-		error_handler_in(FlashStorage_write_float(4, RollKp));
+		ErrorHandling_throw(FlashStorage_write_float(4, RollKp));
 	if(type == 0x00 || type == 0x02)
-		error_handler_in(FlashStorage_write_float(8, RollKi));
+		ErrorHandling_throw(FlashStorage_write_float(8, RollKi));
 	if(type == 0x00 || type == 0x03)
-		error_handler_in(FlashStorage_write_float(12, RollKd));
+		ErrorHandling_throw(FlashStorage_write_float(12, RollKd));
 	if(type == 0x00 || type == 0x04)
-		error_handler_in(FlashStorage_write_float(16, PitchKp));
+		ErrorHandling_throw(FlashStorage_write_float(16, PitchKp));
 	if(type == 0x00 || type == 0x05)
-		error_handler_in(FlashStorage_write_float(20, PitchKi));
+		ErrorHandling_throw(FlashStorage_write_float(20, PitchKi));
 	if(type == 0x00 || type == 0x06)
-		error_handler_in(FlashStorage_write_float(24, PitchKd));
+		ErrorHandling_throw(FlashStorage_write_float(24, PitchKd));
 	if(type == 0x00 || type == 0x07)
-		error_handler_in(FlashStorage_write_float(28, YawKp));
+		ErrorHandling_throw(FlashStorage_write_float(28, YawKp));
 	if(type == 0x00 || type == 0x08)
-		error_handler_in(FlashStorage_write_float(32, YawKi));
+		ErrorHandling_throw(FlashStorage_write_float(32, YawKi));
 	if(type == 0x00 || type == 0x09)
-		error_handler_in(FlashStorage_write_float(36, YawKd));
+		ErrorHandling_throw(FlashStorage_write_float(36, YawKd));
 	if(type == 0x00 || type == 0x0A)
-		error_handler_in(FlashStorage_write_float(40, sensorOffsetX));
+		ErrorHandling_throw(FlashStorage_write_float(40, sensorOffsetX));
 	if(type == 0x00 || type == 0x0B)
-		error_handler_in(FlashStorage_write_float(44, sensorOffsetY));
+		ErrorHandling_throw(FlashStorage_write_float(44, sensorOffsetY));
 }
 
 void LoadValuesFromFlash()
@@ -188,9 +192,9 @@ void DataReady()
 			
 			// Compute new PID output value
 			if (needComputePitch)
-				error_handler_in(PID_Compute(&PitchPid));
+				ErrorHandling_throw(PID_Compute(&PitchPid));
 			if (needComputeRoll)
-				error_handler_in(PID_Compute(&RollPid));
+				ErrorHandling_throw(PID_Compute(&RollPid));
 			//float factor = 0.0005;
 			//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
 			//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
@@ -218,17 +222,17 @@ void DataReady()
 			
 			if(ArmMotors == true)
 			{
-				error_handler_in(esc_set(1, Motor_speeds[0]));
-				error_handler_in(esc_set(2, Motor_speeds[1]));
-				error_handler_in(esc_set(3, Motor_speeds[2]));
-				error_handler_in(esc_set(4, Motor_speeds[3]));
+				ErrorHandling_throw(esc_set(1, Motor_speeds[0]));
+				ErrorHandling_throw(esc_set(2, Motor_speeds[1]));
+				ErrorHandling_throw(esc_set(3, Motor_speeds[2]));
+				ErrorHandling_throw(esc_set(4, Motor_speeds[3]));
 			}
 			else
 			{
-				error_handler_in(esc_set(1, 0));
-				error_handler_in(esc_set(2, 0));
-				error_handler_in(esc_set(3, 0));
-				error_handler_in(esc_set(4, 0));
+				ErrorHandling_throw(esc_set(1, 0));
+				ErrorHandling_throw(esc_set(2, 0));
+				ErrorHandling_throw(esc_set(3, 0));
+				ErrorHandling_throw(esc_set(4, 0));
 			}
 			
 			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
@@ -413,7 +417,7 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			} 
 			else
 			{
-				error_handler_in(SerialCOM_put_error("SetSensorOffsets command has errors"));
+				ErrorHandling_throw(SerialCOM_put_error("SetSensorOffsets command has errors"));
 			}
 		break;
 		case 0x05:
@@ -429,13 +433,13 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			}
 			else
 			{
-				error_handler_in(SerialCOM_put_error("SendPIDValues command has errors"));
+				ErrorHandling_throw(SerialCOM_put_error("SendPIDValues command has errors"));
 			}
 			//restart BNO measurement if necessary
 			if(BNO055_is_busy() == false)
 			{
-				error_handler_in(BNO055_start_measurement(true, true, BNO_MEASURE));
-				error_handler_in(SerialCOM_put_debug("Restart BNO"));
+				ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
+				ErrorHandling_throw(SerialCOM_put_debug("Restart BNO"));
 			}
 		break;
 		case 0x06:
@@ -470,13 +474,13 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 						PID_SetTunings(&YawPid, YawKd, YawKi, YawKp);
 					break;
 					default:
-						error_handler_in(SerialCOM_put_error("SetPIDValues command has a wrong PID identifier"));
+						ErrorHandling_throw(SerialCOM_put_error("SetPIDValues command has a wrong PID identifier"));
 					break;
 				}
 			} 
 			else
 			{
-				error_handler_in(SerialCOM_put_error("SetPIDValues command has errors"));
+				ErrorHandling_throw(SerialCOM_put_error("SetPIDValues command has errors"));
 			}
 		break;
 		case 0x07:
@@ -486,14 +490,14 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				//while(BNO055_is_busy() == true);		//wait for a bit to make sure that all measurements are finished
 				SaveValuesToFlash(0x00);				//save Values
 				//BNO055_start_measurement(true,true,BNO_MEASURE);	//resume Measurement
-				error_handler_in(SerialCOM_put_debug("Saved values to flash"));
+				ErrorHandling_throw(SerialCOM_put_debug("Saved values to flash"));
 			}else
 			{
-				error_handler_in(SerialCOM_put_error("SaveToFlash command has errors"));
+				ErrorHandling_throw(SerialCOM_put_error("SaveToFlash command has errors"));
 			}
 		break;
 		default:
-			error_handler_in(SerialCOM_put_error("Unknown command!"));
+			ErrorHandling_throw(SerialCOM_put_error("Unknown command!"));
 		break;
 	}
 }
@@ -502,11 +506,11 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 
 void config_BNO()
 {
-	error_handler_in(SerialCOM_put_debug("Start BNO Init"));
-	error_handler_in(BNO055_init_fusion_mode(false));
-	error_handler_in(SerialCOM_put_debug("Calib OK"));
-	error_handler_in(BNO055_register_error_callback(BNO_Error));
-	error_handler_in(BNO055_register_data_ready_callback(DataReady));
+	ErrorHandling_throw(SerialCOM_put_debug("Start BNO Init"));
+	ErrorHandling_throw(BNO055_init_fusion_mode(false));
+	ErrorHandling_throw(SerialCOM_put_debug("Calib OK"));
+	ErrorHandling_throw(BNO055_register_error_callback(BNO_Error));
+	ErrorHandling_throw(BNO055_register_data_ready_callback(DataReady));
 	//configure MAG
 	/*error_handler_in(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID1));
 	uint8_t config = 0x07	//30Hz data rate
@@ -520,20 +524,20 @@ int main(void)
 {
 	SystemInit();
 	configure_wdt();
-	error_handler_in(SerialCOM_init());
-	error_handler_in(SerialCOM_register_call_back(message_from_PC));
-	error_handler_in(SerialCOM_put_Command('R', 0x05));			//Reset GUI
-	error_handler_in(FlashStorage_Init());
+	ErrorHandling_throw(SerialCOM_init());
+	ErrorHandling_throw(SerialCOM_register_call_back(message_from_PC));
+	ErrorHandling_throw(SerialCOM_put_Command('R', 0x05));			//Reset GUI
+	ErrorHandling_throw(FlashStorage_Init());
 
 	if(FlashStorage_read(0))
 	{
-		error_handler_in(SerialCOM_print_debug("Running for the first time, populating Flash with default values"));
+		ErrorHandling_throw(SerialCOM_print_debug("Running for the first time, populating Flash with default values"));
 		SaveValuesToFlash(0x00);
 		//LoadValuesFromFlash();
-		error_handler_in(FlashStorage_write_uint8_t(0,0));
+		ErrorHandling_throw(FlashStorage_write_uint8_t(0,0));
 	}else
 	{
-		error_handler_in(SerialCOM_print_debug("loading values from flash"));		
+		ErrorHandling_throw(SerialCOM_print_debug("loading values from flash"));		
 		LoadValuesFromFlash();
 	}
 	_Delay(8400000);
@@ -544,11 +548,11 @@ int main(void)
 	esc_init();
 	
 	PID_Init();
-	error_handler_in(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-250,250,10));
-	error_handler_in(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd,-250,250,10));
-	error_handler_in(BNO055_start_measurement(true, true, BNO_MEASURE));
+	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-250,250,10));
+	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd,-250,250,10));
+	ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
 	error_handler_print();
-	error_handler_in(SerialCOM_put_debug("Init Done!"));
+	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
 	while(1)
 	{
 		error_handler_print();

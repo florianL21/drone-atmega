@@ -44,7 +44,7 @@ bool bnocom_register_validation_check(uint8_t Register, uint8_t Length, uint8_t 
 uint8_t* bno_response_value = NULL;
 uint8_t bno_response_length = 0;
 bool bno_waiting_for_response = false;
-StatusCode bno_response_status = SUCCESS;
+ErrorCode bno_response_status = SUCCESS;
 BNO_STATUS_BYTES bno_response_error = BNO_STATUS_READ_SUCCESS;
 
 void bno_success(uint8_t* Data, uint8_t Length)
@@ -54,7 +54,7 @@ void bno_success(uint8_t* Data, uint8_t Length)
 		free(bno_response_value);
 	bno_response_value = malloc(Length * sizeof(uint8_t));
 	if(bno_response_value == NULL)
-		bno_response_status = BNO055_ERROR_MALLOC_RETURNED_NULL;
+		bno_response_status = MODULE_BNOCOM | FUNCTION_success | ERROR_MALLOC_RETURNED_NULL;
 	else{
 		memcpy(bno_response_value, Data, Length);
 		bno_response_status = SUCCESS;
@@ -62,43 +62,43 @@ void bno_success(uint8_t* Data, uint8_t Length)
 	bno_waiting_for_response = false;
 }
 
-void bno_error(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code)
+void bno_error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
 {
 	/*UART0_puts("error:\n\r");
 	UART0_put_int(Error);
 	UART0_puts("\n\r");*/
 	bno_waiting_for_response = false;
 	bno_response_error = Error;
-	bno_response_status = BNO055_ERROR;
+	bno_response_status = MODULE_BNOCOM | FUNCTION_success | ERROR_TRANSMISSION_ERROR;
 }
 
-StatusCode BNOCOM_write_and_wait_for_response_1byte(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Data)
+ErrorCode BNOCOM_write_and_wait_for_response_1byte(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Data)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return  MODULE_BNOCOM | FUNCTION_write_and_wait_for_response_1byte | ERROR_ARGUMENT_OUT_OF_RANGE;
 	return BNOCOM_write_and_wait_for_response(RegisterTableOffset, RegisterTablePage, &Data, 1);
 }
 
-StatusCode BNOCOM_read_and_wait_for_response_1byte(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* responseData)
+ErrorCode BNOCOM_read_and_wait_for_response_1byte(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* responseData)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return  MODULE_BNOCOM | FUNCTION_read_and_wait_for_response_1byte | ERROR_ARGUMENT_OUT_OF_RANGE;
 	if(responseData == NULL)
-		return BNO055_ERROR_GOT_NULL_POINTER;
+		return  MODULE_BNOCOM | FUNCTION_read_and_wait_for_response_1byte | ERROR_GOT_NULL_POINTER;
 	uint8_t responseLength = 1;
-	DEFUALT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response(RegisterTableOffset, RegisterTablePage, responseData, &responseLength), bno_read_status);
+	DEFAULT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response(RegisterTableOffset, RegisterTablePage, responseData, &responseLength));
 	if(responseLength != 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return  MODULE_BNOCOM | FUNCTION_read_and_wait_for_response_1byte | ERROR_ARGUMENT_OUT_OF_RANGE;
 	return SUCCESS;
 }
 
-StatusCode BNOCOM_write_and_wait_for_response(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* Data, uint8_t Length)
+ErrorCode BNOCOM_write_and_wait_for_response(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* Data, uint8_t Length)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1 || Length == 0)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return  MODULE_BNOCOM | FUNCTION_write_and_wait_for_response | ERROR_ARGUMENT_OUT_OF_RANGE;
 	if(Data == NULL)
-		return BNO055_ERROR_GOT_NULL_POINTER;
-	StatusCode error_return = SUCCESS;
+		return  MODULE_BNOCOM | FUNCTION_write_and_wait_for_response | ERROR_GOT_NULL_POINTER;
+	ErrorCode error_return = SUCCESS;
 	//Store original callbacks
 	BNOCOM_ERROR_CALLBACK SavedErrorCallback = bnocom_error_callback;
 	BNOCOM_SUCCESS_CALLBACK SavedSuccessCallback = bnocom_read_success_callback;
@@ -117,13 +117,13 @@ StatusCode BNOCOM_write_and_wait_for_response(uint8_t RegisterTableOffset, uint8
 	return bno_response_status;
 }
 
-StatusCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t responseData[], uint8_t* responseLength)
+ErrorCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t responseData[], uint8_t* responseLength)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return  MODULE_BNOCOM | FUNCTION_read_and_wait_for_response | ERROR_ARGUMENT_OUT_OF_RANGE;
 	if(responseData == NULL || responseLength == NULL)
-		return BNO055_ERROR_GOT_NULL_POINTER;
-	StatusCode error_return = SUCCESS;
+		return  MODULE_BNOCOM | FUNCTION_read_and_wait_for_response | ERROR_GOT_NULL_POINTER;
+	ErrorCode error_return = SUCCESS;
 	//Store original callbacks
 	BNOCOM_ERROR_CALLBACK SavedErrorCallback = bnocom_error_callback;
 	BNOCOM_SUCCESS_CALLBACK SavedSuccessCallback = bnocom_read_success_callback;
@@ -149,7 +149,7 @@ StatusCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_
 	if(expectedLength != bno_response_length)
 	{
 		*responseLength = bno_response_length;
-		return BNO055_ERROR_LENGTH_MISSMATCH;
+		return MODULE_BNOCOM | FUNCTION_read_and_wait_for_response | ERROR_LENGTH_MISSMATCH;
 	}
 	//copy response to destination:
 	for(uint8_t counter = 0; counter < bno_response_length; counter++)
@@ -165,86 +165,86 @@ StatusCode BNOCOM_read_and_wait_for_response(uint8_t RegisterTableOffset, uint8_
 * BNO easy to use functions:
 ****************************************************************************************************/
 
-StatusCode BNOCOM_register_write_1byte_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Data)
+ErrorCode BNOCOM_register_write_1byte_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Data)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_BNOCOM | FUNCTION_register_write_1byte_by_table | ERROR_ARGUMENT_OUT_OF_RANGE;
 	
 	if(RegisterTablePage == 0)
 	{
 		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_write_1byte_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_write(BNO055_reg_table0[BNO_REG][RegisterTableOffset], 1, &Data);
 	}
 	else
 	{
 		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_write_1byte_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_write(BNO055_reg_table1[BNO_REG][RegisterTableOffset], 1, &Data);
 	}
 }
 
-StatusCode BNOCOM_register_write_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* Data, uint8_t Length)
+ErrorCode BNOCOM_register_write_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t* Data, uint8_t Length)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_BNOCOM | FUNCTION_register_write_by_table | ERROR_ARGUMENT_OUT_OF_RANGE;
 	
 	if(RegisterTablePage == 0)
 	{
 		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_write_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_write(BNO055_reg_table0[BNO_REG][RegisterTableOffset], Length, Data);
 	}
 	else
 	{
 		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_READ_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_write_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_write(BNO055_reg_table1[BNO_REG][RegisterTableOffset], Length, Data);
 	}
 }
 
-StatusCode BNOCOM_register_write_1byte(uint8_t Register, uint8_t Data)
+ErrorCode BNOCOM_register_write_1byte(uint8_t Register, uint8_t Data)
 {
 	return BNOCOM_register_write(Register,1,&Data);
 }
 
-StatusCode BNOCOM_register_read_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Length)
+ErrorCode BNOCOM_register_read_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Length)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_BNOCOM | FUNCTION_register_read_by_table | ERROR_ARGUMENT_OUT_OF_RANGE;
 	if(RegisterTablePage == 0)
 	{
 		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_read_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_read(BNO055_reg_table0[BNO_REG][RegisterTableOffset], Length);
 	}
 	else
 	{
 		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_read_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_read(BNO055_reg_table1[BNO_REG][RegisterTableOffset], Length);
 	}
 }
 
-StatusCode BNOCOM_register_read_1byte_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage)
+ErrorCode BNOCOM_register_read_1byte_by_table(uint8_t RegisterTableOffset, uint8_t RegisterTablePage)
 {
 	if(RegisterTableOffset > BNO_NUM_REG_ADDRESSES0 || RegisterTablePage > 1)
-		return BNO055_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_BNOCOM | FUNCTION_register_read_1byte_by_table | ERROR_ARGUMENT_OUT_OF_RANGE;
 	if(RegisterTablePage == 0)
 	{
 		if(BNO055_reg_table0[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_read_1byte_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_read(BNO055_reg_table0[BNO_REG][RegisterTableOffset], 1);
 	}
 	else
 	{
 		if(BNO055_reg_table1[BNO_REG][RegisterTableOffset] == BNO_REG_WRITE_ONLY)
-			return BNO055_ERROR_INVALID_ARGUMENT;
+			return MODULE_BNOCOM | FUNCTION_register_read_1byte_by_table | ERROR_INVALID_ARGUMENT;
 		return BNOCOM_register_read(BNO055_reg_table1[BNO_REG][RegisterTableOffset], 1);
 	}
 }
 
-StatusCode BNOCOM_register_read_1byte(uint8_t Register)
+ErrorCode BNOCOM_register_read_1byte(uint8_t Register)
 {
 	return BNOCOM_register_read(Register,1);
 }
@@ -283,33 +283,33 @@ bool bnocom_register_is_valid(uint8_t Register, uint8_t Length, bool read_write)
 	return false;
 }
 
-StatusCode BNOCOM_Init(BNOCOM_SUCCESS_CALLBACK callBack)
+ErrorCode BNOCOM_Init(BNOCOM_SUCCESS_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
-		return BNO055_ERROR_GOT_NULL_POINTER;
+		return MODULE_BNOCOM | FUNCTION_Init | ERROR_GOT_NULL_POINTER;
 	}
-	DEFUALT_ERROR_HANDLER(USART0_init(115200, 2),error_return1);
-	DEFUALT_ERROR_HANDLER(USART0_register_received_callback(bnocom_response_received),error_return2);
+	DEFAULT_ERROR_HANDLER(USART0_init(115200, 2));
+	DEFAULT_ERROR_HANDLER(USART0_register_received_callback(bnocom_response_received));
 	bnocom_read_success_callback = callBack;
 	return SUCCESS;
 }
 
-StatusCode BNOCOM_register_error_callback(BNOCOM_ERROR_CALLBACK callBack)
+ErrorCode BNOCOM_register_error_callback(BNOCOM_ERROR_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
-		return BNO055_ERROR_GOT_NULL_POINTER;
+		return MODULE_BNOCOM | FUNCTION_register_error_callback | ERROR_GOT_NULL_POINTER;
 	}
 	bnocom_error_callback = callBack;
 	return SUCCESS;
 }
 
-StatusCode BNOCOM_register_success_callback(BNOCOM_SUCCESS_CALLBACK callBack)
+ErrorCode BNOCOM_register_success_callback(BNOCOM_SUCCESS_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
-		return BNO055_ERROR_GOT_NULL_POINTER;
+		return MODULE_BNOCOM | FUNCTION_register_success_callback | ERROR_GOT_NULL_POINTER;
 	}
 	bnocom_read_success_callback = callBack;
 	return SUCCESS;
@@ -320,16 +320,16 @@ bool BNOCOM_is_idle()
 	return bnocom_IsIdle;
 }
 
-StatusCode BNOCOM_register_read(uint8_t Register, uint8_t Length)
+ErrorCode BNOCOM_register_read(uint8_t Register, uint8_t Length)
 {
 	if(!BNOCOM_is_idle() || !USART0_has_space())
 	{
-		return BNO055_ERROR_NOT_READY_FOR_OPERATION;
+		return MODULE_BNOCOM | FUNCTION_register_read | ERROR_NOT_READY_FOR_OPERATION;
 	}
 	#ifdef BNO_USE_REGISTER_VALIDATION
 	if(!bnocom_register_is_valid(Register, Length, BNO_REG_READ_ONLY))
 	{
-		return BNO055_ERROR_INVALID_ARGUMENT;
+		return MODULE_BNOCOM | FUNCTION_register_read | ERROR_INVALID_ARGUMENT;
 	}
 	#endif
 	uint8_t Message[4];
@@ -337,29 +337,29 @@ StatusCode BNOCOM_register_read(uint8_t Register, uint8_t Length)
 	Message[1] = READ_BYTE;
 	Message[2] = Register;
 	Message[3] = Length;
-	DEFUALT_ERROR_HANDLER(USART0_put_data(Message, 4),error_return1);
-	DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(2),error_return2);
+	DEFAULT_ERROR_HANDLER(USART0_put_data(Message, 4));
+	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(2));
 	bnocom_IsIdle = false;
 
 	return SUCCESS;
 }
 
-StatusCode BNOCOM_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
+ErrorCode BNOCOM_register_write(uint8_t Register, uint8_t Length, uint8_t* Data)
 {
 	if(!BNOCOM_is_idle() || !USART0_has_space())
 	{
-		return BNO055_ERROR_NOT_READY_FOR_OPERATION;
+		return MODULE_BNOCOM | FUNCTION_register_write | ERROR_NOT_READY_FOR_OPERATION;
 	}
 	#ifdef BNO_USE_REGISTER_VALIDATION
 	if(!bnocom_register_is_valid(Register, Length, BNO_REG_WRITE_ONLY))
 	{
-		return BNO055_ERROR_INVALID_ARGUMENT;
+		return MODULE_BNOCOM | FUNCTION_register_write | ERROR_INVALID_ARGUMENT;
 	}
 	#endif
 	uint8_t* Message = malloc((Length+4)*sizeof(uint8_t));
 	if(Message == NULL)
 	{
-		return BNO055_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_BNOCOM | FUNCTION_register_write | ERROR_MALLOC_RETURNED_NULL;
 	}
 	Message[0] = START_BYTE;
 	Message[1] = WRITE_BYTE;
@@ -369,10 +369,10 @@ StatusCode BNOCOM_register_write(uint8_t Register, uint8_t Length, uint8_t* Data
 	{
 		Message[i + 4] = Data[i];
 	}
-	StatusCode USART_return = USART0_put_data(Message, Length + 4);
+	ErrorCode USART_return = USART0_put_data(Message, Length + 4);
 	if(USART_return == SUCCESS)
 	{
-		DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(2),error_return);
+		DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(2));
 		bnocom_IsIdle = false;
 		free(Message);
 		return SUCCESS;
@@ -386,7 +386,7 @@ StatusCode BNOCOM_register_write(uint8_t Register, uint8_t Length, uint8_t* Data
 
 void bnocom_response_received(uint8_t* Data, uint16_t Length)
 {
-	StatusCode USART_return;
+	ErrorCode USART_return;
 	switch(bnocom_rec_states)
 	{
 		case BNOCOM_REC_STATE_IDLE:
@@ -398,7 +398,7 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 					bnocom_read_success_callback(NULL,0);
 				}else if(Data[1] != BNO_STATUS_WRITE_SUCCESS && bnocom_error_callback != NULL)
 				{
-					bnocom_error_callback(Data[1], BNO055_ERROR);
+					bnocom_error_callback(Data[1], MODULE_BNOCOM | FUNCTION_response_received | ERROR_GENERIC);
 				}
 			}
 			else if(Length == 2 && Data[0] == READ_SUCCESS_BYTE)
@@ -416,7 +416,7 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 				bnocom_IsIdle = true;
 				if(bnocom_error_callback != NULL)
 				{
-					bnocom_error_callback(BNO_TRANSMIT_ERROR, BNO055_ERROR_ARGUMENT_OUT_OF_RANGE);
+					bnocom_error_callback(BNO_TRANSMIT_ERROR, MODULE_BNOCOM | FUNCTION_response_received | ERROR_ARGUMENT_OUT_OF_RANGE);
 				}
 			}
 		break;
@@ -441,7 +441,7 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 			bnocom_IsIdle = true;
 			if(bnocom_error_callback != NULL)
 			{
-				bnocom_error_callback(BNO_TRANSMIT_ERROR, ERROR_FATAL);
+				bnocom_error_callback(BNO_TRANSMIT_ERROR, MODULE_BNOCOM | FUNCTION_response_received | ERROR_GENERIC);
 			}
 		break;
 	}

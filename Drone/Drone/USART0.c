@@ -18,13 +18,13 @@ bool usart0_transmitInProgress = false;
 
 void usart0_put_raw_data(uint8_t* sendData, uint16_t Length);
 
-StatusCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
+ErrorCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
-		return USART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_USART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFUALT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength),error_return);
+	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength));
 	
 	// Enable Clock for UART
 	PMC->PMC_PCER0 = 1 << ID_USART0;
@@ -54,7 +54,7 @@ StatusCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	USART0->US_PTCR = US_PTCR_TXTEN | US_PTCR_RXTEN;
 	usart0SendQueue = queue_new(USART0_QUEUE_MAX_ITEMS);
 	if(usart0SendQueue == NULL)
-		return HelperFunctions_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_USART0 | FUNCTION_Init | ERROR_MALLOC_RETURNED_NULL;
 	return SUCCESS;
 }
 
@@ -80,15 +80,15 @@ void usart0_put_raw_data(uint8_t* sendData, uint16_t Length)
 	USART0->US_IER = US_IER_ENDTX;			//activate Transmit done interrupt
 }
 
-StatusCode USART0_put_data(uint8_t* sendData, uint16_t Length)
+ErrorCode USART0_put_data(uint8_t* sendData, uint16_t Length)
 {
 	if(sendData == NULL)
 	{
-		return USART0_ERROR_GOT_NULL_POINTER;
+		return MODULE_USART0 | FUNCTION_put_data | ERROR_GOT_NULL_POINTER;
 	}
 	if(Length == 0)
 	{
-		return USART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_USART0 | FUNCTION_put_data | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
 	if(usart0_transmitInProgress == false)
 	{
@@ -102,16 +102,16 @@ StatusCode USART0_put_data(uint8_t* sendData, uint16_t Length)
 			return queue_write(usart0SendQueue,sendData,Length);
 		}else
 		{
-			return USART0_ERROR_NOT_READY_FOR_OPERATION;
+			return MODULE_USART0 | FUNCTION_put_data | ERROR_NOT_READY_FOR_OPERATION;
 		}
 	}
 }
 
-StatusCode USART0_set_receiver_length(uint32_t Length)
+ErrorCode USART0_set_receiver_length(uint32_t Length)
 {
 	if(Length == 0)
 	{
-		return USART0_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_USART0 | FUNCTION_set_receiver_length | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
 	if(usart0_ReceivePtr != NULL)
 	{
@@ -122,17 +122,17 @@ StatusCode USART0_set_receiver_length(uint32_t Length)
 	usart0_ReceivePtr = malloc(Length*sizeof(uint8_t));
 	if(usart0_ReceivePtr == NULL)
 	{
-		return USART0_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_USART0 | FUNCTION_set_receiver_length | ERROR_MALLOC_RETURNED_NULL;
 	}
 	USART0->US_RPR = (uint32_t)usart0_ReceivePtr;
 	return SUCCESS;
 }
 
-StatusCode USART0_register_received_callback(USART_RECV_CALLBACK callBack)
+ErrorCode USART0_register_received_callback(USART_RECV_CALLBACK callBack)
 {
 	if(callBack == NULL)
 	{
-		return USART0_ERROR_GOT_NULL_POINTER;
+		return MODULE_USART0 | FUNCTION_register_received_callback | ERROR_GOT_NULL_POINTER;
 	}
 	usart_reciveCallBack = callBack;
 	return SUCCESS;

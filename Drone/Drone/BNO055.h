@@ -17,6 +17,7 @@
 #include "BNO055_reg_table.h"
 #include <stdio.h>
 #include "SerialCOM.h"
+#include "ErrorHandling.h"
 
 /*Predefined bno constants*/
 #define BNO055_ID				0xA0
@@ -52,18 +53,18 @@ struct BNO055_Data
 typedef struct BNO055_Data BNO055_Data;
 
 
-typedef void (*BNO055_ERROR_CALLBACK)(BNO_STATUS_BYTES Error, StatusCode Transmit_error_code);
+typedef void (*BNO055_ERROR_CALLBACK)(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code);
 typedef void (*BNO055_DATA_READY_CALLBACK)(void);
 
-StatusCode BNO055_init_fusion_mode(bool calibrationNeeded);
-StatusCode BNO055_init_non_fusion_mode(uint8_t bno_mode_register);
-StatusCode BNO055_get_calibration(uint8_t* sys, uint8_t* gyro, uint8_t* accel, uint8_t* mag);
+ErrorCode BNO055_init_fusion_mode(bool calibrationNeeded);
+ErrorCode BNO055_init_non_fusion_mode(uint8_t bno_mode_register);
+ErrorCode BNO055_get_calibration(uint8_t* sys, uint8_t* gyro, uint8_t* accel, uint8_t* mag);
 BNO055_Data BNO055_get_measurement_data();
-StatusCode BNO055_start_measurement(bool measureContinous, bool triggerCallback, uint8_t bnoMeasurementType);
-StatusCode BNO055_stop_continous_measurement();
-StatusCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback);
-StatusCode BNO055_register_data_ready_callback(BNO055_DATA_READY_CALLBACK callback);
-StatusCode BNO055_calibrate();
+ErrorCode BNO055_start_measurement(bool measureContinous, bool triggerCallback, uint8_t bnoMeasurementType);
+ErrorCode BNO055_stop_continous_measurement();
+ErrorCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback);
+ErrorCode BNO055_register_data_ready_callback(BNO055_DATA_READY_CALLBACK callback);
+ErrorCode BNO055_calibrate();
 bool BNO055_is_busy();
 //TODO: safety check for bno is busy
 

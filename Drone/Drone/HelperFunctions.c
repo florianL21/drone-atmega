@@ -20,8 +20,6 @@ void _Delay(uint32_t delayCycles)
 	}
 }
 
-
-
 bool queue_has_space(Queue *queue)
 {
 	if (queue == NULL) {
@@ -50,11 +48,11 @@ uint32_t queue_get_item_count(Queue* queue)
 	return queue->queueLength;
 }
 
-StatusCode queue_delete(Queue *queue)
+ErrorCode queue_delete(Queue *queue)
 {
 	if (queue == NULL)
 	{
-		return HelperFunctions_ERROR_GOT_NULL_POINTER;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_queue_delete | ERROR_GOT_NULL_POINTER;
 	}
 	while (queue->front != NULL)
 	{
@@ -100,25 +98,25 @@ queue_node queue_read(Queue *queue)
 	return returnStruct;
 }
 
-StatusCode queue_write(Queue *queue, uint8_t* data, uint16_t Length) 
+ErrorCode queue_write(Queue *queue, uint8_t* data, uint16_t Length) 
 {
 	if (queue == NULL)
 	{
-		return HelperFunctions_ERROR_GOT_NULL_POINTER;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_write | ERROR_GOT_NULL_POINTER;
 	}
 	queue_node *node = malloc(sizeof(*node));
 	if (node == NULL)
 	{
-		return HelperFunctions_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_write | ERROR_MALLOC_RETURNED_NULL;
 	}
 	if(!queue_has_space(queue))
 	{
-		return HelperFunctions_ERROR_NOT_READY_FOR_OPERATION;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_write | ERROR_NOT_READY_FOR_OPERATION;
 	}
 	node->data = malloc(Length * sizeof(uint8_t));
 	if (node->data == NULL)
 	{
-		return HelperFunctions_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_write | ERROR_MALLOC_RETURNED_NULL;
 	}
 	for(uint16_t dataIndex = 0; dataIndex < Length; dataIndex++)
 	{
@@ -136,15 +134,15 @@ StatusCode queue_write(Queue *queue, uint8_t* data, uint16_t Length)
 	return SUCCESS;
 }
 
-StatusCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue)
+ErrorCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue)
 {
 	if(size == 0)
-		return HelperFunctions_ERROR_INVALID_ARGUMENT;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_median_filter_new | ERROR_INVALID_ARGUMENT;
 	if(newFilter == NULL)
-		return HelperFunctions_ERROR_GOT_NULL_POINTER;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_median_filter_new | ERROR_GOT_NULL_POINTER;
 	newFilter->FilterValues = malloc(sizeof(uint16_t)*size);
 	if(newFilter->FilterValues == NULL)
-		return HelperFunctions_ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_median_filter_new | ERROR_MALLOC_RETURNED_NULL;
 	for(uint8_t i = 0; i < size; i++)
 	{
 		newFilter->FilterValues[i] = initValue; 
@@ -153,10 +151,10 @@ StatusCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t ini
 	return SUCCESS;
 }
 
-StatusCode median_filter_add(MedianFilter* Filter, uint16_t newValue)
+ErrorCode median_filter_add(MedianFilter* Filter, uint16_t newValue)
 {
 	if(Filter == NULL)
-		return HelperFunctions_ERROR_GOT_NULL_POINTER;
+		return MODULE_HELPERFUNCTIONS | FUNCTION_median_filter_add | ERROR_GOT_NULL_POINTER;
 	for(uint8_t i = 0; i < Filter->FilterSize; i++)
 	{
 		Filter->FilterValues[i] = Filter->FilterValues[i + 1];

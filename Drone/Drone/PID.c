@@ -44,14 +44,14 @@ void PID_Init()
 
 //struct pidData myPidData[NUM_PID_CONTROLLERS];
 
-StatusCode PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime)
+ErrorCode PID_Initialize(pidData* pidController, float *Input, float *Output, float *Setpoint, float Kp, float Ki, float Kd, float Min, float Max, float SampleTime)
 {
 	if(pidController == NULL || Input == NULL || Output == NULL || Setpoint == NULL)
-		return PID_ERROR_GOT_NULL_POINTER;
+		return MODULE_PID | FUNCTION_Initialize | ERROR_GOT_NULL_POINTER;
 	if(Kp < 0 || Ki < 0 || Kd < 0 || SampleTime < 0)
-		return PID_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_PID | FUNCTION_Initialize | ERROR_ARGUMENT_OUT_OF_RANGE;
 	if(Min > Max) 
-		return PID_ERROR_INVALID_ARGUMENT;
+		return MODULE_PID | FUNCTION_Initialize | ERROR_INVALID_ARGUMENT;
 
 	pidController->Input = Input;
 	pidController->Output = Output;
@@ -60,7 +60,7 @@ StatusCode PID_Initialize(pidData* pidController, float *Input, float *Output, f
 	pidController->lastInput = *(pidController->Input);
 	pidController->ITerm = *(pidController->Output);
 	
-	DEFUALT_ERROR_HANDLER(PID_SetOutputLimits(pidController, Min, Max),setLimits_return);
+	DEFAULT_ERROR_HANDLER(PID_SetOutputLimits(pidController, Min, Max));
 	
 	if(pidController->ITerm > pidController->outMax)
 		pidController->ITerm = pidController->outMax;
@@ -70,9 +70,9 @@ StatusCode PID_Initialize(pidData* pidController, float *Input, float *Output, f
 	pidController->SampleTime = SampleTime*(TICKS_PER_SECOND / 1000);
 	pidController->LastTime = pid_getTicks() - pidController->SampleTime;
 	
-	DEFUALT_ERROR_HANDLER(PID_SetTunings(pidController, Kp, Ki, Kd),setTunings_return);
+	DEFAULT_ERROR_HANDLER(PID_SetTunings(pidController, Kp, Ki, Kd));
 	
-	DEFUALT_ERROR_HANDLER(PID_SetControllerDirection(pidController, DIRECT),setDirection_return);
+	DEFAULT_ERROR_HANDLER(PID_SetControllerDirection(pidController, DIRECT));
 	return SUCCESS;
 }
 
@@ -83,10 +83,10 @@ bool PID_need_compute(pidData* pidController)
 	return pid_calculateTicks(pidController->LastTime, pid_getTicks()) >= pidController->SampleTime;
 }
 
-StatusCode PID_Compute(pidData* pidController)
+ErrorCode PID_Compute(pidData* pidController)
 {
 	if(pidController == NULL)
-		return PID_ERROR_GOT_NULL_POINTER;
+		return MODULE_PID | FUNCTION_Compute | ERROR_GOT_NULL_POINTER;
 	if(PID_need_compute(pidController) == true)
 	{
 		/*Compute all the working error variables*/
@@ -125,12 +125,12 @@ void PID_Reset(pidData* pidController)
 	pidController->ITerm = 0;
 }
 
-StatusCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd)
+ErrorCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd)
 {
 	if(pidController == NULL)
-		return PID_ERROR_GOT_NULL_POINTER;
+		return MODULE_PID | FUNCTION_SetTunings | ERROR_GOT_NULL_POINTER;
 	if (Kp < 0 || Ki < 0 || Kd < 0)
-		return PID_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_PID | FUNCTION_SetTunings | ERROR_ARGUMENT_OUT_OF_RANGE;
 	
 	float SampleTimeInSec = (float)(pidController->SampleTime) / ((float) TICKS_PER_SECOND);
 	pidController->kp = Kp;
@@ -148,10 +148,10 @@ StatusCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd)
 	return SUCCESS;
 }
 
-StatusCode PID_SetSampleTime(pidData* pidController, float NewSampleTime)
+ErrorCode PID_SetSampleTime(pidData* pidController, float NewSampleTime)
 {
 	if(pidController == NULL)
-		return PID_ERROR_GOT_NULL_POINTER;
+		return MODULE_PID | FUNCTION_SetSampleTime | ERROR_GOT_NULL_POINTER;
 	if (NewSampleTime > 0)
 	{
 		float ratio  = (float)(NewSampleTime* (TICKS_PER_SECOND / 1000)) / (float)(pidController->SampleTime);
@@ -161,15 +161,15 @@ StatusCode PID_SetSampleTime(pidData* pidController, float NewSampleTime)
 		pidController->SampleTime = (uint32_t)NewSampleTime * (TICKS_PER_SECOND / 1000);
 		return SUCCESS;
 	}
-	return PID_ERROR_ARGUMENT_OUT_OF_RANGE;
+	return MODULE_PID | FUNCTION_SetSampleTime | ERROR_ARGUMENT_OUT_OF_RANGE;
 }
 
-StatusCode PID_SetOutputLimits(pidData* pidController, float Min, float Max)
+ErrorCode PID_SetOutputLimits(pidData* pidController, float Min, float Max)
 {
 	if(pidController==NULL)
-		return PID_ERROR_GOT_NULL_POINTER;
+		return MODULE_PID | FUNCTION_SetOutputLimits | ERROR_GOT_NULL_POINTER;
 	if(Min > Max) 
-		return PID_ERROR_INVALID_ARGUMENT;
+		return MODULE_PID | FUNCTION_SetOutputLimits | ERROR_INVALID_ARGUMENT;
 	
 	pidController->outMin = Min;
 	pidController->outMax = Max;
@@ -186,12 +186,12 @@ StatusCode PID_SetOutputLimits(pidData* pidController, float Min, float Max)
 	return SUCCESS;
 }
 
-StatusCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction)
+ErrorCode PID_SetControllerDirection(pidData* pidController, uint8_t Direction)
 {
 	if(pidController == NULL)
-		return PID_ERROR_GOT_NULL_POINTER;
+		return MODULE_PID | FUNCTION_SetControllerDirection | ERROR_GOT_NULL_POINTER;
 	if(Direction != 0 && Direction != 1)
-		return PID_ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_PID | FUNCTION_SetControllerDirection | ERROR_ARGUMENT_OUT_OF_RANGE;
 
 	if(Direction != pidController->controllerDirection)
 	{
