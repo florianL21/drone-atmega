@@ -79,14 +79,46 @@ void BNO_Error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
 void error_handler_print()
 {
 	ErrorCode Error;
-	char module[20] = "";
-	char function[20] = "";
-	char error[20] = "";
+	char moduleDescription[20] = "";
+	char functionDescription[20] = "";
+	char errorDescription[20] = "";
+	char lastModuleDescription[20] = "";
+	char lastFunctionDescription[20] = "";
+	
+	/*
+	ERROR_GENERIC						= 0x01,
+	ERROR_ARGUMENT_OUT_OF_RANGE			= 0x02,
+	ERROR_GOT_NULL_POINTER				= 0x03,
+	ERROR_MALLOC_RETURNED_NULL			= 0x04,
+	ERROR_NOT_READY_FOR_OPERATION		= 0x05,
+	ERROR_INVALID_ARGUMENT				= 0x06,
+	ERROR_WRONG_DEVICE_ID				= 0x07,
+	ERROR_LENGTH_MISSMATCH				= 0x08,
+	ERROR_QUEUE_WAS_EMPTY				= 0x09,
+	ERROR_WRITE_FAILED					= 0x0A,
+	ERROR_ADDRESS_TOO_LOW				= 0x0B,
+	ERROR_ADDRESS_TOO_HIGH				= 0x0C,
+	ERROR_FAILED_TO_LOCK_FLASH			= 0x0D,
+	ERROR_FAILED_TO_UNLOCK_FLASH		= 0x0E,
+	ERROR_ADDRESS_NOT_4_BYTE_BOUDARY	= 0x0F,
+	ERROR_TRANSMISSION_ERROR			= 0x10
+	*/
+	
 	if(ErrorHandling_catch(&Error) == true)
 	{
 		//error
 		switch(Error&0xFF)
 		{
+			case ERROR_GENERIC:
+				strcat(moduleDescription, "Generic");
+			break;
+			case ERROR_ARGUMENT_OUT_OF_RANGE:
+				strcat(moduleDescription, "Argument out of range");	
+			break;
+			case ERROR_GOT_NULL_POINTER:
+				strcat(moduleDescription, "Got null pointer");
+			break;
+			
 			default:
 			break;
 		}

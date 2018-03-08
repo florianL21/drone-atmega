@@ -42,9 +42,9 @@ ErrorCode SerialCOM_register_call_back(SerialCOM_RECV_CALLBACK callback)
 
 ErrorCode SerialCOM_init()
 {
-	DEFAULT_ERROR_HANDLER(UART0_init(115200, 1));
-	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(3));
-	DEFAULT_ERROR_HANDLER(UART0_register_received_callback(message_received));
+	DEFAULT_ERROR_HANDLER(UART0_init(115200, 1), MODULE_SERIALCOM, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(3), MODULE_SERIALCOM, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(UART0_register_received_callback(message_received), MODULE_SERIALCOM, FUNCTION_Init);
 	return SUCCESS;
 }
 
@@ -60,7 +60,7 @@ ErrorCode SerialCOM_put_message(uint8_t message[], uint8_t Type, uint8_t Length)
 	transmissionData[2] = Length;
 	memcpy(&transmissionData[3], message, Length);
 	transmissionData[Length+3] = 0x03;
-	ErrorCode errorReturn = UART0_put_data(transmissionData, Length+4);
+	ErrorCode errorReturn = ErrorHandling_set_top_level(UART0_put_data(transmissionData, Length+4), MODULE_SERIALCOM, FUNCTION_put_message);
 	free(transmissionData);
 	return errorReturn;
 }
@@ -84,27 +84,27 @@ ErrorCode SerialCOM_force_put_message(uint8_t message[], uint8_t Type, uint8_t L
 
 ErrorCode SerialCOM_put_Command(char CommandChar, uint8_t Type)
 {
-	return SerialCOM_put_message(((uint8_t*)&CommandChar), Type, 1);
+	return ErrorHandling_set_top_level(SerialCOM_put_message(((uint8_t*)&CommandChar), Type, 1), MODULE_SERIALCOM, FUCNTION_put_Command);
 }
 
 ErrorCode SerialCOM_put_debug(char Text[])
 {
-	return SerialCOM_put_message(((uint8_t*)Text), 0x00, strlen(Text));
+	return ErrorHandling_set_top_level(SerialCOM_put_message(((uint8_t*)Text), 0x00, strlen(Text)), MODULE_SERIALCOM, FUCNTION_put_debug);
 }
 
 ErrorCode SerialCOM_put_debug_n(char Text[], uint8_t Length)
 {
-	return SerialCOM_put_message(((uint8_t*)Text), 0x00, Length);
+	return ErrorHandling_set_top_level(SerialCOM_put_message(((uint8_t*)Text), 0x00, Length), MODULE_SERIALCOM, FUCNTION_put_debug_n);
 }
 
 ErrorCode SerialCOM_put_error(char Text[])
 {
-	return SerialCOM_put_message(((uint8_t*)Text), 0x64, strlen(Text));
+	return ErrorHandling_set_top_level(SerialCOM_put_message(((uint8_t*)Text), 0x64, strlen(Text)), MODULE_SERIALCOM, FUCNTION_put_error);
 }
 
 ErrorCode SerialCOM_force_put_error(char Text[])
 {
-	return SerialCOM_force_put_message(((uint8_t*)Text), 0x64, strlen(Text));
+	return ErrorHandling_set_top_level(SerialCOM_force_put_message(((uint8_t*)Text), 0x64, strlen(Text)), MODULE_SERIALCOM, FUCNTION_force_put_error);
 }
 
 uint8_t SerialCOM_get_free_space()
@@ -119,7 +119,7 @@ ErrorCode SerialCOM_print_debug(const char *fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
-	ErrorCode rt = SerialCOM_put_debug(buffer);
+	ErrorCode rt = ErrorHandling_set_top_level(SerialCOM_put_debug(buffer), MODULE_SERIALCOM, FUNCTION_print_debug);
 	return rt;
 }
 
@@ -130,6 +130,6 @@ ErrorCode SerialCOM_print_error(const char *fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
-	ErrorCode rt = SerialCOM_put_error(buffer);
+	ErrorCode rt = ErrorHandling_set_top_level(SerialCOM_put_error(buffer), MODULE_SERIALCOM, FUNCTION_print_error);
 	return rt;
 }

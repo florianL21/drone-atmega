@@ -24,7 +24,7 @@ ErrorCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	{
 		return MODULE_UART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength));
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength), MODULE_UART0, FUNCTION_Init);
 	
 	PMC->PMC_PCER0 = 1 << ID_UART;
 	// Set pin in peripheral mode
@@ -73,21 +73,21 @@ uint8_t UART0_get_space()
 
 ErrorCode UART0_puts(char Data[])
 {
-	return UART0_put_data((uint8_t*)Data, strlen((char*)Data));
+	return ErrorHandling_set_top_level(UART0_put_data((uint8_t*)Data, strlen((char*)Data)), MODULE_UART0, FUNCTION_puts);
 }
 
 ErrorCode UART0_put_float(float num)
 {
 	char buffer[20] = "";
 	sprintf(buffer,"%.4f",num);
-	return UART0_puts(buffer);
+	return ErrorHandling_set_top_level(UART0_puts(buffer), MODULE_UART0, FUNCTION_put_float);
 }
 
 ErrorCode UART0_put_int(int num)
 {
 	char buffer[20] = "";
 	sprintf(buffer,"%d",num);
-	return UART0_puts(buffer);
+	return ErrorHandling_set_top_level(UART0_puts(buffer), MODULE_UART0, FUNCTION_put_int);
 }
 
 void uart0_put_raw_data(uint8_t* sendData, uint16_t Length)
@@ -120,7 +120,7 @@ ErrorCode UART0_put_data(uint8_t* sendData, uint16_t Length)
 	} else {
 		if(queue_has_space(uart0SendQueue) == true)
 		{
-			return queue_write(uart0SendQueue, sendData, Length);
+			return ErrorHandling_set_top_level(queue_write(uart0SendQueue, sendData, Length), MODULE_UART0, FUNCTION_put_data);
 		}else
 		{
 			return MODULE_UART0 | FUNCTION_put_data | ERROR_NOT_READY_FOR_OPERATION;
@@ -132,7 +132,7 @@ ErrorCode UART0_put_int_blocking(int num)
 {
 	char buffer[50] = "";
 	sprintf(buffer,"%d",num);
-	return UART0_puts_blocking(buffer);
+	return ErrorHandling_set_top_level(UART0_puts_blocking(buffer), MODULE_UART0, FUNCTION_put_int_blocking);
 }
 
 ErrorCode UART0_puts_blocking(char sendData[])

@@ -125,14 +125,14 @@ ErrorCode FlashStorage_write_uint8_t(uint32_t address, uint8_t Value)
 {
 	uint8_t b2[sizeof(Value)];
 	memcpy(b2, &Value, sizeof(Value));
-	return FlashStorage_write(address, b2, sizeof(Value));
+	return ErrorHandling_set_top_level(FlashStorage_write(address, b2, sizeof(Value)), MODULE_FLASHSTORAGE, FUNCTION_write_uint8_t);
 }
 
 ErrorCode FlashStorage_write_float(uint32_t address, float Value)
 {
 	uint8_t b2[sizeof(Value)];
 	memcpy(b2, &Value, sizeof(Value));
-	return FlashStorage_write(address, b2, sizeof(Value));
+	return ErrorHandling_set_top_level(FlashStorage_write(address, b2, sizeof(Value)), MODULE_FLASHSTORAGE, FUNCTION_write_float);
 }
 
 float FlashStorage_read_float(uint32_t address)

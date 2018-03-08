@@ -44,9 +44,9 @@ ErrorCode BNO055_init_fusion_mode(bool calibrationNeeded)
 {
 	bno_is_busy = true;
 	
-	DEFAULT_ERROR_HANDLER(BNOCOM_Init(bno_runtime_success));
+	DEFAULT_ERROR_HANDLER(BNOCOM_Init(bno_runtime_success), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	
-	DEFAULT_ERROR_HANDLER(BNOCOM_register_error_callback(bno_runtime_error));
+	DEFAULT_ERROR_HANDLER(BNOCOM_register_error_callback(bno_runtime_error), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	//Wait for USART0 to clear its backlog if there is any
 	
 	while(!USART0_is_idle());
@@ -55,17 +55,17 @@ ErrorCode BNO055_init_fusion_mode(bool calibrationNeeded)
 	//Read Chip-id 
 	uint8_t Data = 0;
 	
-	DEFAULT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, 0, &Data));
+	DEFAULT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, 0, &Data), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	if(Data != BNO055_ID)
 		return MODULE_BNO055 | FUNCTION_init_fusion_mode | ERROR_WRONG_DEVICE_ID;
 	//sensor defaults to OPR_MODE -> config mode
-	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE));
+	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	
 	//sensor defaults to PWR_MODE -> normal mode
-	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PWR_MODE, 0, BNO_PWR_MODE_NORMAL));
+	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PWR_MODE, 0, BNO_PWR_MODE_NORMAL), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	
 	//sensor defaults to PAGE_ID -> PAGE0
-	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0));
+	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	
 	//Set output units:
 	Data =	(0<<7) | //Format = Windows
@@ -74,20 +74,20 @@ ErrorCode BNO055_init_fusion_mode(bool calibrationNeeded)
 			(1<<1) | //Gyro = Rad/s
 			(0<<0);  //Accelerometer = m/s^2
 	_Delay(1000000);
-	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data));
+	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	_Delay(10000);
 	//sensor defaults to SYS_TRIGGER -> Internal oscillator
-	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_SYS_TRIGGER, 0, BNO_INTERNAL_OSC));
+	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_SYS_TRIGGER, 0, BNO_INTERNAL_OSC), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	
 	if(calibrationNeeded)
 	{
 		//Switch to Fusion Mode
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, FUSION_MODE_NDOF));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, FUSION_MODE_NDOF), MODULE_BNO055, FUNCTION_init_fusion_mode);
 		
 		//Calibrating		
 		BNO055_calibrate();
 		//Switch to Config Mode
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE), MODULE_BNO055, FUNCTION_init_fusion_mode);
 		
 				
 		//TODO: write Data to EEPROM
@@ -98,7 +98,7 @@ ErrorCode BNO055_init_fusion_mode(bool calibrationNeeded)
 	}
 	
 	//Set Operation Mode to NDOF (nine degrees of freedom)
-	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, FUSION_MODE_NDOF));
+	DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, FUSION_MODE_NDOF), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	//Initialize data struct to zero
 	lastMeasuredData.X = 0;
 	lastMeasuredData.Y = 0;
@@ -114,9 +114,9 @@ ErrorCode BNO055_init_non_fusion_mode(uint8_t bno_mode_register)
 	{
 		bno_is_busy = true;
 		
-		DEFAULT_ERROR_HANDLER(BNOCOM_Init(bno_runtime_success));
+		DEFAULT_ERROR_HANDLER(BNOCOM_Init(bno_runtime_success), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		
-		DEFAULT_ERROR_HANDLER(BNOCOM_register_error_callback(bno_runtime_error));
+		DEFAULT_ERROR_HANDLER(BNOCOM_register_error_callback(bno_runtime_error), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		
 		//Wait for USART0 to clear its backlog if there is any
 		while(!USART0_is_idle());
@@ -125,18 +125,18 @@ ErrorCode BNO055_init_non_fusion_mode(uint8_t bno_mode_register)
 		//Read Chip-id
 		uint8_t Data = 0;
 		
-		DEFAULT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, 0, &Data));
+		DEFAULT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CHIP_ID, 0, &Data), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		if(Data != BNO055_ID)
 			return MODULE_BNO055 | FUNCTION_init_fusion_mode | ERROR_WRONG_DEVICE_ID;
 		
 		//sensor defaults to OPR_MODE -> config mode
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, BNO_CONFIG_MODE), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		
 		//sensor defaults to PWR_MODE -> normal mode
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PWR_MODE, 0, BNO_PWR_MODE_NORMAL));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PWR_MODE, 0, BNO_PWR_MODE_NORMAL), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		
 		//sensor defaults to PAGE_ID -> PAGE0
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID0), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		
 		//Set output units:
 		Data =	(0<<7) | //Format = Windows
@@ -145,13 +145,13 @@ ErrorCode BNO055_init_non_fusion_mode(uint8_t bno_mode_register)
 		(0<<1) | //Gyro = Degrees/s
 		(0<<0);  //Accelerometer = m/s^2
 		_Delay(1000000);
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_UNIT_SEL, 0, Data), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		_Delay(10000);
 		//sensor defaults to SYS_TRIGGER -> Internal oscillator
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_SYS_TRIGGER, 0, BNO_INTERNAL_OSC));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_SYS_TRIGGER, 0, BNO_INTERNAL_OSC), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		
 		//Set Operation Mode to NDOF (nine degrees of freedom)
-		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, bno_mode_register));
+		DEFAULT_ERROR_HANDLER(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_OPR_MODE, 0, bno_mode_register), MODULE_BNO055, FUNCTION_init_non_fusion_mode);
 		//Initialize data struct to zero
 		lastMeasuredData.X = 0;
 		lastMeasuredData.Y = 0;
@@ -186,9 +186,9 @@ ErrorCode BNO055_calibrate()
 		}
 		if(readReturn != SUCCESS && Data != BNO_STATUS_BUS_OVER_RUN_ERROR)
 		{
-			return readReturn;
+			return ErrorHandling_set_top_level(readReturn, MODULE_BNO055, FUNCTION_calibrate);
 		}
-		DEFAULT_ERROR_HANDLER(bno_calculate_calibration(Data, &sys, &gyro, &accel, &mag));
+		DEFAULT_ERROR_HANDLER(bno_calculate_calibration(Data, &sys, &gyro, &accel, &mag), MODULE_BNO055, FUNCTION_calibrate);
 	}
 	bno_is_busy = false;
 	return SUCCESS;
@@ -198,8 +198,8 @@ ErrorCode BNO055_get_calibration(uint8_t* sys, uint8_t* gyro, uint8_t* accel, ui
 {
 	uint8_t Data = 0;
 	bno_is_busy = true;
-	DEFAULT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CALIB_STAT, 0, &Data));
-	DEFAULT_ERROR_HANDLER(bno_calculate_calibration(Data, sys, gyro, accel, mag));
+	DEFAULT_ERROR_HANDLER(BNOCOM_read_and_wait_for_response_1byte(BNO_REG_CALIB_STAT, 0, &Data), MODULE_BNO055, FUNCTION_get_calibration);
+	DEFAULT_ERROR_HANDLER(bno_calculate_calibration(Data, sys, gyro, accel, mag), MODULE_BNO055, FUNCTION_get_calibration);
 	bno_is_busy = false;
 	return SUCCESS;
 }
@@ -286,7 +286,7 @@ ErrorCode BNO055_start_measurement(bool measureContinous, bool triggerCallback, 
 		bno_measureContinous = measureContinous;
 		bno_triggerCallback = triggerCallback;
 		bnoReadRegister = bnoMeasurementType;
-		return BNOCOM_register_read_by_table(bnoReadRegister, 0, 6);
+		return ErrorHandling_set_top_level(BNOCOM_register_read_by_table(bnoReadRegister, 0, 6), MODULE_BNO055, FUNCTION_start_measurement);
 	}
 	return MODULE_BNO055 | FUNCTION_start_measurement | ERROR_ARGUMENT_OUT_OF_RANGE;
 }

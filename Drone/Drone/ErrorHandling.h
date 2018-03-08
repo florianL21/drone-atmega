@@ -76,6 +76,25 @@ typedef enum {
 	FUNCTION_puts_blocking							= 0x2B00,
 	FUNCTION_set_receiver_length					= 0x2C00,
 	FUNCTION_register_received_callback				= 0x2D00,
+	FUNCTION_calibrate								= 0x2E00,
+	FUNCTION_get_calibration						= 0x2F00,
+	FUNCTION_register_write_1byte					= 0x3000,
+	FUNCTION_register_read_1byte					= 0x3100,
+	FUNCTION_write_uint8_t							= 0x3200,
+	FUNCTION_write_float							= 0x3300,
+	FUCNTION_put_Command							= 0x3400,
+	FUCNTION_put_debug								= 0x3500,
+	FUCNTION_put_debug_n							= 0x3600,
+	FUCNTION_put_error								= 0x3700,
+	FUCNTION_force_put_error						= 0x3800,
+	FUNCTION_print_debug							= 0x3900,
+	FUNCTION_print_error							= 0x3A00,
+	FUNCTION_puts									= 0x3B00,
+	FUNCTION_put_float								= 0x3C00,
+	FUNCTION_put_int								= 0x3D00,
+	FUNCTION_put_int_blocking						= 0x3E00
+	
+	
 	
 }Functions;
 
@@ -100,16 +119,17 @@ typedef enum {
 	
 }Errors;
 
-typedef uint32_t ErrorCode;
+typedef uint64_t ErrorCode;
 
 ErrorCode ErrorHandling_tempError;
 
 
-#define DEFAULT_ERROR_HANDLER(x)		ErrorHandling_tempError = x;if(ErrorHandling_tempError != SUCCESS){return ErrorHandling_tempError;}
+#define DEFAULT_ERROR_HANDLER(error, module, function)		ErrorHandling_tempError = error;if(ErrorHandling_tempError != SUCCESS){return ErrorHandling_set_top_level(ErrorHandling_tempError, module, function);}
 
 
 void ErrorHandling_throw(ErrorCode Error);
-bool ErrorHandling_catch(uint32_t* Error);
+bool ErrorHandling_catch(ErrorCode* Error);
 void ErrorHandling_throw_b(Modules Module, Functions Function, Errors Error);
+ErrorCode ErrorHandling_set_top_level(ErrorCode Error, Modules LastModule, Functions LastFunction);
 
 #endif /* ERRORHANDLING_H_ */

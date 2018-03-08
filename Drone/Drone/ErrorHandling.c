@@ -6,7 +6,7 @@
  */ 
 #include "ErrorHandling.h"
 
-uint32_t errorStack[MAX_ERROR_COUNT] = {0};
+uint64_t errorStack[MAX_ERROR_COUNT] = {0};
 uint8_t errorCount = 0;
 
 void ErrorHandling_throw(ErrorCode Error)
@@ -25,7 +25,7 @@ void ErrorHandling_throw_b(Modules Module, Functions Function, Errors Error)
 	}
 }
 
-bool ErrorHandling_catch(uint32_t* Error)
+bool ErrorHandling_catch(ErrorCode* Error)
 {
 	if(errorCount != 0)
 	{
@@ -37,19 +37,14 @@ bool ErrorHandling_catch(uint32_t* Error)
 		return false;
 	}
 }
-/*
-void error_handler_print()
+
+ErrorCode ErrorHandling_set_top_level(ErrorCode Error, Modules LastModule, Functions LastFunction)
 {
-	if(errorCount != 0)
+	if(Error != SUCCESS)
 	{
-		char ErrorToCharBuffer[10] = "";
-		for (uint8_t i = 0; i < errorCount; i++)
-		{
-			itoa(errorStack[i], ErrorToCharBuffer, 16);
-			ErrorToCharBuffer[2]='\0';
-			SerialCOM_put_error(ErrorToCharBuffer);
-		}
-		errorCount = 0;
+		Error &= 0xFFFFFF;
+		Error |= LastModule << 16;
+		Error |= LastFunction << 16;
 	}
+	return Error;
 }
-*/

@@ -13,6 +13,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Series;
 
 namespace ControlCenter
 {
@@ -30,9 +33,15 @@ namespace ControlCenter
 
         static TextBox StatusText;
 
+        PlotModel MyModel;
+
         public MainWindow()
         {
             InitializeComponent();
+            MyModel = new PlotModel{ Title = "Test" };
+
+            TestGraph.Model = MyModel;
+
             StatusText = StatusTextBox as TextBox;
 
             mySerialPort = new SerialPort("COM5");
@@ -45,13 +54,16 @@ namespace ControlCenter
             mySerialPort.ReceivedBytesThreshold = 1;
             mySerialPort.ReadTimeout = 10;
             mySerialPort.DataReceived += new SerialDataReceivedEventHandler(serialPort_DataReceived);
-            StatusText.Text = "";
+            //StatusText.Text = "";
 
 
             dispatcherACKTimeout.Tick += new EventHandler(ACK_timeout);
             dispatcherACKTimeout.Interval = new TimeSpan(0, 0, 1);
+
             
         }
+
+        
 
         /*Send Message Functions:
          */
@@ -779,6 +791,11 @@ namespace ControlCenter
             RefreshPIDValues();
         }
 
+        private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox_ErrorLog.Text = "Begin of Error log: \n";
+        }
+
         /*Checkboxes:
          */
 
@@ -850,12 +867,10 @@ namespace ControlCenter
 
         private void TabControl_MainModes_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if(TabControl_MainModes.SelectedIndex == 1)
+            if (TabControl_MainModes.SelectedIndex == 1)
             {
                 TextBox_ErrorLog.ScrollToEnd();
             }
         }
-
-        
     }
 }

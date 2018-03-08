@@ -24,7 +24,7 @@ ErrorCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	{
 		return MODULE_USART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength));
+	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength), MODULE_USART0, FUNCTION_Init);
 	
 	// Enable Clock for UART
 	PMC->PMC_PCER0 = 1 << ID_USART0;
@@ -99,7 +99,7 @@ ErrorCode USART0_put_data(uint8_t* sendData, uint16_t Length)
 	{
 		if(queue_has_space(usart0SendQueue) == true)
 		{
-			return queue_write(usart0SendQueue,sendData,Length);
+			return ErrorHandling_set_top_level(queue_write(usart0SendQueue,sendData,Length), MODULE_USART0, FUNCTION_put_data);
 		}else
 		{
 			return MODULE_USART0 | FUNCTION_put_data | ERROR_NOT_READY_FOR_OPERATION;

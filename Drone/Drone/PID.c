@@ -60,7 +60,7 @@ ErrorCode PID_Initialize(pidData* pidController, float *Input, float *Output, fl
 	pidController->lastInput = *(pidController->Input);
 	pidController->ITerm = *(pidController->Output);
 	
-	DEFAULT_ERROR_HANDLER(PID_SetOutputLimits(pidController, Min, Max));
+	DEFAULT_ERROR_HANDLER(PID_SetOutputLimits(pidController, Min, Max), MODULE_PID, FUNCTION_Initialize);
 	
 	if(pidController->ITerm > pidController->outMax)
 		pidController->ITerm = pidController->outMax;
@@ -70,9 +70,9 @@ ErrorCode PID_Initialize(pidData* pidController, float *Input, float *Output, fl
 	pidController->SampleTime = SampleTime*(TICKS_PER_SECOND / 1000);
 	pidController->LastTime = pid_getTicks() - pidController->SampleTime;
 	
-	DEFAULT_ERROR_HANDLER(PID_SetTunings(pidController, Kp, Ki, Kd));
+	DEFAULT_ERROR_HANDLER(PID_SetTunings(pidController, Kp, Ki, Kd), MODULE_PID, FUNCTION_Initialize);
 	
-	DEFAULT_ERROR_HANDLER(PID_SetControllerDirection(pidController, DIRECT));
+	DEFAULT_ERROR_HANDLER(PID_SetControllerDirection(pidController, DIRECT), MODULE_PID, FUNCTION_Initialize);
 	return SUCCESS;
 }
 
