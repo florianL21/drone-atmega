@@ -13,9 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using OxyPlot;
-using OxyPlot.Axes;
-using OxyPlot.Series;
+
 
 namespace ControlCenter
 {
@@ -33,14 +31,14 @@ namespace ControlCenter
 
         static TextBox StatusText;
 
-        PlotModel MyModel;
+        LoggingGraph MotorValueGraphWindow;
+        LoggingGraph RCReceiverValueGraphWindow;
+        LoggingGraph SensorValueGraphWindow;
 
         public MainWindow()
         {
             InitializeComponent();
-            MyModel = new PlotModel{ Title = "Test" };
-
-            TestGraph.Model = MyModel;
+           
 
             StatusText = StatusTextBox as TextBox;
 
@@ -59,7 +57,6 @@ namespace ControlCenter
 
             dispatcherACKTimeout.Tick += new EventHandler(ACK_timeout);
             dispatcherACKTimeout.Interval = new TimeSpan(0, 0, 1);
-
             
         }
 
@@ -424,6 +421,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_MotorValuesM0.Value = M0));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_MotorValuesM0.Text = M0.ToString()));
+                if (MotorValueGraphWindow != null && MotorValueGraphWindow.IsOpen == true)
+                {
+                    MotorValueGraphWindow.addDataPoint(M0, "M0");
+                }
             }
             if (M1 == -100000)
             {
@@ -434,6 +435,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_MotorValuesM1.Value = M1));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_MotorValuesM1.Text = M1.ToString()));
+                if (MotorValueGraphWindow != null && MotorValueGraphWindow.IsOpen == true)
+                {
+                    MotorValueGraphWindow.addDataPoint(M1, "M1");
+                }
             }
             if (M2 == -100000)
             {
@@ -444,6 +449,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_MotorValuesM2.Value = M2));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_MotorValuesM2.Text = M2.ToString()));
+                if (MotorValueGraphWindow != null && MotorValueGraphWindow.IsOpen == true)
+                {
+                    MotorValueGraphWindow.addDataPoint(M2, "M2");
+                }
             }
             if (M3 == -100000)
             {
@@ -454,6 +463,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_MotorValuesM3.Value = M3));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_MotorValuesM3.Text = M3.ToString()));
+                if (MotorValueGraphWindow != null && MotorValueGraphWindow.IsOpen == true)
+                {
+                    MotorValueGraphWindow.addDataPoint(M3, "M3");
+                }
             }
         }
 
@@ -468,6 +481,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_RCReceiverValuesThrottle.Value = Throttle));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_RCReceiverValuesThrottle.Text = Throttle.ToString()));
+                if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
+                {
+                    RCReceiverValueGraphWindow.addDataPoint(Throttle, "Throttle");
+                }
             }
             if (Roll == -100000)
             {
@@ -478,6 +495,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_RCReceiverValuesRoll.Value = Roll));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_RCReceiverValuesRoll.Text = Roll.ToString()));
+                if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
+                {
+                    RCReceiverValueGraphWindow.addDataPoint(Roll, "Roll");
+                }
             }
             if (Pitch == -100000)
             {
@@ -488,6 +509,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_RCReceiverValuesPitch.Value = Pitch));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_RCReceiverValuesPitch.Text = Pitch.ToString()));
+                if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
+                {
+                    RCReceiverValueGraphWindow.addDataPoint(Pitch, "Pitch");
+                }
             }
             if (Yaw == -100000)
             {
@@ -498,6 +523,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_RCReceiverValuesYaw.Value = Yaw));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_RCReceiverValuesYaw.Text = Yaw.ToString()));
+                if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
+                {
+                    RCReceiverValueGraphWindow.addDataPoint(Yaw, "Yaw");
+                }
             }
             if (Gear == -100000)
             {
@@ -508,6 +537,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_RCReceiverValuesGear.Value = Gear));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_RCReceiverValuesGear.Text = Gear.ToString()));
+                if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
+                {
+                    RCReceiverValueGraphWindow.addDataPoint(Gear, "Gear");
+                }
             }
         }
 
@@ -522,6 +555,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesRoll.Value = X));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesRoll.Text = X.ToString()));
+                if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
+                {
+                    SensorValueGraphWindow.addDataPoint(X, "X");
+                }
             }
             if (Y == -100000)
             {
@@ -532,6 +569,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesPitch.Value = Y));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesPitch.Text = Y.ToString()));
+                if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
+                {
+                    SensorValueGraphWindow.addDataPoint(Y, "Y");
+                }
             }
             if (Z == -100000)
             {
@@ -542,6 +583,10 @@ namespace ControlCenter
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesYaw.Value = Z));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesYaw.Text = Z.ToString()));
+                if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
+                {
+                    SensorValueGraphWindow.addDataPoint(Z, "Z");
+                }
             }
         }
 
@@ -796,6 +841,63 @@ namespace ControlCenter
             TextBox_ErrorLog.Text = "Begin of Error log: \n";
         }
 
+        private void Button_StartSensorValuesGraph_Click(object sender, RoutedEventArgs e)
+        {
+            if(SensorValueGraphWindow == null || SensorValueGraphWindow.IsOpen == false)
+            {
+                SensorValueGraphWindow = new LoggingGraph();
+                SensorValueGraphWindow.MyModel.Title = "Sensor Values";
+                string[] dataLineNames = { "X", "Y", "Z" };
+                double[,] maxMins = new double[,] { { 1024, 1024, 1024, 1024, 1 }, { -1024, -1024, -1024, -1024, -1024 } };
+                SensorValueGraphWindow.setDataLines(dataLineNames, maxMins);
+                SensorValueGraphWindow.yAxis.Maximum = 1024;
+                SensorValueGraphWindow.yAxis.Minimum = -1024;
+                SensorValueGraphWindow.Show();
+            }
+            else
+            {
+                SensorValueGraphWindow.Activate();
+            }
+        }
+
+        private void Button_StartRCReceiverValuesGraph_Click(object sender, RoutedEventArgs e)
+        {
+            if (RCReceiverValueGraphWindow == null || RCReceiverValueGraphWindow.IsOpen == false)
+            {
+                RCReceiverValueGraphWindow = new LoggingGraph();
+                RCReceiverValueGraphWindow.MyModel.Title = "RC Receiver Values";
+                string[] dataLineNames = { "Throttle", "Roll", "Pitch", "Yaw", "Gear" };
+                double[,] maxMins = new double[,] { { 2200, 2200, 2200, 2200, 1 }, { 0, 0, 0, 0, 0 } };
+                RCReceiverValueGraphWindow.setDataLines(dataLineNames, maxMins);
+                RCReceiverValueGraphWindow.yAxis.Maximum = 2200;
+                RCReceiverValueGraphWindow.yAxis.Minimum = 0;
+                RCReceiverValueGraphWindow.Show();
+            }
+            else
+            {
+                RCReceiverValueGraphWindow.Activate();
+            }
+        }
+       
+        private void Button_StartMotorValuesGraph_Click(object sender, RoutedEventArgs e)
+        {
+            if (MotorValueGraphWindow == null || MotorValueGraphWindow.IsOpen == false)
+            {
+                MotorValueGraphWindow = new LoggingGraph();
+                MotorValueGraphWindow.MyModel.Title = "Motor Values";
+                string[] dataLineNames = { "M0", "M1", "M2", "M3"};
+                double[,] maxMins = new double[,] { { 5200, 5200, 5200, 5200 }, { 0, 0, 0, 0} };
+                MotorValueGraphWindow.setDataLines(dataLineNames, maxMins);
+                MotorValueGraphWindow.yAxis.Maximum = 5200;
+                MotorValueGraphWindow.yAxis.Minimum = 0;
+                MotorValueGraphWindow.Show();
+            }
+            else
+            {
+                MotorValueGraphWindow.Activate();
+            }
+        }
+
         /*Checkboxes:
          */
 
@@ -861,6 +963,18 @@ namespace ControlCenter
             Connect_DisconnectButton.Content = "Connect";
             SetStatus("Disconnected");
             ResetGUI();
+            if (MotorValueGraphWindow != null && MotorValueGraphWindow.IsOpen == true)
+            {
+                MotorValueGraphWindow.Close();
+            }
+            if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
+            {
+                SensorValueGraphWindow.Close();
+            }
+            if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
+            {
+                RCReceiverValueGraphWindow.Close();
+            }
             mySerialPort.Close();
             Dispose();
         }

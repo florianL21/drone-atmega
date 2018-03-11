@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ControlCenter"
-        xmlns:oxy="http://oxyplot.org/wpf"
+        
         mc:Ignorable="d"
         Title="Drone Control Center" Height="801.137" Width="600.941" ResizeMode="NoResize"
         Closing="Window_Closing">
@@ -125,7 +125,9 @@
                                 </TabItem>
                             </TabControl>
                         </GroupBox>
-                        <oxy:PlotView x:Name="TestGraph" Margin="288,321,10,119"/>
+                        <Button x:Name="Button_StartSensorValuesGraph" Content="Start Sensor Values Graph" HorizontalAlignment="Left" Margin="288,298,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartSensorValuesGraph_Click"/>
+                        <Button x:Name="Button_StartRCReceiverValuesGraph" Content="Start RC Receiver Values Graph" HorizontalAlignment="Left" Margin="288,331,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartRCReceiverValuesGraph_Click"/>
+                        <Button x:Name="Button_StartMotorValuesGraph" Content="Start Motor Values Graph" HorizontalAlignment="Left" Margin="288,364,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartMotorValuesGraph_Click"/>
                     </Grid>
                 </Grid>
             </TabItem>
