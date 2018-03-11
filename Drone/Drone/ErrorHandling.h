@@ -12,9 +12,14 @@
 #include "sam.h"
 #include "config.h"
 #include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
+
 
 typedef enum {
-	MODULE_SUCESS						= 0x000000,
+										//0xFF0000
+									//0xFF00000000
+	MODULE_SUCCESS						= 0x000000,
 	MODULE_GENERIC						= 0x010000,
 	MODULE_MAIN							= 0x020000,
 	MODULE_BNO055						= 0x030000,
@@ -26,7 +31,7 @@ typedef enum {
 	MODULE_RCREADER						= 0x090000,
 	MODULE_SERIALCOM					= 0x0A0000,
 	MODULE_UART0						= 0x0B0000,
-	MODULE_USART0						= 0x0C0000
+	MODULE_USART0						= 0x0C0000					//<--
 }Modules;
 
 typedef enum {
@@ -92,10 +97,7 @@ typedef enum {
 	FUNCTION_puts									= 0x3B00,
 	FUNCTION_put_float								= 0x3C00,
 	FUNCTION_put_int								= 0x3D00,
-	FUNCTION_put_int_blocking						= 0x3E00
-	
-	
-	
+	FUNCTION_put_int_blocking						= 0x3E00		//<--
 }Functions;
 
 typedef enum {
@@ -115,8 +117,15 @@ typedef enum {
 	ERROR_FAILED_TO_LOCK_FLASH			= 0x0D,
 	ERROR_FAILED_TO_UNLOCK_FLASH		= 0x0E,
 	ERROR_ADDRESS_NOT_4_BYTE_BOUDARY	= 0x0F,
-	ERROR_TRANSMISSION_ERROR			= 0x10
-	
+	ERROR_TRANSMISSION_ERROR			= 0x10,
+	ERROR_READ_FAIL						= 0x11,
+	ERROR_WRITE_FAIL					= 0x12,
+	ERROR_REGMAP_INVALID_ADDRESS		= 0x13,
+	ERROR_WRONG_START_BYTE				= 0x14,
+	ERROR_BUS_OVER_RUN					= 0x15,
+	ERROR_MAX_LENGTH					= 0x16,
+	ERROR_MIN_LENGTH					= 0x17,
+	ERROR_RECEIVE_CHARACTER_TIMEOUT		= 0x18		//<--
 }Errors;
 
 typedef uint64_t ErrorCode;
@@ -131,5 +140,8 @@ void ErrorHandling_throw(ErrorCode Error);
 bool ErrorHandling_catch(ErrorCode* Error);
 void ErrorHandling_throw_b(Modules Module, Functions Function, Errors Error);
 ErrorCode ErrorHandling_set_top_level(ErrorCode Error, Modules LastModule, Functions LastFunction);
+void ErrorHandling_get_module_description(ErrorCode Error, char errorDescription[]);
+void ErrorHandling_get_function_description(ErrorCode Error, char errorDescription[]);
+void ErrorHandling_get_error_description(ErrorCode Error, char errorDescription[]);
 
 #endif /* ERRORHANDLING_H_ */

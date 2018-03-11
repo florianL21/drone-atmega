@@ -66,6 +66,7 @@ ErrorCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback);
 ErrorCode BNO055_register_data_ready_callback(BNO055_DATA_READY_CALLBACK callback);
 ErrorCode BNO055_calibrate();
 bool BNO055_is_busy();
+bool BNO055_is_connected();
 //TODO: safety check for bno is busy
 
 #endif /* BNO055_H_ */

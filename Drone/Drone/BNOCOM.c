@@ -69,7 +69,7 @@ void bno_error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
 	UART0_puts("\n\r");*/
 	bno_waiting_for_response = false;
 	bno_response_error = Error;
-	bno_response_status = MODULE_BNOCOM | FUNCTION_success | ERROR_TRANSMISSION_ERROR;
+	bno_response_status = ErrorHandling_set_top_level(Transmit_error_code, MODULE_BNOCOM, FUNCTION_error);
 }
 
 ErrorCode BNOCOM_write_and_wait_for_response_1byte(uint8_t RegisterTableOffset, uint8_t RegisterTablePage, uint8_t Data)
@@ -393,10 +393,10 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 			if(Length == 2 && Data[0] == ACK_OR_ERROR_BYTE)
 			{
 				bnocom_IsIdle = true;
-				if(Data[1] == BNO_STATUS_WRITE_SUCCESS && bnocom_read_success_callback != NULL)
+				if(Data[1] == BNO_STATUS_WRITE_SUCCESS && bnocom_read_success_callback != NULL)		//BNO states operation success
 				{
 					bnocom_read_success_callback(NULL,0);
-				}else if(Data[1] != BNO_STATUS_WRITE_SUCCESS && bnocom_error_callback != NULL)
+				}else if(Data[1] != BNO_STATUS_WRITE_SUCCESS && bnocom_error_callback != NULL)		//BNO states an error
 				{
 					bnocom_error_callback(Data[1], MODULE_BNOCOM | FUNCTION_response_received | ERROR_GENERIC);
 				}
@@ -416,7 +416,7 @@ void bnocom_response_received(uint8_t* Data, uint16_t Length)
 				bnocom_IsIdle = true;
 				if(bnocom_error_callback != NULL)
 				{
-					bnocom_error_callback(BNO_TRANSMIT_ERROR, MODULE_BNOCOM | FUNCTION_response_received | ERROR_ARGUMENT_OUT_OF_RANGE);
+					bnocom_error_callback(BNO_TRANSMIT_ERROR, MODULE_BNOCOM | FUNCTION_response_received | ERROR_ARGUMENT_OUT_OF_RANGE);	//Length missmatch
 				}
 			}
 		break;

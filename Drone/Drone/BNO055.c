@@ -35,6 +35,7 @@ bool bno_measureContinous = false;
 bool bno_triggerCallback = false;
 BNO055_Data lastMeasuredData;
 bool bno_is_busy = false;
+bool bno_is_connected = false;
 uint8_t bnoReadRegister = 0;
 
 
@@ -49,7 +50,10 @@ ErrorCode BNO055_init_fusion_mode(bool calibrationNeeded)
 	DEFAULT_ERROR_HANDLER(BNOCOM_register_error_callback(bno_runtime_error), MODULE_BNO055, FUNCTION_init_fusion_mode);
 	//Wait for USART0 to clear its backlog if there is any
 	
-	while(!USART0_is_idle());
+	while(!USART0_is_idle())
+	{
+		
+	}
 	
 	//Check for right device
 	//Read Chip-id 
@@ -105,6 +109,7 @@ ErrorCode BNO055_init_fusion_mode(bool calibrationNeeded)
 	lastMeasuredData.Z = 0;
 	bno_is_busy = false;
 	//Initialization finished
+	bno_is_connected = true;
 	return SUCCESS;
 }
 
@@ -158,6 +163,7 @@ ErrorCode BNO055_init_non_fusion_mode(uint8_t bno_mode_register)
 		lastMeasuredData.Z = 0;
 		bno_is_busy = false;
 		//Initialization finished
+		bno_is_connected = true;
 		return SUCCESS;
 	}
 	return MODULE_BNO055 | FUNCTION_init_non_fusion_mode | ERROR_ARGUMENT_OUT_OF_RANGE;
@@ -248,7 +254,7 @@ void bno_runtime_success(uint8_t* sensorData, uint8_t Length)
 		bno_data_ready_callback();
 	if(bno_measureContinous == true)
 	{
-		BNOCOM_register_read_by_table(bnoReadRegister, 0, 6);
+		ErrorHandling_throw(ErrorHandling_set_top_level(BNOCOM_register_read_by_table(bnoReadRegister, 0, 6), MODULE_BNO055, FUNCTION_runtime_success));
 		bno_is_busy = true;
 	}
 	bno_is_busy = false;
@@ -257,6 +263,11 @@ void bno_runtime_success(uint8_t* sensorData, uint8_t Length)
 bool BNO055_is_busy()
 {
 	return bno_is_busy;
+}
+
+bool BNO055_is_connected()
+{
+	return bno_is_connected;
 }
 
 void bno_runtime_error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)

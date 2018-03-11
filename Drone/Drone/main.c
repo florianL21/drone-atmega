@@ -67,76 +67,69 @@ void configure_wdt(void)
 
 void BNO_Error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
 {
-	if(Error == BNO_STATUS_BUS_OVER_RUN_ERROR && (Transmit_error_code & 0xFF) == ERROR_GENERIC)
+	if(Error == BNO_STATUS_BUS_OVER_RUN_ERROR && (Transmit_error_code & 0xFF) == ERROR_GENERIC)		//BNO was not ready for operation, try again
 		ErrorHandling_throw(BNO055_start_measurement(true,true,BNO_MEASURE));
-	else 
+	else if((Transmit_error_code & 0xFF) == ERROR_GENERIC)											//BNO reported an error
 	{
 		_Delay(840000);
-		ErrorHandling_throw_b(MODULE_MAIN, FUNCTION_error, ERROR_GENERIC); //TODO: process Error
+		switch(Error)//translate the error codes
+		{
+			case BNO_STATUS_READ_FAIL:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_READ_FAIL, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_STATUS_WRITE_FAIL:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_WRITE_FAIL, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_STATUS_REGMAP_INVALID_ADDRESS:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_REGMAP_INVALID_ADDRESS, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_STATUS_WRONG_START_BYTE:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_WRONG_START_BYTE, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_STATUS_BUS_OVER_RUN_ERROR:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_BUS_OVER_RUN, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_STATUS_MAX_LENGTH_ERROR:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_MAX_LENGTH, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_STATUS_MIN_LENGTH_ERROR:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_MIN_LENGTH, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_STATUS_RECEIVE_CHARACTER_TIMEOUT:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_RECEIVE_CHARACTER_TIMEOUT, MODULE_MAIN, FUNCTION_error));
+			break;
+			case BNO_TRANSMIT_ERROR:
+				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_TRANSMISSION_ERROR, MODULE_MAIN, FUNCTION_error));
+			break;
+			default:
+				ErrorHandling_throw_b(MODULE_MAIN, FUNCTION_error, ERROR_GENERIC);
+			break;
+		}
+	} 
+	else																							//Some kind of other error
+	{
+		ErrorHandling_throw(ErrorHandling_set_top_level(Transmit_error_code, MODULE_MAIN, FUNCTION_error));				//throw the error
 	}
 }
 
-void error_handler_print()
+void ErrorHandling_print()
 {
 	ErrorCode Error;
-	char moduleDescription[20] = "";
-	char functionDescription[20] = "";
-	char errorDescription[20] = "";
-	char lastModuleDescription[20] = "";
-	char lastFunctionDescription[20] = "";
-	
-	/*
-	ERROR_GENERIC						= 0x01,
-	ERROR_ARGUMENT_OUT_OF_RANGE			= 0x02,
-	ERROR_GOT_NULL_POINTER				= 0x03,
-	ERROR_MALLOC_RETURNED_NULL			= 0x04,
-	ERROR_NOT_READY_FOR_OPERATION		= 0x05,
-	ERROR_INVALID_ARGUMENT				= 0x06,
-	ERROR_WRONG_DEVICE_ID				= 0x07,
-	ERROR_LENGTH_MISSMATCH				= 0x08,
-	ERROR_QUEUE_WAS_EMPTY				= 0x09,
-	ERROR_WRITE_FAILED					= 0x0A,
-	ERROR_ADDRESS_TOO_LOW				= 0x0B,
-	ERROR_ADDRESS_TOO_HIGH				= 0x0C,
-	ERROR_FAILED_TO_LOCK_FLASH			= 0x0D,
-	ERROR_FAILED_TO_UNLOCK_FLASH		= 0x0E,
-	ERROR_ADDRESS_NOT_4_BYTE_BOUDARY	= 0x0F,
-	ERROR_TRANSMISSION_ERROR			= 0x10
-	*/
+	char ErrorMessage [200] = "";
 	
 	if(ErrorHandling_catch(&Error) == true)
 	{
-		//error
-		switch(Error&0xFF)
-		{
-			case ERROR_GENERIC:
-				strcat(moduleDescription, "Generic");
-			break;
-			case ERROR_ARGUMENT_OUT_OF_RANGE:
-				strcat(moduleDescription, "Argument out of range");	
-			break;
-			case ERROR_GOT_NULL_POINTER:
-				strcat(moduleDescription, "Got null pointer");
-			break;
-			
-			default:
-			break;
-		}
-		//Function
-		switch(Error&0xFF00)
-		{
-			default:
-			break;
-		}
-		//Module
-		switch(Error&0xFF0000)
-		{
-			case MODULE_BNO055:
-			break;
-			default:
-			break;
-		}
-		
+		ErrorHandling_get_error_description(Error & 0xFF, ErrorMessage);						//max 32 chars
+		strcat(ErrorMessage, " error: \n\toriginates at: \"");									//26 chars
+		ErrorHandling_get_module_description(Error & 0xFF0000, ErrorMessage);					//max 15 chars
+		strcat(ErrorMessage, "_");																//1 chars
+		ErrorHandling_get_function_description(Error & 0xFF00, ErrorMessage);					//max 33 chars
+		strcat(ErrorMessage, "\"\n\tTop call function: \"");									//23 chars
+		ErrorHandling_get_module_description((Error & 0xFF00000000) >> 16, ErrorMessage);		//max 15 chars
+		strcat(ErrorMessage, "_");																//1 chars
+		ErrorHandling_get_function_description((Error & 0xFF000000) >> 16, ErrorMessage);		//max 33 chars
+		strcat(ErrorMessage, "\"");																//1 chars
+		SerialCOM_put_error(ErrorMessage);
 	}
 }
 
@@ -468,11 +461,11 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				ErrorHandling_throw(SerialCOM_put_error("SendPIDValues command has errors"));
 			}
 			//restart BNO measurement if necessary
-			if(BNO055_is_busy() == false)
+			/*if(BNO055_is_busy() == false)
 			{
 				ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
 				ErrorHandling_throw(SerialCOM_put_debug("Restart BNO"));
-			}
+			}*/
 		break;
 		case 0x06:
 			//check message integrity:
@@ -518,10 +511,16 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 		case 0x07:
 			if(message[0] == 'S')
 			{
-				//BNO055_stop_continous_measurement();	//stop BNO measurement
-				//while(BNO055_is_busy() == true);		//wait for a bit to make sure that all measurements are finished
-				SaveValuesToFlash(0x00);				//save Values
-				//BNO055_start_measurement(true,true,BNO_MEASURE);	//resume Measurement
+				if(BNO055_is_connected())
+				{
+					BNO055_stop_continous_measurement();	//stop BNO measurement
+					while(BNO055_is_busy() == true);		//wait for a bit to make sure that all measurements are finished
+					SaveValuesToFlash(0x00);				//save Values
+					BNO055_start_measurement(true, true, BNO_MEASURE);	//resume Measurement
+				} else
+				{
+					SaveValuesToFlash(0x00);				//save Values
+				}
 				ErrorHandling_throw(SerialCOM_put_debug("Saved values to flash"));
 			}else
 			{
@@ -580,19 +579,13 @@ int main(void)
 	esc_init();
 	
 	PID_Init();
-	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd,-250,250,10));
-	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd,-250,250,10));
+	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd, -250, 250, 10));
+	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd, -250, 250, 10));
 	ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
-	error_handler_print();
+	ErrorHandling_print();
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
 	while(1)
 	{
-		error_handler_print();
-		//if(UART0_has_space())
-		{
-			//error_handler_in(SerialCOM_put_debug("This message tests the correctness of the memmory management"));
-			
-		}
-		//_Delay(1000000);
+		ErrorHandling_print();		//print out errors when there is time for it
 	}
 }

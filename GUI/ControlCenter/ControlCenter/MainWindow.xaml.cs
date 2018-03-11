@@ -204,9 +204,9 @@ namespace ControlCenter
                 if (recievedData.Count - offset >= 3)
                 {
                     startCharIndex = recievedData.ToList().IndexOf(0x02, offset);//search for beginning char
-                    if (startCharIndex != -1)
+                    if (startCharIndex != -1 && startCharIndex + 3 <= recievedData.Count)
                     {
-                        if (IsTypeValid(recievedData.ToList()[startCharIndex + 1]))//chech if type matches
+                        if (IsTypeValid(recievedData.ToList()[startCharIndex + 1]))//check if type matches
                         {
                             int MessageLength = recievedData.ToList()[startCharIndex + 2];
                             endCharIndex = startCharIndex + MessageLength + 3;
@@ -845,7 +845,7 @@ namespace ControlCenter
         {
             if (TabControl_MainModes.SelectedIndex == 1)
             {
-                TextBox_ErrorLog.ScrollToEnd();
+                //TextBox_ErrorLog.ScrollToEnd();
             }
         }
         private void StatusTextBox_TextChanged(object sender, TextChangedEventArgs e)
