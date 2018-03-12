@@ -942,7 +942,7 @@ namespace ControlCenter
 
         /* Special:
          */
-
+        
         private void TextBox_ErrorLog_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (TabControl_MainModes.SelectedIndex == 1)
@@ -986,5 +986,6 @@ namespace ControlCenter
                 TextBox_ErrorLog.ScrollToEnd();
             }
         }
+
     }
 }

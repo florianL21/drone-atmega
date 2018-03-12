@@ -14,6 +14,7 @@ using System.Windows.Shapes;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
+using System.Collections.ObjectModel;
 
 namespace ControlCenter
 {
@@ -33,7 +34,20 @@ namespace ControlCenter
         List<string> lineDescriptions = new List<string>();
         List<LineSeries> allLineSeries = new List<LineSeries>();
         double timeToDisplay = 10;
-        
+        double[,] xAxisMaxMins;
+
+        public ObservableCollection<BoolStringClass> CheckboxList { get; set; }
+
+        public class BoolStringClass
+        {
+            public string LineDescription { get; set; }
+            public bool IsSelected { get; set; }
+        }
+
+        private double map(double x, double in_min, double in_max, double out_min, double out_max)
+        {
+            return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
 
         public LoggingGraph()
         {
@@ -43,15 +57,20 @@ namespace ControlCenter
             MyModel.Axes.Add(yAxis);
             //MyModel.Series.Add(MyData);
             IsOpen = true;
+
+            CheckboxList = new ObservableCollection<BoolStringClass>();
+            this.DataContext = this;
         }
 
         public void setDataLines(string[] lineDescription, double[,] AxisMaxMins)
         {
+            xAxisMaxMins = AxisMaxMins;
             for (int i = 0; i < lineDescription.Length; i++)
             {
                 allLineSeries.Add(new LineSeries { Title = lineDescription[i] });
                 MyModel.Series.Add(allLineSeries[i]);
                 lineDescriptions.Add(lineDescription[i]);
+                CheckboxList.Add(new BoolStringClass { IsSelected = true, LineDescription = lineDescription[i] });
             }
         }
 
@@ -59,13 +78,15 @@ namespace ControlCenter
         {
             double timeDiff = (DateTime.Now - lastTimeUpdated).TotalMilliseconds/1000;
             List<DataPoint> newPoints = new List<DataPoint>();
-            LineSeries thisLineSeries = allLineSeries[lineDescriptions.IndexOf(lineDescription)];
-            thisLineSeries.Points.Add(new DataPoint(timeDiff, data));
+            int lineIndex = lineDescriptions.IndexOf(lineDescription);
+            LineSeries thisLineSeries = allLineSeries[lineIndex];
+            thisLineSeries.Points.Add(new DataPoint(timeDiff, map(data, xAxisMaxMins[lineIndex,0], xAxisMaxMins[lineIndex, 1], xAxis.Minimum,xAxis.Maximum)));
+            
             xAxis.Minimum = timeDiff - timeToDisplay;
             xAxis.Maximum = timeDiff;
-            if(thisLineSeries.Points.Count >= timeToDisplay*20) //est. 20 point per second 
+            if(thisLineSeries.Points.Count >= timeToDisplay*10 + 100) //est. 10 point per second 
             {
-                thisLineSeries.Points.RemoveRange(0, thisLineSeries.Points.Count - ((int)timeToDisplay * 20));
+                thisLineSeries.Points.RemoveRange(0, thisLineSeries.Points.Count - ((int)timeToDisplay * 10));
             }
             MyModel.InvalidatePlot(true);
         }
@@ -86,6 +107,17 @@ namespace ControlCenter
 
             }
              MyModel.InvalidatePlot(true);
+        }
+
+        private void CheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            for (int i = 0; i < CheckboxList.Count; i++)
+            {
+                LineSeries thisLineSeries = allLineSeries[lineDescriptions.IndexOf(CheckboxList.ElementAt(i).LineDescription)];
+                thisLineSeries.IsVisible = CheckboxList.ElementAt(i).IsSelected;
+            }
+            MyModel.InvalidatePlot(true);
+
         }
     }
 }

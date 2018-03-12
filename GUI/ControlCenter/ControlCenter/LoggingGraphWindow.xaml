@@ -9,9 +9,17 @@
         Title="LoggingGraph" Height="322.662" Width="300"
         Closing="Window_Closing">
     <Grid>
+
         <oxy:PlotView x:Name="Graph" Margin="0,0,0,28" />
         <TextBox x:Name="TextBox_SecondsToShow" HorizontalAlignment="Left" Margin="77,0,0,4" TextWrapping="Wrap" Text="10" Width="26" TextChanged="TextBox_SecondsToShow_TextChanged" Height="23" VerticalAlignment="Bottom"/>
         <Label Content="Seconds" Margin="108,0,0,5" Height="26" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="54"/>
         <Label Content="Show last" HorizontalAlignment="Left" Margin="10,0,0,5" Width="62" Height="26" VerticalAlignment="Bottom"/>
+        <ComboBox ItemsSource="{Binding CheckboxList}" Margin="0,0,10,10" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="115" Text="Select Data to display" ToolTip="Select Data to display">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding LineDescription}" Checked="CheckBox_Changed" Unchecked="CheckBox_Changed"/>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
     </Grid>
 </Window>
