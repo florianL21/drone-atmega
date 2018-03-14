@@ -80,7 +80,7 @@ namespace ControlCenter
             List<DataPoint> newPoints = new List<DataPoint>();
             int lineIndex = lineDescriptions.IndexOf(lineDescription);
             LineSeries thisLineSeries = allLineSeries[lineIndex];
-            thisLineSeries.Points.Add(new DataPoint(timeDiff, map(data, xAxisMaxMins[lineIndex,0], xAxisMaxMins[lineIndex, 1], xAxis.Minimum,xAxis.Maximum)));
+            thisLineSeries.Points.Add(new DataPoint(timeDiff, map(data, xAxisMaxMins[1, lineIndex], xAxisMaxMins[0, lineIndex], yAxis.Minimum, yAxis.Maximum)));
             
             xAxis.Minimum = timeDiff - timeToDisplay;
             xAxis.Maximum = timeDiff;

@@ -53,7 +53,7 @@ namespace ControlCenter
             mySerialPort.ReadTimeout = 10;
             mySerialPort.DataReceived += new SerialDataReceivedEventHandler(serialPort_DataReceived);
             //StatusText.Text = "";
-
+            
 
             dispatcherACKTimeout.Tick += new EventHandler(ACK_timeout);
             dispatcherACKTimeout.Interval = new TimeSpan(0, 0, 1);
