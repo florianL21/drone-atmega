@@ -29,6 +29,8 @@ namespace ControlCenter
 
         System.Windows.Threading.DispatcherTimer dispatcherACKTimeout = new System.Windows.Threading.DispatcherTimer();
 
+        //System.Windows.Threading.DispatcherTimer dispatcherTestData = new System.Windows.Threading.DispatcherTimer();
+
         static TextBox StatusText;
 
         LoggingGraph MotorValueGraphWindow;
@@ -57,10 +59,29 @@ namespace ControlCenter
 
             dispatcherACKTimeout.Tick += new EventHandler(ACK_timeout);
             dispatcherACKTimeout.Interval = new TimeSpan(0, 0, 1);
+
+            /*
+            dispatcherTestData.Tick += new EventHandler(sendTestData);
+            dispatcherTestData.Interval = new TimeSpan(0, 0, 0, 0, 100);
+            */
             
+
+
         }
 
-        
+        /*
+        void sendTestData(object s, EventArgs e)
+        {
+            Random rand = new Random();
+            if (MotorValueGraphWindow != null && MotorValueGraphWindow.IsOpen == true)
+            {
+                MotorValueGraphWindow.addDataPoint(rand.Next(0, 5200), "M0");
+                MotorValueGraphWindow.addDataPoint(rand.Next(0, 5200), "M1");
+                MotorValueGraphWindow.addDataPoint(rand.Next(0, 5200), "M2");
+                MotorValueGraphWindow.addDataPoint(rand.Next(0, 5200), "M3");
+            }
+        }
+        */
 
         /*Send Message Functions:
          */
@@ -849,7 +870,7 @@ namespace ControlCenter
                 SensorValueGraphWindow.MyModel.Title = "Sensor Values";
                 string[] dataLineNames = { "X", "Y", "Z" };
                 double[,] maxMins = new double[,] { { 1024, 1024, 1024, 1024, 1 }, { -1024, -1024, -1024, -1024, -1024 } };
-                SensorValueGraphWindow.setDataLines(dataLineNames, maxMins);
+                SensorValueGraphWindow.setDataLines(dataLineNames, maxMins, 10); //updates set to a maximum of 10 times per second
                 SensorValueGraphWindow.yAxis.Maximum = 1024;
                 SensorValueGraphWindow.yAxis.Minimum = -1024;
                 SensorValueGraphWindow.Show();
@@ -868,7 +889,7 @@ namespace ControlCenter
                 RCReceiverValueGraphWindow.MyModel.Title = "RC Receiver Values";
                 string[] dataLineNames = { "Throttle", "Roll", "Pitch", "Yaw", "Gear" };
                 double[,] maxMins = new double[,] { { 2200, 2200, 2200, 2200, 1 }, { 0, 0, 0, 0, 0 } };
-                RCReceiverValueGraphWindow.setDataLines(dataLineNames, maxMins);
+                RCReceiverValueGraphWindow.setDataLines(dataLineNames, maxMins, 10); //updates set to a maximum of 10 times per second
                 RCReceiverValueGraphWindow.yAxis.Maximum = 2200;
                 RCReceiverValueGraphWindow.yAxis.Minimum = 0;
                 RCReceiverValueGraphWindow.Show();
@@ -887,10 +908,11 @@ namespace ControlCenter
                 MotorValueGraphWindow.MyModel.Title = "Motor Values";
                 string[] dataLineNames = { "M0", "M1", "M2", "M3"};
                 double[,] maxMins = new double[,] { { 5200, 5200, 5200, 5200 }, { 0, 0, 0, 0} };
-                MotorValueGraphWindow.setDataLines(dataLineNames, maxMins);
+                MotorValueGraphWindow.setDataLines(dataLineNames, maxMins, 10);  //updates set to a maximum of 10 times per second
                 MotorValueGraphWindow.yAxis.Maximum = 5200;
                 MotorValueGraphWindow.yAxis.Minimum = 0;
                 MotorValueGraphWindow.Show();
+                dispatcherTestData.Start();
             }
             else
             {
