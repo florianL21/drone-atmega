@@ -125,9 +125,11 @@
                                 </TabItem>
                             </TabControl>
                         </GroupBox>
-                        <Button x:Name="Button_StartSensorValuesGraph" Content="Start Sensor Values Graph" HorizontalAlignment="Left" Margin="288,298,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartSensorValuesGraph_Click"/>
-                        <Button x:Name="Button_StartRCReceiverValuesGraph" Content="Start RC Receiver Values Graph" HorizontalAlignment="Left" Margin="288,331,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartRCReceiverValuesGraph_Click"/>
-                        <Button x:Name="Button_StartMotorValuesGraph" Content="Start Motor Values Graph" HorizontalAlignment="Left" Margin="288,364,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartMotorValuesGraph_Click"/>
+                        <Button x:Name="Button_StartSensorValuesGraph" Content="Start Sensor Values Graph" HorizontalAlignment="Left" Margin="288,298,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartSensorValuesGraph_Click" IsEnabled="False"/>
+                        <Button x:Name="Button_StartRCReceiverValuesGraph" Content="Start RC Receiver Values Graph" HorizontalAlignment="Left" Margin="288,331,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartRCReceiverValuesGraph_Click" IsEnabled="False"/>
+                        <Button x:Name="Button_StartMotorValuesGraph" Content="Start Motor Values Graph" HorizontalAlignment="Left" Margin="288,364,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartMotorValuesGraph_Click" IsEnabled="False"/>
+                        <Button x:Name="Button_ResetArduino" Content="Reset Arduino" HorizontalAlignment="Left" Margin="288,397,0,0" VerticalAlignment="Top" Width="118" Click="Button_ResetArduino_Click" IsEnabled="False"/>
+                        <CheckBox x:Name="CheckBox_ClearLogOnReset" Content="Clear error log on reset" HorizontalAlignment="Left" Margin="411,400,0,0" VerticalAlignment="Top" IsEnabled="False" IsChecked="True"/>
                     </Grid>
                 </Grid>
             </TabItem>

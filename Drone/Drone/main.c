@@ -62,7 +62,12 @@ bool ArmMotors = false;
 
 void configure_wdt(void)
 {
-	WDT->WDT_MR = 0x00000000; // disable WDT
+	WDT->WDT_MR = WDT_MR_WDV(330) | WDT_MR_WDD(330) | WDT_MR_WDRSTEN; //About 1s
+	//WDT->WDT_MR = 0x00000000; // disable WDT
+}
+void wdt_reset()
+{
+	WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
 }
 
 void BNO_Error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
@@ -391,7 +396,9 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 //0x01: Motor
 //0x02: RC
 //0x03: Sensor
-//0x04: Set current values as Sensor offset
+//0x04: Commands:
+//				  - S: Set current values as Sensor offset
+//				  - R: Reset Arduino
 //0x05: Send PID Values to PC
 //0x06: Get Value from PC
 //0x07: Save Values to Flash
@@ -431,18 +438,25 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				printSensorValues = false;
 		break;
 		case 0x04:
-			if(message[0] == 'S')
+			switch(message[0])
 			{
-				sensorOffsetX = SensorValues.X;
-				sensorOffsetY = SensorValues.Y;
-				//SaveValuesToFlash(0x0A);
-				//SaveValuesToFlash(0x0B);
-				PID_Reset(&RollPid);
-				PID_Reset(&PitchPid);
-			} 
-			else
-			{
-				ErrorHandling_throw(SerialCOM_put_error("SetSensorOffsets command has errors"));
+				case 'S':
+					sensorOffsetX = SensorValues.X;
+					sensorOffsetY = SensorValues.Y;
+					//SaveValuesToFlash(0x0A);
+					//SaveValuesToFlash(0x0B);
+					PID_Reset(&RollPid);
+					PID_Reset(&PitchPid);
+				break;
+				case 'R':
+					if(RemoteValues.Gear == false)
+						while(1);
+					else
+						ErrorHandling_throw(SerialCOM_put_error("Motors have to be disarmt before reset!"));
+				break;
+				default:
+					ErrorHandling_throw(SerialCOM_put_error("SetSensorOffsets command has errors"));
+				break;
 			}
 		break;
 		case 0x05:
@@ -554,12 +568,13 @@ void config_BNO()
 int main(void)
 {
 	SystemInit();
-	configure_wdt();
+	
 	ErrorHandling_throw(SerialCOM_init());
 	ErrorHandling_throw(SerialCOM_register_call_back(message_from_PC));
 	ErrorHandling_throw(SerialCOM_put_Command('R', 0x05));			//Reset GUI
 	ErrorHandling_throw(FlashStorage_Init());
-
+	
+	ErrorHandling_throw(SerialCOM_put_debug("MCU RESET!"));
 	if(FlashStorage_read(0))
 	{
 		ErrorHandling_throw(SerialCOM_print_debug("Running for the first time, populating Flash with default values"));
@@ -584,8 +599,10 @@ int main(void)
 	ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
 	ErrorHandling_print();
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
+	configure_wdt();
 	while(1)
 	{
+		wdt_reset();
 		ErrorHandling_print();		//print out errors when there is time for it
 	}
 }

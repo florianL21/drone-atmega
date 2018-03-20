@@ -732,13 +732,25 @@ namespace ControlCenter
                     GroupBox_SensorValues.IsEnabled = false;
                     GroupBox_PIDValues.IsEnabled = false;
                     PortNameTextbox.IsEnabled = true;
+                    Button_StartRCReceiverValuesGraph.IsEnabled = false;
+                    Button_StartMotorValuesGraph.IsEnabled = false;
+                    Button_StartSensorValuesGraph.IsEnabled = false;
+                    TextBox_ErrorLog.IsEnabled = false;
+                    Button_ResetArduino.IsEnabled = false;
+                    CheckBox_ClearLogOnReset.IsEnabled = false;
+                    if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
+                        SensorValueGraphWindow.Close();
+                    if (MotorValueGraphWindow != null && MotorValueGraphWindow.IsOpen == true)
+                        MotorValueGraphWindow.Close();
+                    if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
+                        RCReceiverValueGraphWindow.Close();
                     ResetGUI();
                     mySerialPort.Close();
                 }
                 catch (Exception Error)
                 {
                     LogError("Exception Thrown: " + Error.ToString(), "Connect_DisconnectButton_Click");
-                    SetStatus("Error opening serial COM");
+                    SetStatus("Error closing serial COM");
                 }
             }
             else
@@ -756,12 +768,15 @@ namespace ControlCenter
                         GroupBox_SensorValues.IsEnabled = true;
                         GroupBox_PIDValues.IsEnabled = true;
                         PortNameTextbox.IsEnabled = false;
+                        TextBox_ErrorLog.IsEnabled = true;
+                        Button_ResetArduino.IsEnabled = true;
+                        CheckBox_ClearLogOnReset.IsEnabled = true;
                         RefreshPIDValues();
                     }
                     catch (Exception Error)
                     {
                         LogError("Exception Thrown: " + Error.ToString(), "Connect_DisconnectButton_Click");
-                        SetStatus("Error closing serial COM");
+                        SetStatus("Error opening serial COM");
                     }
                 }
                 else
@@ -912,11 +927,20 @@ namespace ControlCenter
                 MotorValueGraphWindow.yAxis.Maximum = 5200;
                 MotorValueGraphWindow.yAxis.Minimum = 0;
                 MotorValueGraphWindow.Show();
-                dispatcherTestData.Start();
+                //dispatcherTestData.Start();
             }
             else
             {
                 MotorValueGraphWindow.Activate();
+            }
+        }
+
+        private void Button_ResetArduino_Click(object sender, RoutedEventArgs e)
+        {
+            sendMessage(0x04, 'R');
+            if(CheckBox_ClearLogOnReset.IsChecked == true)
+            {
+                TextBox_ErrorLog.Text = "Begin of Error log: \n";
             }
         }
 
@@ -927,6 +951,7 @@ namespace ControlCenter
         {
             sendMessage_and_wait_for_ack(0x03, 'I');
             SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
+            Button_StartSensorValuesGraph.IsEnabled = true;
         }
 
         private void CheckBox_SensorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
@@ -934,12 +959,14 @@ namespace ControlCenter
             sendMessage_and_wait_for_ack(0x03, 'O');
             SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
             DisplaySensorData(-100000, -100000, -100000);
+            Button_StartSensorValuesGraph.IsEnabled = false;
         }
 
         private void CheckBox_MotorValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
             sendMessage_and_wait_for_ack(0x01, 'I');
             SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
+            Button_StartMotorValuesGraph.IsEnabled = true;
         }
 
         private void CheckBox_MotorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
@@ -947,12 +974,14 @@ namespace ControlCenter
             sendMessage_and_wait_for_ack(0x01, 'O');
             SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
             DisplayMotorData(-100000, -100000, -100000, -100000);
+            Button_StartMotorValuesGraph.IsEnabled = false;
         }
 
         private void CheckBox_RCReceiverValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
             sendMessage_and_wait_for_ack(0x02, 'I');
             SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
+            Button_StartRCReceiverValuesGraph.IsEnabled = true;
         }
 
         private void CheckBox_RCReceiverValuesEnable_Unchecked(object sender, RoutedEventArgs e)
@@ -960,6 +989,7 @@ namespace ControlCenter
             sendMessage_and_wait_for_ack(0x02, 'O');
             SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
             DisplayRCReaderData(-100000, -100000, -100000, -100000, -100000);
+            Button_StartRCReceiverValuesGraph.IsEnabled = false;
         }
 
         /* Special:
@@ -1008,6 +1038,5 @@ namespace ControlCenter
                 TextBox_ErrorLog.ScrollToEnd();
             }
         }
-
     }
 }
