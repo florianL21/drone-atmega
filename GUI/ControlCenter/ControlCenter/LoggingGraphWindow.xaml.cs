@@ -15,6 +15,9 @@ using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using System.Collections.ObjectModel;
+using Microsoft.Win32;
+using System.IO;
+using System.Globalization;
 
 namespace ControlCenter
 {
@@ -32,11 +35,13 @@ namespace ControlCenter
         //public LineSeries MyData = new LineSeries();
         DateTime ApplicationStartTime = DateTime.Now;
         List<string> lineDescriptions = new List<string>();
-        List<LineSeries> allLineSeries = new List<LineSeries>();
+        public List<LineSeries> allLineSeries = new List<LineSeries>();
         double timeToDisplay = 10;
         double[,] xAxisMaxMins;
         int MaxUpdatesPerSecond = 0;
         DateTime[] timeOfLastUpdate;
+        bool GraphPaused = false;
+        string GraphDataSnapshot = "";
 
         public ObservableCollection<BoolStringClass> CheckboxList { get; set; }
 
@@ -61,6 +66,31 @@ namespace ControlCenter
 
             CheckboxList = new ObservableCollection<BoolStringClass>();
             this.DataContext = this;
+        }
+
+        public void openInViewerMode(List<LineSeries> LineSeriesList, string[] lineDescription, double[,] AxisMaxMins, int maxUpdatesPerSecond)
+        {
+            xAxisMaxMins = AxisMaxMins;
+            MaxUpdatesPerSecond = maxUpdatesPerSecond;
+            timeOfLastUpdate = new DateTime[lineDescription.Length];
+            DateTime temp = DateTime.Now;
+            for (int i = 0; i < lineDescription.Length; i++)
+            {
+                timeOfLastUpdate[i] = temp;
+                LineSeriesList[i].Smooth = true;
+                LineSeriesList[i].Title = lineDescription[i];
+                allLineSeries.Add(LineSeriesList[i]);
+                MyModel.Series.Add(allLineSeries[i]);
+                lineDescriptions.Add(lineDescription[i]);
+                CheckboxList.Add(new BoolStringClass { IsSelected = true, LineDescription = lineDescription[i] });
+            }
+            xAxis.IsPanEnabled = true;
+            xAxis.IsZoomEnabled = true;
+            yAxis.IsPanEnabled = true;
+            yAxis.IsZoomEnabled = true;
+            MyModel.InvalidatePlot(true);
+            TextBox_SecondsToShow.IsEnabled = false;
+            Button_PauseResumeLogging.IsEnabled = false;
         }
 
         public void setDataLines(string[] lineDescription, double[,] AxisMaxMins, int maxUpdatesPerSecond)
@@ -95,7 +125,10 @@ namespace ControlCenter
                 {
                     thisLineSeries.Points.RemoveRange(0, thisLineSeries.Points.Count - ((int)timeToDisplay * MaxUpdatesPerSecond));
                 }
-                MyModel.InvalidatePlot(true);
+                if(GraphPaused == false)
+                {
+                    MyModel.InvalidatePlot(true);
+                }
             } else
             {
 
@@ -117,7 +150,10 @@ namespace ControlCenter
             {
 
             }
-             MyModel.InvalidatePlot(true);
+            if (GraphPaused == false)
+            {
+                MyModel.InvalidatePlot(true);
+            }
         }
 
         private void CheckBox_Changed(object sender, RoutedEventArgs e)
@@ -127,8 +163,68 @@ namespace ControlCenter
                 LineSeries thisLineSeries = allLineSeries[lineDescriptions.IndexOf(CheckboxList.ElementAt(i).LineDescription)];
                 thisLineSeries.IsVisible = CheckboxList.ElementAt(i).IsSelected;
             }
-            MyModel.InvalidatePlot(true);
+            if (GraphPaused == false)
+            {
+                MyModel.InvalidatePlot(true);
+            }
 
+        }
+
+        string SerializeDataPlotWindow(string windowTitle, List<LineSeries> myData, List<string> LineDescriptions)
+        {
+            String temp = windowTitle + "\n";
+            int LineCount = LineDescriptions.Count;
+            temp += xAxis.Maximum.ToString(new CultureInfo("en-US")) + "," + xAxis.Minimum.ToString(new CultureInfo("en-US")) + "\n";
+            temp += yAxis.Maximum.ToString(new CultureInfo("en-US")) + "," + yAxis.Minimum.ToString(new CultureInfo("en-US"));
+            temp += "\t";
+            for (int i = 0; i < LineCount; i++)
+            {
+                temp += "\n" + LineDescriptions[i];
+            }
+            temp += "\t";
+            for (int i = 0; i < LineCount; i++)
+            {
+                temp += "\n" + xAxisMaxMins[0,i] + "," + xAxisMaxMins[1, i];
+            }
+            temp += "\t";
+            for (int i = 0; i < LineCount; i++)
+            {
+                temp += "\t";
+                foreach (DataPoint onePoint in myData[i].Points)
+                {
+                    temp += "\n" + onePoint.X.ToString(new CultureInfo("en-US")) + "," + onePoint.Y.ToString(new CultureInfo("en-US"));
+                }
+            }
+            return temp;
+        }
+
+        private void Button_PauseResumeLogging_Click(object sender, RoutedEventArgs e)
+        {
+            if(GraphPaused == false)
+            {
+                ComboBox_DataLineEnable.IsEnabled = false;
+                TextBox_SecondsToShow.IsEnabled = false;
+                MenuItem_SaveGraph.IsEnabled = true;
+                Button_PauseResumeLogging.Content = "Resume logging";
+                GraphDataSnapshot = SerializeDataPlotWindow(MyModel.Title, allLineSeries, lineDescriptions);
+                GraphPaused = true;
+            }
+            else
+            {
+                ComboBox_DataLineEnable.IsEnabled = true;
+                TextBox_SecondsToShow.IsEnabled = true;
+                Button_PauseResumeLogging.Content = "Pause logging";
+                GraphPaused = false;
+            }
+        }
+
+        private void MenuItem_SaveGraph_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Graph Files (*.graph)|*.graph";
+            saveFileDialog.AddExtension = true;
+            if (saveFileDialog.ShowDialog() == true)
+                File.WriteAllText(saveFileDialog.FileName, GraphDataSnapshot);
         }
     }
 }

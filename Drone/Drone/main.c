@@ -26,6 +26,7 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "PID.h"
 #include "SerialCOM.h"
 #include "FlashStorage.h"
+#include "WDT.h"
 
 #define BNO_MEASURE BNO_REG_GRV_DATA
 
@@ -60,15 +61,7 @@ uint8_t sendCount = 0;
 
 bool ArmMotors = false;
 
-void configure_wdt(void)
-{
-	WDT->WDT_MR = WDT_MR_WDV(330) | WDT_MR_WDD(330) | WDT_MR_WDRSTEN; //About 1s
-	//WDT->WDT_MR = 0x00000000; // disable WDT
-}
-void wdt_reset()
-{
-	WDT->WDT_CR = 0xA5000000 | WDT_CR_WDRSTT;
-}
+
 
 void BNO_Error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
 {
@@ -124,15 +117,15 @@ void ErrorHandling_print()
 	
 	if(ErrorHandling_catch(&Error) == true)
 	{
-		ErrorHandling_get_error_description(Error & 0xFF, ErrorMessage);						//max 32 chars
+		ErrorHandling_get_error_description(Error, ErrorMessage);								//max 32 chars
 		strcat(ErrorMessage, " error: \n\toriginates at: \"");									//26 chars
-		ErrorHandling_get_module_description(Error & 0xFF0000, ErrorMessage);					//max 15 chars
+		ErrorHandling_get_module_description(Error, ErrorMessage);								//max 15 chars
 		strcat(ErrorMessage, "_");																//1 chars
-		ErrorHandling_get_function_description(Error & 0xFF00, ErrorMessage);					//max 33 chars
+		ErrorHandling_get_function_description(Error, ErrorMessage);							//max 33 chars
 		strcat(ErrorMessage, "\"\n\tTop call function: \"");									//23 chars
-		ErrorHandling_get_module_description((Error & 0xFF00000000) >> 16, ErrorMessage);		//max 15 chars
+		ErrorHandling_get_top_module_description(Error, ErrorMessage);		//max 15 chars
 		strcat(ErrorMessage, "_");																//1 chars
-		ErrorHandling_get_function_description((Error & 0xFF000000) >> 16, ErrorMessage);		//max 33 chars
+		ErrorHandling_get_top_function_description(Error, ErrorMessage);		//max 33 chars
 		strcat(ErrorMessage, "\"");																//1 chars
 		SerialCOM_put_error(ErrorMessage);
 	}
@@ -527,7 +520,7 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			{
 				if(BNO055_is_connected())
 				{
-					BNO055_stop_continous_measurement();	//stop BNO measurement
+					BNO055_stop_continuous_measurement();	//stop BNO measurement
 					while(BNO055_is_busy() == true);		//wait for a bit to make sure that all measurements are finished
 					SaveValuesToFlash(0x00);				//save Values
 					BNO055_start_measurement(true, true, BNO_MEASURE);	//resume Measurement
@@ -572,7 +565,7 @@ int main(void)
 	ErrorHandling_throw(SerialCOM_init());
 	ErrorHandling_throw(SerialCOM_register_call_back(message_from_PC));
 	ErrorHandling_throw(SerialCOM_put_Command('R', 0x05));			//Reset GUI
-	ErrorHandling_throw(FlashStorage_Init());
+	ErrorHandling_throw(FlashStorage_init());
 	
 	ErrorHandling_throw(SerialCOM_put_debug("MCU RESET!"));
 	if(FlashStorage_read(0))
@@ -599,10 +592,10 @@ int main(void)
 	ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
 	ErrorHandling_print();
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
-	configure_wdt();
+	WDT_init(330); //about 1s
 	while(1)
 	{
-		wdt_reset();
+		WDT_restart();
 		ErrorHandling_print();		//print out errors when there is time for it
 	}
 }

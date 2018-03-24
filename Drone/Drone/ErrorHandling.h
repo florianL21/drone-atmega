@@ -136,12 +136,91 @@ ErrorCode ErrorHandling_tempError;
 #define DEFAULT_ERROR_HANDLER(error, module, function)		ErrorHandling_tempError = error;if(ErrorHandling_tempError != SUCCESS){return ErrorHandling_set_top_level(ErrorHandling_tempError, module, function);}
 
 
+/*
+	This function adds a error to the error queue to get processed when there is time for it.
+	Parameters:
+		- Error:	This is the error code witch gets added to the queue.
+*/
 void ErrorHandling_throw(ErrorCode Error);
-bool ErrorHandling_catch(ErrorCode* Error);
+
+/*
+	This function adds a error to the error queue to get processed when there is time for it.
+	Parameters:
+		- Module:	Module where the error occurred.
+		- Function:	Function where the error occurred.
+		- Error:	Type of error that occurred.
+*/
 void ErrorHandling_throw_b(Modules Module, Functions Function, Errors Error);
+
+/*
+	This function gets the top error from the error queue and returns it as a pointer.
+	Parameters:
+		- Error:	Pointer to the error variable.
+	Returns:
+		true if there was an error, false if the queue is empty.
+*/
+bool ErrorHandling_catch(ErrorCode* Error);
+
+/*
+	This function Sets the topmost level of the error stack to the given module and function.
+	This should be used when calling functions which return errors inside a function which is not at the topmost error stack level.
+	Parameters:
+		- Error:		Error from a child function.
+		- LastModule:	Identifier of this Module.
+		- LastFunction:	Identifier of this function.
+	Returns:
+		the modified error code.
+*/
 ErrorCode ErrorHandling_set_top_level(ErrorCode Error, Modules LastModule, Functions LastFunction);
+
+/*
+	This function translates an module identifier from an error code to a string description.
+	strcat is used to append the description to the given char array.
+	ATTENTION: the Array must be at least 33 values long ('\0' included)
+	Parameters:
+		- Error:			Error code where the module identifier should get translated
+		- errorDescription:	Pointer to a predefined char array.
+*/
 void ErrorHandling_get_module_description(ErrorCode Error, char errorDescription[]);
+
+/*
+	This function translates the top stack module identifier from an error code to a string description.
+	strcat is used to append the description to the given char array.
+	ATTENTION: the Array must be at least 33 values long ('\0' included)
+	Parameters:
+		- Error:			Error code where the top stack module identifier should get translated
+		- errorDescription:	Pointer to a predefined char array.
+*/
+void ErrorHandling_get_top_module_description(ErrorCode Error, char errorDescription[]);
+
+/*
+	This function translates the function identifier from an error code to a string description.
+	strcat is used to append the description to the given char array.
+	ATTENTION: the Array must be at least 33 values long ('\0' included)
+	Parameters:
+		- Error:			Error code where the function identifier should get translated
+		- errorDescription:	Pointer to a predefined char array.
+*/
 void ErrorHandling_get_function_description(ErrorCode Error, char errorDescription[]);
+
+/*
+	This function translates the top stack function identifier from an error code to a string description.
+	strcat is used to append the description to the given char array.
+	ATTENTION: the Array must be at least 33 values long ('\0' included)
+	Parameters:
+		- Error:			Error code where the top stack function identifier should get translated
+		- errorDescription:	Pointer to a predefined char array.
+*/
+void ErrorHandling_get_top_function_description(ErrorCode Error, char errorDescription[]);
+
+/*
+	This function translates an error code from its identifier to a string description.
+	strcat is used to append the description to the given char array.
+	ATTENTION: the Array must be at least 33 values long ('\0' included)
+	Parameters:
+		- Error:			Error that should get translated
+		- errorDescription:	Pointer to a predefined cahr array.
+*/
 void ErrorHandling_get_error_description(ErrorCode Error, char errorDescription[]);
 
 #endif /* ERRORHANDLING_H_ */

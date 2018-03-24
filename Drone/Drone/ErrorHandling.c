@@ -53,7 +53,7 @@ ErrorCode ErrorHandling_set_top_level(ErrorCode Error, Modules LastModule, Funct
 void ErrorHandling_get_error_description(ErrorCode Error, char errorDescription[])
 {
 	//error
-	switch(Error)
+	switch(Error & 0xFF)
 	{
 		case SUCCESS:
 			strcat(errorDescription, "Undefined");
@@ -136,10 +136,15 @@ void ErrorHandling_get_error_description(ErrorCode Error, char errorDescription[
 	} //32
 }
 
+void ErrorHandling_get_top_function_description(ErrorCode Error, char errorDescription[])
+{
+	ErrorHandling_get_function_description((Error & 0xFF000000) >> 16, errorDescription);
+}
+
 void ErrorHandling_get_function_description(ErrorCode Error, char errorDescription[])
 {
 	//Function
-	switch(Error)
+	switch(Error & 0xFF00)
 	{
 		case FUNCTION_SUCCESS:
 			strcat(errorDescription, "Undefined");
@@ -333,10 +338,15 @@ void ErrorHandling_get_function_description(ErrorCode Error, char errorDescripti
 	} //33
 }
 
+void ErrorHandling_get_top_module_description(ErrorCode Error, char errorDescription[])
+{
+	ErrorHandling_get_module_description((Error & 0xFF00000000) >> 16, errorDescription)
+}
+
 void ErrorHandling_get_module_description(ErrorCode Error, char errorDescription[])
 {
 	//Module
-	switch(Error)
+	switch(Error & 0xFF0000)
 	{
 		case MODULE_SUCCESS:
 			strcat(errorDescription, "Undefined");

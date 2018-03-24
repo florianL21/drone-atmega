@@ -35,7 +35,7 @@ void esc_init()
 //Motor2: Timer1 PIN PB17
 //Motor3: Timer2 PIN PB18
 //Motor4: Timer3 PIN PB19
-//value must be in between 0 and ESC_MaxLimit-ESC_PWM_MIN_DUTY_CYCLE
+//speed must be in between 0 and ESC_MaxLimit-ESC_PWM_MIN_DUTY_CYCLE
 ErrorCode esc_set(uint8_t MotorNum, int16_t speed) 
 {
 	MotorNum += 3;

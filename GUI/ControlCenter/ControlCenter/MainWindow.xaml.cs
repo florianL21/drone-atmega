@@ -1,5 +1,8 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using OxyPlot.Series;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -22,14 +25,9 @@ namespace ControlCenter
     /// </summary>
     public partial class MainWindow : Window
     {
-        public SerialPort mySerialPort;
-        private Queue<byte> recievedData = new Queue<byte>();
-        private Queue<byte[]> sendQueue = new Queue<byte[]>();
-        bool readyToSend = true;
+        SerialCom SerialPort;
 
-        System.Windows.Threading.DispatcherTimer dispatcherACKTimeout = new System.Windows.Threading.DispatcherTimer();
-
-        //System.Windows.Threading.DispatcherTimer dispatcherTestData = new System.Windows.Threading.DispatcherTimer();
+        System.Windows.Threading.DispatcherTimer dispatcherTestData = new System.Windows.Threading.DispatcherTimer();
 
         static TextBox StatusText;
 
@@ -40,36 +38,15 @@ namespace ControlCenter
         public MainWindow()
         {
             InitializeComponent();
-           
-
             StatusText = StatusTextBox as TextBox;
-
-            mySerialPort = new SerialPort("COM5");
-            mySerialPort.BaudRate = 115200;
-            mySerialPort.Parity = Parity.None;
-            mySerialPort.StopBits = StopBits.One;
-            mySerialPort.DataBits = 8;
-            mySerialPort.Handshake = Handshake.None;
-            mySerialPort.RtsEnable = false;
-            mySerialPort.ReceivedBytesThreshold = 1;
-            mySerialPort.ReadTimeout = 10;
-            mySerialPort.DataReceived += new SerialDataReceivedEventHandler(serialPort_DataReceived);
-            //StatusText.Text = "";
+            SerialPort = new SerialCom(this);
             
-
-            dispatcherACKTimeout.Tick += new EventHandler(ACK_timeout);
-            dispatcherACKTimeout.Interval = new TimeSpan(0, 0, 1);
-
-            /*
             dispatcherTestData.Tick += new EventHandler(sendTestData);
             dispatcherTestData.Interval = new TimeSpan(0, 0, 0, 0, 100);
-            */
             
-
-
         }
 
-        /*
+        
         void sendTestData(object s, EventArgs e)
         {
             Random rand = new Random();
@@ -81,357 +58,11 @@ namespace ControlCenter
                 MotorValueGraphWindow.addDataPoint(rand.Next(0, 5200), "M3");
             }
         }
-        */
-
-        /*Send Message Functions:
-         */
-
-        void ACK_timeout(object s, EventArgs e)
-        {
-            dispatcherACKTimeout.Stop();
-            LogError("ACK Timeout", "ACK:timeout");
-            if (sendQueue.Count == 0)
-                readyToSend = true;
-            else
-            {
-                if (mySerialPort.IsOpen)
-                {
-                    byte[] sendMessage = sendQueue.Dequeue();
-                    mySerialPort.Write(sendMessage, 0, sendMessage.Length);
-                    dispatcherACKTimeout.Start();
-                }
-            }
-
-        }
-
-        void sendMessage(byte Type, char message)
-        {
-            byte[] msg = new byte[1];
-            msg[0] = (byte)message;
-            sendMessage(Type, msg);
-        }
-
-        void sendMessage(byte Type, byte message)
-        {
-            byte[] msg = new byte[1];
-            msg[0] = message;
-            sendMessage(Type, msg);
-        }
-
-        void sendMessage(byte Type, byte[] message)
-        {
-            byte[] sendMessage = new byte[message.Length + 4];
-            sendMessage[0] = 0x02;
-            sendMessage[1] = Type;
-            sendMessage[2] = (byte)message.Length;
-            for (int i = 0; i < message.Length; i++)
-            {
-                sendMessage[i + 3] = message[i];
-            }
-            sendMessage[message.Length + 3] = 0x03;
-            if (mySerialPort.IsOpen)
-                mySerialPort.Write(sendMessage, 0, sendMessage.Length);
-        }
-
-        void sendMessage_and_wait_for_ack(byte Type, char message)
-        {
-            byte[] msg = new byte[1];
-            msg[0] = (byte)message;
-            sendMessage_and_wait_for_ack(Type, msg);
-        }
-
-        void sendMessage_and_wait_for_ack(byte Type, byte[] message)
-        {
-            if (mySerialPort.IsOpen)
-            {
-                byte[] sendMessage = new byte[message.Length + 4];
-                sendMessage[0] = 0x02;
-                sendMessage[1] = Type;
-                sendMessage[2] = (byte)message.Length;
-                for (int i = 0; i < message.Length; i++)
-                {
-                    sendMessage[i + 3] = message[i];
-                }
-                sendMessage[message.Length + 3] = 0x03;
-
-                if(readyToSend == true)
-                {
-                    mySerialPort.Write(sendMessage, 0, sendMessage.Length);
-                    dispatcherACKTimeout.Start();
-                    readyToSend = false;
-                }
-                else
-                {
-                    sendQueue.Enqueue(sendMessage);
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            if (mySerialPort != null)
-            {
-                mySerialPort.Dispose();
-            }
-        }
-
-
-        /* Helper Functions:
-         */
-
-        string byteArrayToString(byte[] bArray)
-        {
-            char[] cArray = new char[bArray.Length];
-            for(int i = 0; i < bArray.Length; i++)
-            {
-                cArray[i] = (char)bArray[i];
-            }
-            return new string(cArray);
-        }
-
-        byte[] charArrayToByteArray(char[] Array)
-        {
-            byte[] bArray = new byte[Array.Length];
-            for(int i = 0; i < Array.Length; i++)
-            {
-                bArray[i] = (byte)Array[i];
-            }
-            return bArray;
-        }
-
-        /* Data receive processing:
-         */
-
-        bool IsTypeValid(int Type)
-        {
-            //                                                       ACK  ERROR
-            int[] validTypes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x64 };
-            for (int i = 0; i < validTypes.Length; i++)
-            {
-                if (Type == validTypes[i])
-                    return true;
-            }
-            return false;
-        }
-
-        void processSerialPortData(int offset)
-        {
-            try
-            {
-                int startCharIndex = 0, endCharIndex = 0;
-                if (recievedData.Count - offset >= 3)
-                {
-                    startCharIndex = recievedData.ToList().IndexOf(0x02, offset);//search for beginning char
-                    if (startCharIndex != -1 && startCharIndex + 3 <= recievedData.Count)
-                    {
-                        if (IsTypeValid(recievedData.ToList()[startCharIndex + 1]))//check if type matches
-                        {
-                            int MessageLength = recievedData.ToList()[startCharIndex + 2];
-                            endCharIndex = startCharIndex + MessageLength + 3;
-                            try
-                            {
-                                if (recievedData.ToList()[endCharIndex] == 0x03)
-                                {
-                                    var packet = Enumerable.Range(0, endCharIndex + offset + 1).Select(i => recievedData.Dequeue());
-                                    byte[] message1 = packet.ToArray();
-                                    
-                                    string message = byteArrayToString(message1);
-                                    processData(message[startCharIndex + 1], message.Substring(startCharIndex + 3, MessageLength));
-                                    if (recievedData.Count > 3)
-                                    {
-                                        processSerialPortData(0);
-                                    }
-                                }
-                                else
-                                {
-                                    processSerialPortData(startCharIndex + 1);
-                                    LogError("[ATTEMPTING AUTOCORRECTION] End Char missmatch. Maybe out of sync?", "processSerialPortData");
-                                }
-                            }
-                            catch
-                            {
-                                //LogError("[ATTEMPTING AUTOCORRECTION] Not enought data in input buffer for this message length. Maybe out of sync? ", "processSerialPortData");
-                                processSerialPortData(startCharIndex + 1);
-                            }
-                        }
-                        else
-                        {
-                            processSerialPortData(startCharIndex + 1);
-                            LogError("[ATTEMPTING AUTOCORRECTION] Invalid Type. Maybe out of sync?", "processSerialPortData");
-                        }
-                    }
-                }
-            }
-            catch (Exception error)
-            {
-                LogError("Exception thrown: " + error.ToString(), "processSerialPortData");
-            }
-        }
-
-        void serialPort_DataReceived(object s, SerialDataReceivedEventArgs e)
-        {
-            try
-            {
-                byte[] data = new byte[mySerialPort.BytesToRead];
-                mySerialPort.Read(data, 0, data.Length);
-                data.ToList().ForEach(b => recievedData.Enqueue(b));
-                // Determine if we have a "packet" in the queue
-                processSerialPortData(0);
-            }
-            catch (Exception Error)
-            {
-                LogError("Exception thrown: " + Error.ToString(), "serialPort_DataReceived");
-            }
-        }
-
-        void processData(int Type, string receivedText)
-        {
-            switch (Type)
-            {
-                case 0x00:
-                    LogDebug(receivedText);
-                    SetStatus(DateTime.Now.ToString("h:mm:ttss") + ": " + receivedText);
-                    break;
-                case 0x01:
-                    int[] Motor_speeds = { 0, 0, 0, 0 };
-                    //check message integetry:
-                    if(receivedText[0] == '0' && receivedText[3] == '1' && receivedText[6] == '2' && receivedText[9] == '3')
-                    {
-                        Motor_speeds[0] = (receivedText[1] << 8) | receivedText[2];
-                        Motor_speeds[1] = (receivedText[4] << 8) | receivedText[5];
-                        Motor_speeds[2] = (receivedText[7] << 8) | receivedText[8];
-                        Motor_speeds[3] = (receivedText[10] << 8) | receivedText[11];
-                        DisplayMotorData(Motor_speeds[0], Motor_speeds[1], Motor_speeds[2], Motor_speeds[3]);
-                    }
-                    else
-                    {
-                        LogError("Motor Speed Value transmission has errors, discarding Data.", "processData");
-                    }
-                    break;
-                case 0x02:
-                    int Throttle, Roll, Pitch, Yaw, Gear;
-                    //check message integetry:
-                    if (receivedText[0] == 'T' && receivedText[3] == 'R' && receivedText[6] == 'P' && receivedText[9] == 'Y' && receivedText[12] == 'G')
-                    {
-                        Throttle = (receivedText[1] << 8) | receivedText[2];
-                        Roll = (receivedText[4] << 8) | receivedText[5];
-                        Pitch = (receivedText[7] << 8) | receivedText[8];
-                        Yaw = (receivedText[10] << 8) | receivedText[11];
-                        Gear = receivedText[13];
-                        DisplayRCReaderData(Throttle, Roll, Pitch, Yaw, Gear);
-                    }
-                    else
-                    {
-                        LogError("RC Reader transmission has errors, discarding Data.", "processData");
-                    }
-                    break;
-                case 0x03:
-                    short X, Y, Z;
-                    //check message integetry:
-                    if (receivedText[0] == 'X' && receivedText[4] == 'Y' && receivedText[8] == 'Z')
-                    {
-                        X = Convert.ToInt16((receivedText[2] << 8) | receivedText[3]);
-                        Y = Convert.ToInt16((receivedText[6] << 8) | receivedText[7]);
-                        Z = Convert.ToInt16((receivedText[10] << 8) | receivedText[11]);
-
-                        if (receivedText[1] == 1)
-                            X *= -1;
-                        if (receivedText[5] == 1)
-                            Y *= -1;
-                        if (receivedText[9] == 1)
-                            Z *= -1;
-
-                        DisplaySensorData(X, Y, Z);
-                    }
-                    else
-                    {
-                        LogError("Sensor transmission has errors, discarding Data.", "processData");
-                    }
-                    break;
-                case 0x04:
-                    float kp, ki, kd;
-                    if (receivedText[1] == 'P' && receivedText[6] == 'I' && receivedText[11] == 'D')
-                    {
-                        byte[] array = new byte[4];
-                        array[0] = (byte)receivedText[5];
-                        array[1] = (byte)receivedText[4];
-                        array[2] = (byte)receivedText[3];
-                        array[3] = (byte)receivedText[2];
-                        kp = BitConverter.ToSingle(array, 0);
-                        array[0] = (byte)receivedText[10];
-                        array[1] = (byte)receivedText[9];
-                        array[2] = (byte)receivedText[8];
-                        array[3] = (byte)receivedText[7];
-                        ki = BitConverter.ToSingle(array, 0);
-                        array[0] = (byte)receivedText[15];
-                        array[1] = (byte)receivedText[14];
-                        array[2] = (byte)receivedText[13];
-                        array[3] = (byte)receivedText[12];
-                        kd = BitConverter.ToSingle(array, 0);                        
-
-                        switch (receivedText[0])
-                        {
-                            case 'R':
-                                SetStatus("Received Roll Data.");
-                                DisplayRollPIDData(kp, ki, kd);
-                                break;
-                            case 'P':
-                                SetStatus("Received Pitch Data.");
-                                DisplayPitchPIDData(kp, ki, kd);
-                                break;
-                            case 'Y':
-                                SetStatus("Received Yaw Data.");
-                                DisplayYawPIDData(kp, ki, kd);
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        LogError("PID transmission has errors, discarding Data.", "processData");
-                    }
-                    break;
-                case 0x05:
-                    if (receivedText[0] == 'R')
-                    {
-                        Dispatcher.BeginInvoke((Action)(() => ResetGUI()));
-                        RefreshPIDValues();
-                    }
-                    break;
-                case 0x06:
-                    if (receivedText[0] == 'A')
-                    {
-                        dispatcherACKTimeout.Stop();
-                        if (sendQueue.Count == 0)
-                        {
-                            readyToSend = true;
-                        }
-                        else
-                        {
-                            byte[] sendMessage = sendQueue.Dequeue();
-                            mySerialPort.Write(sendMessage, 0, sendMessage.Length);
-                            dispatcherACKTimeout.Start();
-                            if (sendQueue.Count == 0)
-                            {
-                                readyToSend = true;
-                            }
-                        }
-                    }
-                    break;
-                case 0x64:
-                    LogError(receivedText, "ArduinoBoard");
-                    SetStatus("The Arduino reported an error");
-                    break;
-                default:
-                    LogError("Unspecified Type received. Should not be possible!!!", "processData");
-                    SetStatus("An error occured");
-                    break;
-            }
-        }
-
+        
         /* Data Diplay Functions:
          */
 
-        void DisplayMotorData(int M0, int M1, int M2, int M3)
+        public void DisplayMotorData(int M0, int M1, int M2, int M3)
         {
             if(M0 == -100000)
             {
@@ -491,7 +122,7 @@ namespace ControlCenter
             }
         }
 
-        void DisplayRCReaderData(int Throttle, int Roll, int Pitch, int Yaw, int Gear)
+        public void DisplayRCReaderData(int Throttle, int Roll, int Pitch, int Yaw, int Gear)
         {
             if (Throttle == -100000)
             {
@@ -565,7 +196,7 @@ namespace ControlCenter
             }
         }
 
-        void DisplaySensorData(int X, int Y, int Z)
+        public void DisplaySensorData(int X, int Y, int Z)
         {
             if (X == -100000)
             {
@@ -611,7 +242,7 @@ namespace ControlCenter
             }
         }
 
-        void DisplayRollPIDData(float kp, float ki, float kd)
+        public void DisplayRollPIDData(float kp, float ki, float kd)
         {
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_P.Text = string.Format("{0:N4}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Roll_I.Text = string.Format("{0:N4}", ki)));
@@ -621,7 +252,7 @@ namespace ControlCenter
             Dispatcher.BeginInvoke((Action)(() => Label_Roll_D_Arduino.Content = string.Format("{0:N4}", kd)));
         }
 
-        void DisplayPitchPIDData(float kp, float ki, float kd)
+        public void DisplayPitchPIDData(float kp, float ki, float kd)
         {
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_P.Text = string.Format("{0:N4}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Pitch_I.Text = string.Format("{0:N4}", ki)));
@@ -631,7 +262,7 @@ namespace ControlCenter
             Dispatcher.BeginInvoke((Action)(() => Label_Pitch_D_Arduino.Content = string.Format("{0:N4}", kd)));
         }
 
-        void DisplayYawPIDData(float kp, float ki, float kd)
+        public void DisplayYawPIDData(float kp, float ki, float kd)
         {
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_P.Text = string.Format("{0:N4}", kp)));
             Dispatcher.BeginInvoke((Action)(() => TextBox_Yaw_I.Text = string.Format("{0:N4}", ki)));
@@ -644,31 +275,31 @@ namespace ControlCenter
         /* Logging Functions:
          */
 
-        void LogError(string ErrorMessage, string FunctionName)
+        public void LogError(string ErrorMessage, string FunctionName)
         {
             Dispatcher.BeginInvoke((Action)(() => TextBox_ErrorLog.Text += "[" + DateTime.Now.ToString("h:mm:ttss") + "], [ERROR] at Function [" + FunctionName + "]: " + ErrorMessage + "\n"));
         }
 
-        void LogDebug(string DebugMessage)
+        public void LogDebug(string DebugMessage)
         {
             Dispatcher.BeginInvoke((Action)(() => TextBox_ErrorLog.Text += "[" + DateTime.Now.ToString("h:mm:ttss") + "], [DEBUG]: " + DebugMessage + "\n"));
         }
 
-        void SetStatus(string statusText)
+        public void SetStatus(string statusText)
         {
             Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "[" + DateTime.Now.ToString("h:mm:ttss") + "]: " + statusText));
         }
 
         /* Misc Functions:
          */
-        void RefreshPIDValues()
+        public void RefreshPIDValues()
         {
-            sendMessage_and_wait_for_ack(0x05, 'Y');
-            sendMessage_and_wait_for_ack(0x05, 'P');
-            sendMessage_and_wait_for_ack(0x05, 'R');
+            SerialPort.sendMessage_and_wait_for_ack(0x05, 'Y');
+            SerialPort.sendMessage_and_wait_for_ack(0x05, 'P');
+            SerialPort.sendMessage_and_wait_for_ack(0x05, 'R');
         }
 
-        void ResetGUI()
+        public void ResetGUI()
         {
             CheckBox_SensorValuesEnable.IsChecked = false;
             CheckBox_RCReceiverValuesEnable.IsChecked = false;
@@ -707,24 +338,23 @@ namespace ControlCenter
             buffer[13] = Value[2];
             buffer[14] = Value[1];
             buffer[15] = Value[0];
-
+            SerialPort.
             sendMessage_and_wait_for_ack(0x06, buffer);
         }
 
         /*Button Clicks:
          */
 
-        private void Connect_DisconnectButton_Click(object sender, RoutedEventArgs e)
+        void Connect_DisconnectButton_Click(object sender, RoutedEventArgs e)
         {
-            sendQueue.Clear();
-            recievedData.Clear();
-            if (mySerialPort.IsOpen)
+            SerialPort.Clear();
+            if (SerialPort.IsOpen())
             {
                 try
                 {
-                    sendMessage(0x01, 'O');
-                    sendMessage(0x02, 'O');
-                    sendMessage(0x03, 'O');
+                    SerialPort.sendMessage(0x01, 'O');
+                    SerialPort.sendMessage(0x02, 'O');
+                    SerialPort.sendMessage(0x03, 'O');
                     Connect_DisconnectButton.Content = "Connect";
                     SetStatus("Disconnected");
                     GroupBox_MotorValues.IsEnabled = false;
@@ -745,7 +375,7 @@ namespace ControlCenter
                     if (RCReceiverValueGraphWindow != null && RCReceiverValueGraphWindow.IsOpen == true)
                         RCReceiverValueGraphWindow.Close();
                     ResetGUI();
-                    mySerialPort.Close();
+                    SerialPort.Close();
                 }
                 catch (Exception Error)
                 {
@@ -759,8 +389,8 @@ namespace ControlCenter
                 {
                     try
                     {
-                        mySerialPort.PortName = PortNameTextbox.Text;
-                        mySerialPort.Open();
+                        SerialPort.setPort(PortNameTextbox.Text);
+                        SerialPort.Open();
                         Connect_DisconnectButton.Content = "Disconnect";
                         SetStatus("Connected");
                         GroupBox_MotorValues.IsEnabled = true;
@@ -849,12 +479,12 @@ namespace ControlCenter
 
         private void Button_PIDSaveToFlash_Click(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x07, 'S');
+            SerialPort.sendMessage(0x07, 'S');
         }
 
         private void Button_setSensorOffsets_Click(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x04, 'S');
+            SerialPort.sendMessage(0x04, 'S');
         }
 
         private void Button_RefreshYawPID_Click(object sender, RoutedEventArgs e)
@@ -927,7 +557,7 @@ namespace ControlCenter
                 MotorValueGraphWindow.yAxis.Maximum = 5200;
                 MotorValueGraphWindow.yAxis.Minimum = 0;
                 MotorValueGraphWindow.Show();
-                //dispatcherTestData.Start();
+                dispatcherTestData.Start();
             }
             else
             {
@@ -937,7 +567,7 @@ namespace ControlCenter
 
         private void Button_ResetArduino_Click(object sender, RoutedEventArgs e)
         {
-            sendMessage(0x04, 'R');
+            SerialPort.sendMessage(0x04, 'R');
             if(CheckBox_ClearLogOnReset.IsChecked == true)
             {
                 TextBox_ErrorLog.Text = "Begin of Error log: \n";
@@ -949,14 +579,14 @@ namespace ControlCenter
 
         private void CheckBox_SensorValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
-            sendMessage_and_wait_for_ack(0x03, 'I');
+            SerialPort.sendMessage_and_wait_for_ack(0x03, 'I');
             SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
             Button_StartSensorValuesGraph.IsEnabled = true;
         }
 
         private void CheckBox_SensorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
-            sendMessage_and_wait_for_ack(0x03, 'O');
+            SerialPort.sendMessage_and_wait_for_ack(0x03, 'O');
             SetStatus("Sensor Value Logging Enabled: " + CheckBox_SensorValuesEnable.IsChecked.ToString());
             DisplaySensorData(-100000, -100000, -100000);
             Button_StartSensorValuesGraph.IsEnabled = false;
@@ -964,14 +594,14 @@ namespace ControlCenter
 
         private void CheckBox_MotorValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
-            sendMessage_and_wait_for_ack(0x01, 'I');
+            SerialPort.sendMessage_and_wait_for_ack(0x01, 'I');
             SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
             Button_StartMotorValuesGraph.IsEnabled = true;
         }
 
         private void CheckBox_MotorValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
-            sendMessage_and_wait_for_ack(0x01, 'O');
+            SerialPort.sendMessage_and_wait_for_ack(0x01, 'O');
             SetStatus("Motor Value Logging Enabled: " + CheckBox_MotorValuesEnable.IsChecked.ToString());
             DisplayMotorData(-100000, -100000, -100000, -100000);
             Button_StartMotorValuesGraph.IsEnabled = false;
@@ -979,14 +609,14 @@ namespace ControlCenter
 
         private void CheckBox_RCReceiverValuesEnable_Checked(object sender, RoutedEventArgs e)
         {
-            sendMessage_and_wait_for_ack(0x02, 'I');
+            SerialPort.sendMessage_and_wait_for_ack(0x02, 'I');
             SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
             Button_StartRCReceiverValuesGraph.IsEnabled = true;
         }
 
         private void CheckBox_RCReceiverValuesEnable_Unchecked(object sender, RoutedEventArgs e)
         {
-            sendMessage_and_wait_for_ack(0x02, 'O');
+            SerialPort.sendMessage_and_wait_for_ack(0x02, 'O');
             SetStatus("RC Receiver Value Logging Enabled: " + CheckBox_RCReceiverValuesEnable.IsChecked.ToString());
             DisplayRCReaderData(-100000, -100000, -100000, -100000, -100000);
             Button_StartRCReceiverValuesGraph.IsEnabled = false;
@@ -994,7 +624,79 @@ namespace ControlCenter
 
         /* Special:
          */
-        
+        private void MenuItem_OpenGraph_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Graph Files(.graph)|*.graph";
+            openFileDialog.Title = "Select a Cursor File";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                System.IO.StreamReader sr = new
+                   System.IO.StreamReader(openFileDialog.FileName);
+                DeserializeDataPlotWindow(sr.ReadToEnd());
+                sr.Close();
+            }
+        }
+
+
+        void DeserializeDataPlotWindow(string myData)
+        {
+            try
+            {
+                List<LineSeries> allLineSeries1 = new List<LineSeries>();
+                LoggingGraph myViewer = new LoggingGraph();
+                int startIndex = myData.IndexOf('\n');
+                myViewer.MyModel.Title = myData.Substring(0, startIndex);
+                myData = myData.Substring(startIndex + 1, myData.Length - (startIndex + 1));
+                startIndex = myData.IndexOf(',');
+                myViewer.xAxis.Maximum = double.Parse(myData.Substring(0, startIndex), new CultureInfo("en-US"));
+                myData = myData.Substring(startIndex + 1, myData.Length - (startIndex + 1));
+                startIndex = myData.IndexOf('\n');
+                myViewer.xAxis.Minimum = double.Parse(myData.Substring(0, startIndex), new CultureInfo("en-US"));
+                myData = myData.Substring(startIndex + 1, myData.Length - (startIndex + 1));
+                startIndex = myData.IndexOf(',');
+                myViewer.yAxis.Maximum = double.Parse(myData.Substring(0, startIndex), new CultureInfo("en-US"));
+                myData = myData.Substring(startIndex + 1, myData.Length - (startIndex + 1));
+                startIndex = myData.IndexOf('\t');
+                myViewer.yAxis.Minimum = double.Parse(myData.Substring(0, startIndex), new CultureInfo("en-US"));
+                myData = myData.Substring(startIndex + 1, myData.Length - (startIndex + 1));
+                startIndex = myData.IndexOf('\t');
+                string[] dataLineNames = myData.Substring(1, startIndex - 1).Split('\n');
+                myData = myData.Substring(startIndex + 1, myData.Length - (startIndex + 1));
+                startIndex = myData.IndexOf('\t');//there is a '\n' after this '\t' so it gets cut off
+                string[] temp = myData.Substring(1, startIndex - 1).Split('\n');
+                double[,] maxMins = new double[2, temp.Length];
+                for (int i = 0; i < temp.Length; i++)
+                {
+                    string[] temp1 = temp[i].Split(',');
+                    maxMins[0, i] = double.Parse(temp1[0], new CultureInfo("en-US"));
+                    maxMins[1, i] = double.Parse(temp1[1], new CultureInfo("en-US"));
+                }
+                myData = myData.Substring(startIndex + 2, myData.Length - (startIndex + 2));
+                temp = myData.Split('\t');
+                for (int i = 0; i < temp.Length; i++)
+                {
+                    LineSeries thisLineSeries = new LineSeries();
+
+                    temp[i] = temp[i].Substring(1, temp[i].Length - 1);
+                    string[] points = temp[i].Split('\n');
+                    for (int j = 0; j < points.Length; j++)
+                    {
+                        string[] onePoint = points[j].Split(',');
+                        thisLineSeries.Points.Add(new OxyPlot.DataPoint(double.Parse(onePoint[0], new CultureInfo("en-US")), double.Parse(onePoint[1], new CultureInfo("en-US"))));
+                    }
+                    allLineSeries1.Add(thisLineSeries);
+                }
+                //myViewer.setDataLines(dataLineNames, maxMins, 10);  //updates set to a maximum of 10 times per second
+                myViewer.openInViewerMode(allLineSeries1, dataLineNames, maxMins, 10);
+                myViewer.Show();
+            }
+            catch(Exception error)
+            {
+                MessageBox.Show(error.ToString());
+            }
+        }
+
         private void TextBox_ErrorLog_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (TabControl_MainModes.SelectedIndex == 1)
@@ -1009,9 +711,9 @@ namespace ControlCenter
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            sendMessage(0x01, 'O');
-            sendMessage(0x02, 'O');
-            sendMessage(0x03, 'O');
+            SerialPort.sendMessage(0x01, 'O');
+            SerialPort.sendMessage(0x02, 'O');
+            SerialPort.sendMessage(0x03, 'O');
             Connect_DisconnectButton.Content = "Connect";
             SetStatus("Disconnected");
             ResetGUI();
@@ -1027,8 +729,8 @@ namespace ControlCenter
             {
                 RCReceiverValueGraphWindow.Close();
             }
-            mySerialPort.Close();
-            Dispose();
+            SerialPort.Close();
+            SerialPort.Dispose();
         }
 
         private void TabControl_MainModes_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1038,5 +740,7 @@ namespace ControlCenter
                 TextBox_ErrorLog.ScrollToEnd();
             }
         }
+
+        
     }
 }

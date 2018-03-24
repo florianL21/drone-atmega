@@ -6,20 +6,30 @@
         xmlns:oxy="http://oxyplot.org/wpf"
         xmlns:local="clr-namespace:ControlCenter"
         mc:Ignorable="d"
-        Title="LoggingGraph" Height="322.662" Width="300"
+        Title="LoggingGraph" Height="320" Width="400"
+        MinHeight="320"
+        MinWidth="400"
         Closing="Window_Closing">
-    <Grid>
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem x:Name="MenuItem_SaveGraph" Header="_Save graph" Click="MenuItem_SaveGraph_Click" IsEnabled="False"/>
+            </MenuItem>
+        </Menu>
+        <Grid>
 
-        <oxy:PlotView x:Name="Graph" Margin="0,0,0,28" />
-        <TextBox x:Name="TextBox_SecondsToShow" HorizontalAlignment="Left" Margin="77,0,0,4" TextWrapping="Wrap" Text="10" Width="26" TextChanged="TextBox_SecondsToShow_TextChanged" Height="23" VerticalAlignment="Bottom"/>
-        <Label Content="Seconds" Margin="108,0,0,5" Height="26" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="54"/>
-        <Label Content="Show last" HorizontalAlignment="Left" Margin="10,0,0,5" Width="62" Height="26" VerticalAlignment="Bottom"/>
-        <ComboBox ItemsSource="{Binding CheckboxList}" Margin="0,0,10,10" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="115" Text="Select Data to display" ToolTip="Select Data to display">
-            <ComboBox.ItemTemplate>
-                <DataTemplate>
-                    <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding LineDescription}" Checked="CheckBox_Changed" Unchecked="CheckBox_Changed"/>
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
-    </Grid>
+            <oxy:PlotView x:Name="Graph" Margin="0,0,0,28" />
+            <TextBox x:Name="TextBox_SecondsToShow" HorizontalAlignment="Left" Margin="77,0,0,4" TextWrapping="Wrap" Text="10" Width="26" TextChanged="TextBox_SecondsToShow_TextChanged" Height="23" VerticalAlignment="Bottom"/>
+            <Label Content="Seconds" Margin="108,0,0,5" Height="26" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="54"/>
+            <Label Content="Show last" HorizontalAlignment="Left" Margin="10,0,0,5" Width="62" Height="26" VerticalAlignment="Bottom"/>
+            <ComboBox x:Name="ComboBox_DataLineEnable" ItemsSource="{Binding CheckboxList}" Margin="0,0,10,10" Height="21" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="115" Text="Select Data to display" ToolTip="Select Data to display">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding LineDescription}" Checked="CheckBox_Changed" Unchecked="CheckBox_Changed"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button x:Name="Button_PauseResumeLogging" Content="Pause logging" Margin="0,0,130,10" HorizontalAlignment="Right" Width="93" Height="21" VerticalAlignment="Bottom" Click="Button_PauseResumeLogging_Click"/>
+        </Grid>
+    </DockPanel>
 </Window>

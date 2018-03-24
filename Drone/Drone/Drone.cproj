@@ -239,6 +239,12 @@
     <Compile Include="USART0.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="WDT.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="WDT.h">
+      <SubType>compile</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Device_Startup\" />

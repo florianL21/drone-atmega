@@ -276,7 +276,7 @@ void bno_runtime_error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
 		bno_error_callback(Error, Transmit_error_code);
 }
 
-ErrorCode BNO055_stop_continous_measurement()
+ErrorCode BNO055_stop_continuous_measurement()
 {
 	bno_measureContinous = false;
 	return SUCCESS;

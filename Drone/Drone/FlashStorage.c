@@ -1,6 +1,6 @@
 #include "FlashStorage.h"
 
-ErrorCode FlashStorage_Init()
+ErrorCode FlashStorage_init()
 {
 	if(flash_init(FLASH_ACCESS_MODE_128, 6) != FLASH_RC_OK)
 		return MODULE_FLASHSTORAGE | FUNCTION_Init | ERROR_GENERIC;

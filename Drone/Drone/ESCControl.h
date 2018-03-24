@@ -28,19 +28,22 @@
 
  */
 
-
 /*
- *
- *	Configures the 4 ESC pins as output and configures
- *	Timer 0-3
- *
- */
+	Configures the 4 ESC pins as output and configures Timer 0-3.
+*/
 void esc_init();
 
 /*
- *	Sets the duty cycle of the corresponding Timer from the motor
- */
-ErrorCode esc_set(uint8_t MotorNum,int16_t speed);
+	Sets the duty cycle of the corresponding Timer from the motor
+	Requirements:
+		- esc_init()
+	Parameters:
+		- MotorNum:	Number of the Motor. Must be in between 1 and 4
+		- speed must be in between 0 and ESC_MaxLimit-ESC_PWM_MIN_DUTY_CYCLE
+	Returns:
+		Any error that might have occurred.
+*/
+ErrorCode esc_set(uint8_t MotorNum, int16_t speed);
 
 
 
