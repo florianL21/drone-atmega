@@ -27,7 +27,7 @@ namespace ControlCenter
     {
         SerialCom SerialPort;
 
-        System.Windows.Threading.DispatcherTimer dispatcherTestData = new System.Windows.Threading.DispatcherTimer();
+        //System.Windows.Threading.DispatcherTimer dispatcherTestData = new System.Windows.Threading.DispatcherTimer();
 
         static TextBox StatusText;
 
@@ -40,13 +40,14 @@ namespace ControlCenter
             InitializeComponent();
             StatusText = StatusTextBox as TextBox;
             SerialPort = new SerialCom(this);
-            
+            /*
             dispatcherTestData.Tick += new EventHandler(sendTestData);
             dispatcherTestData.Interval = new TimeSpan(0, 0, 0, 0, 100);
+            */
             
         }
 
-        
+        /*
         void sendTestData(object s, EventArgs e)
         {
             Random rand = new Random();
@@ -58,7 +59,7 @@ namespace ControlCenter
                 MotorValueGraphWindow.addDataPoint(rand.Next(0, 5200), "M3");
             }
         }
-        
+        */
         /* Data Diplay Functions:
          */
 
@@ -557,7 +558,7 @@ namespace ControlCenter
                 MotorValueGraphWindow.yAxis.Maximum = 5200;
                 MotorValueGraphWindow.yAxis.Minimum = 0;
                 MotorValueGraphWindow.Show();
-                dispatcherTestData.Start();
+                //dispatcherTestData.Start();
             }
             else
             {
