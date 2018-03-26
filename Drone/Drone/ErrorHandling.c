@@ -340,7 +340,7 @@ void ErrorHandling_get_function_description(ErrorCode Error, char errorDescripti
 
 void ErrorHandling_get_top_module_description(ErrorCode Error, char errorDescription[])
 {
-	ErrorHandling_get_module_description((Error & 0xFF00000000) >> 16, errorDescription)
+	ErrorHandling_get_module_description((Error & 0xFF00000000) >> 16, errorDescription);
 }
 
 void ErrorHandling_get_module_description(ErrorCode Error, char errorDescription[])
