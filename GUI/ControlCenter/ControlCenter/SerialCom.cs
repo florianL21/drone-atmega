@@ -9,7 +9,7 @@ namespace ControlCenter
 {
     class SerialCom
     {
-        private SerialPort mySerialPort;
+        public SerialPort mySerialPort;
         private bool readyToSend = true;
 
         private Queue<byte> recievedData = new Queue<byte>();
@@ -71,7 +71,7 @@ namespace ControlCenter
         private void ACK_timeout(object s, EventArgs e)
         {
             dispatcherACKTimeout.Stop();
-            myMainWindow.LogError("ACK Timeout", "ACK:timeout");
+            myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "ACK_timeout", "ACK Timeout");
             if (sendQueue.Count == 0)
                 readyToSend = true;
             else
@@ -225,7 +225,7 @@ namespace ControlCenter
                                 else
                                 {
                                     processSerialPortData(startCharIndex + 1);
-                                    myMainWindow.LogError("[ATTEMPTING AUTOCORRECTION] End Char missmatch. Maybe out of sync?", "processSerialPortData");
+                                    myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "processSerialPortData", "[ATTEMPTING AUTOCORRECTION] End Char missmatch. Maybe out of sync?");
                                 }
                             }
                             catch
@@ -237,14 +237,14 @@ namespace ControlCenter
                         else
                         {
                             processSerialPortData(startCharIndex + 1);
-                            myMainWindow.LogError("[ATTEMPTING AUTOCORRECTION] Invalid Type. Maybe out of sync?", "processSerialPortData");
+                            myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "processSerialPortData", "[ATTEMPTING AUTOCORRECTION] Invalid Type. Maybe out of sync?");
                         }
                     }
                 }
             }
             catch (Exception error)
             {
-                myMainWindow.LogError("Exception thrown: " + error.ToString(), "processSerialPortData");
+                myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.EXCEPTION, "processSerialPortData", "Exception thrown: " + error.ToString());
             }
         }
 
@@ -260,7 +260,7 @@ namespace ControlCenter
             }
             catch (Exception Error)
             {
-                myMainWindow.LogError("Exception thrown: " + Error.ToString(), "serialPort_DataReceived");
+                myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.EXCEPTION, "serialPort_DataReceived", "Exception thrown: " + Error.ToString());
             }
         }
 
@@ -269,7 +269,7 @@ namespace ControlCenter
             switch (Type)
             {
                 case 0x00:
-                    myMainWindow.LogDebug(receivedText);
+                    myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.DEBUG, "Arduino", receivedText);
                     myMainWindow.SetStatus(DateTime.Now.ToString("h:mm:ttss") + ": " + receivedText);
                     break;
                 case 0x01:
@@ -285,7 +285,7 @@ namespace ControlCenter
                     }
                     else
                     {
-                        myMainWindow.LogError("Motor Speed Value transmission has errors, discarding Data.", "processData");
+                        myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.WARNING, "processData", "Motor Speed Value transmission has errors, discarding Data.");
                     }
                     break;
                 case 0x02:
@@ -302,7 +302,7 @@ namespace ControlCenter
                     }
                     else
                     {
-                        myMainWindow.LogError("RC Reader transmission has errors, discarding Data.", "processData");
+                        myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.WARNING, "processData", "RC Reader transmission has errors, discarding Data.");
                     }
                     break;
                 case 0x03:
@@ -325,7 +325,7 @@ namespace ControlCenter
                     }
                     else
                     {
-                        myMainWindow.LogError("Sensor transmission has errors, discarding Data.", "processData");
+                        myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.WARNING, "processData", "Sensor transmission has errors, discarding Data.");
                     }
                     break;
                 case 0x04:
@@ -367,7 +367,7 @@ namespace ControlCenter
                     }
                     else
                     {
-                        myMainWindow.LogError("PID transmission has errors, discarding Data.", "processData");
+                        myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.WARNING, "processData", "PID transmission has errors, discarding Data.");
                     }
                     break;
                 case 0x05:
@@ -398,11 +398,11 @@ namespace ControlCenter
                     }
                     break;
                 case 0x64:
-                    myMainWindow.LogError(receivedText, "ArduinoBoard");
+                    myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.ERROR, "ARDUINO", receivedText);
                     myMainWindow.SetStatus("The Arduino reported an error");
                     break;
                 default:
-                    myMainWindow.LogError("Unspecified Type received. Should not be possible!!!", "processData");
+                    myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.ERROR, "processData", "Unspecified Type received. Should not be possible!!!");
                     myMainWindow.SetStatus("An error occured");
                     break;
             }

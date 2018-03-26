@@ -16,7 +16,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
+using System.Management;
+using System.Collections.ObjectModel;
 
 namespace ControlCenter
 {
@@ -35,6 +36,10 @@ namespace ControlCenter
         LoggingGraph RCReceiverValueGraphWindow;
         LoggingGraph SensorValueGraphWindow;
 
+        public EventLogWindow LogWindow;
+
+        
+
         public MainWindow()
         {
             InitializeComponent();
@@ -45,6 +50,21 @@ namespace ControlCenter
             dispatcherTestData.Interval = new TimeSpan(0, 0, 0, 0, 100);
             */
             
+
+            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption like '%(COM%'"))
+            {
+                var portnames = System.IO.Ports.SerialPort.GetPortNames();
+                var ports = searcher.Get().Cast<ManagementBaseObject>().ToList().Select(p => p["Caption"].ToString());
+
+                var portList = portnames.Select(n => n + " - " + ports.FirstOrDefault(s => s.Contains(n))).ToList();
+
+                foreach (string s in portList)
+                {
+                    Combobox_PortNames.Items.Add(s);
+                }
+            }
+
+            LogWindow = new EventLogWindow();
         }
 
         /*
@@ -276,15 +296,7 @@ namespace ControlCenter
         /* Logging Functions:
          */
 
-        public void LogError(string ErrorMessage, string FunctionName)
-        {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_ErrorLog.Text += "[" + DateTime.Now.ToString("h:mm:ttss") + "], [ERROR] at Function [" + FunctionName + "]: " + ErrorMessage + "\n"));
-        }
-
-        public void LogDebug(string DebugMessage)
-        {
-            Dispatcher.BeginInvoke((Action)(() => TextBox_ErrorLog.Text += "[" + DateTime.Now.ToString("h:mm:ttss") + "], [DEBUG]: " + DebugMessage + "\n"));
-        }
+        
 
         public void SetStatus(string statusText)
         {
@@ -362,11 +374,10 @@ namespace ControlCenter
                     GroupBox_RCReceiverValues.IsEnabled = false;
                     GroupBox_SensorValues.IsEnabled = false;
                     GroupBox_PIDValues.IsEnabled = false;
-                    PortNameTextbox.IsEnabled = true;
+                    Combobox_PortNames.IsEnabled = true;
                     Button_StartRCReceiverValuesGraph.IsEnabled = false;
                     Button_StartMotorValuesGraph.IsEnabled = false;
                     Button_StartSensorValuesGraph.IsEnabled = false;
-                    TextBox_ErrorLog.IsEnabled = false;
                     Button_ResetArduino.IsEnabled = false;
                     CheckBox_ClearLogOnReset.IsEnabled = false;
                     if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
@@ -380,17 +391,19 @@ namespace ControlCenter
                 }
                 catch (Exception Error)
                 {
-                    LogError("Exception Thrown: " + Error.ToString(), "Connect_DisconnectButton_Click");
+                    LogWindow.WriteToLog(EventLogWindow.LogTypes.EXCEPTION, "Connect_DisconnectButton_Click", "Exception Thrown: " + Error.ToString());
                     SetStatus("Error closing serial COM");
                 }
             }
             else
             {
-                if (PortNameTextbox.Text != "")
+                
+                if (Combobox_PortNames.SelectedIndex != -1)
                 {
+                    string com = Combobox_PortNames.SelectedValue.ToString();
                     try
                     {
-                        SerialPort.setPort(PortNameTextbox.Text);
+                        SerialPort.setPort(com.Substring(0,com.IndexOf(' ')));
                         SerialPort.Open();
                         Connect_DisconnectButton.Content = "Disconnect";
                         SetStatus("Connected");
@@ -398,16 +411,15 @@ namespace ControlCenter
                         GroupBox_RCReceiverValues.IsEnabled = true;
                         GroupBox_SensorValues.IsEnabled = true;
                         GroupBox_PIDValues.IsEnabled = true;
-                        PortNameTextbox.IsEnabled = false;
-                        TextBox_ErrorLog.IsEnabled = true;
+                        Combobox_PortNames.IsEnabled = false;
                         Button_ResetArduino.IsEnabled = true;
                         CheckBox_ClearLogOnReset.IsEnabled = true;
                         RefreshPIDValues();
                     }
                     catch (Exception Error)
                     {
-                        LogError("Exception Thrown: " + Error.ToString(), "Connect_DisconnectButton_Click");
-                        SetStatus("Error opening serial COM");
+                        LogWindow.WriteToLog(EventLogWindow.LogTypes.EXCEPTION, "Connect_DisconnectButton_Click", "Exception Thrown: " + Error.ToString());
+                        SetStatus("Error opening serial " + com.Substring(0, com.IndexOf(' ')));
                     }
                 }
                 else
@@ -503,10 +515,7 @@ namespace ControlCenter
             RefreshPIDValues();
         }
 
-        private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
-        {
-            TextBox_ErrorLog.Text = "Begin of Error log: \n";
-        }
+        
 
         private void Button_StartSensorValuesGraph_Click(object sender, RoutedEventArgs e)
         {
@@ -571,7 +580,7 @@ namespace ControlCenter
             SerialPort.sendMessage(0x04, 'R');
             if(CheckBox_ClearLogOnReset.IsChecked == true)
             {
-                TextBox_ErrorLog.Text = "Begin of Error log: \n";
+                LogWindow.clearErrorLog();
             }
         }
 
@@ -698,16 +707,17 @@ namespace ControlCenter
             }
         }
 
-        private void TextBox_ErrorLog_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (TabControl_MainModes.SelectedIndex == 1)
-            {
-                //TextBox_ErrorLog.ScrollToEnd();
-            }
-        }
         private void StatusTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             //StatusTextBox.ScrollToEnd();
+        }
+
+        private void MenuItem_OpenLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (LogWindow != null && LogWindow.IsVisible == false)
+            {
+                LogWindow.Show();
+            }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -730,18 +740,13 @@ namespace ControlCenter
             {
                 RCReceiverValueGraphWindow.Close();
             }
+            if (LogWindow != null)
+            {
+                LogWindow.Shutdown();
+            }
+            
             SerialPort.Close();
             SerialPort.Dispose();
         }
-
-        private void TabControl_MainModes_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (TabControl_MainModes.SelectedIndex == 1)
-            {
-                TextBox_ErrorLog.ScrollToEnd();
-            }
-        }
-
-        
     }
 }
