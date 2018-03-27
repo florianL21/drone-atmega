@@ -71,7 +71,7 @@ namespace ControlCenter
         private void ACK_timeout(object s, EventArgs e)
         {
             dispatcherACKTimeout.Stop();
-            myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "ACK_timeout", "ACK Timeout");
+            //myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "ACK_timeout", "ACK Timeout");
             if (sendQueue.Count == 0)
                 readyToSend = true;
             else

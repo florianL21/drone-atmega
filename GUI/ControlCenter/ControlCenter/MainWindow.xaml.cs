@@ -65,6 +65,7 @@ namespace ControlCenter
             }
 
             LogWindow = new EventLogWindow();
+            LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "MainWindow", "Application started");
         }
 
         /*

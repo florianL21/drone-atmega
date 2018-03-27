@@ -180,6 +180,22 @@ void DataReady()
 		error_handler_in(SerialCOM_put_debug("S"));
 		count1 = 0;
 	}*/
+	
+	//BNO data calc:
+	
+	BNO055_Data CorrectedValues;
+	CorrectedValues.X	= SensorValues.X - sensorOffsetX;
+	CorrectedValues.Y	= SensorValues.Y - sensorOffsetY;
+	CorrectedValues.Z	= SensorValues.Z;
+	
+	PID_PitchInput		= CorrectedValues.X;
+	PID_RollInput		= CorrectedValues.Y;
+	
+	PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -50, 50);
+	PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -50, 50);
+	
+	//PID Loop calc:
+	
 	static bool GearStateOld = false;
 	bool needComputePitch = PID_need_compute(&PitchPid);
 	bool needComputeRoll = PID_need_compute(&RollPid);
@@ -200,49 +216,38 @@ void DataReady()
 			GearStateOld = false;
 		}
 		
+		// Compute new PID output value
+		if (needComputePitch)
+			ErrorHandling_throw(PID_Compute(&PitchPid));
+		if (needComputeRoll)
+			ErrorHandling_throw(PID_Compute(&RollPid));
+		//float factor = 0.0005;
+		//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
+		//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
+			
+		Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
+		Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
+		Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
+		Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
+			
+		/*
+		Motor_speeds[0] = RemoteValues.Throttle;
+		Motor_speeds[1] = RemoteValues.Throttle;
+		Motor_speeds[2] = RemoteValues.Throttle;
+		Motor_speeds[3] = RemoteValues.Throttle;
+		*/			
+			
+		if(Motor_speeds[0] < 0)
+			Motor_speeds[0] = 0;
+		if(Motor_speeds[1] < 0)
+			Motor_speeds[1] = 0;
+		if(Motor_speeds[2] < 0)
+			Motor_speeds[2] = 0;
+		if(Motor_speeds[3] < 0)
+			Motor_speeds[3] = 0;
+		
 		if(RemoteValues.error != true)
 		{
-			BNO055_Data CorrectedValues;
-			CorrectedValues.X	= SensorValues.X - sensorOffsetX;
-			CorrectedValues.Y	= SensorValues.Y - sensorOffsetY;
-			CorrectedValues.Z	= SensorValues.Z;
-			
-			PID_PitchInput		= CorrectedValues.X;
-			PID_RollInput		= CorrectedValues.Y;
-			
-			PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -50, 50);
-			PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -50, 50);
-			
-			// Compute new PID output value
-			if (needComputePitch)
-				ErrorHandling_throw(PID_Compute(&PitchPid));
-			if (needComputeRoll)
-				ErrorHandling_throw(PID_Compute(&RollPid));
-			//float factor = 0.0005;
-			//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
-			//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
-			
-			Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
-			Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
-			Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
-			Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
-			
-			/*
-			Motor_speeds[0] = RemoteValues.Throttle;
-			Motor_speeds[1] = RemoteValues.Throttle;
-			Motor_speeds[2] = RemoteValues.Throttle;
-			Motor_speeds[3] = RemoteValues.Throttle;
-			*/			
-			
-			if(Motor_speeds[0] < 0)
-				Motor_speeds[0] = 0;
-			if(Motor_speeds[1] < 0)
-				Motor_speeds[1] = 0;
-			if(Motor_speeds[2] < 0)
-				Motor_speeds[2] = 0;
-			if(Motor_speeds[3] < 0)
-				Motor_speeds[3] = 0;
-			
 			if(ArmMotors == true)
 			{
 				ErrorHandling_throw(esc_set(1, Motor_speeds[0]));
@@ -257,98 +262,101 @@ void DataReady()
 				ErrorHandling_throw(esc_set(3, 0));
 				ErrorHandling_throw(esc_set(4, 0));
 			}
+
+		}
+	}
+	
+	//-----Data Logging:
+	
+	if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
+	{
+		
+		sendCount = 0;
+		if(printMotorValues == true)
+		{
+			uint8_t buffer[12] = {0};
+			buffer[0] = '0';
+			buffer[1] = (Motor_speeds[0] & 0xFF00) >> 8;
+			buffer[2] = Motor_speeds[0] & 0x00FF;
+			buffer[3] = '1';
+			buffer[4] = (Motor_speeds[1] & 0xFF00) >> 8;
+			buffer[5] = Motor_speeds[1] & 0x00FF;
+			buffer[6] = '2';
+			buffer[7] = (Motor_speeds[2] & 0xFF00) >> 8;
+			buffer[8] = Motor_speeds[2] & 0x00FF;
+			buffer[9] = '3';
+			buffer[10] = (Motor_speeds[3] & 0xFF00) >> 8;
+			buffer[11] = Motor_speeds[3] & 0x00FF;
+			SerialCOM_put_message(buffer, 0x01, 12);
+		}
+		
+		if(printRCValues == true)
+		{
+			uint8_t buffer[14] = {0};
+			buffer[0] = 'T';
+			buffer[1] = (RemoteValues.Throttle & 0xFF00) >> 8;
+			buffer[2] = RemoteValues.Throttle & 0x00FF;
+			buffer[3] = 'R';
+			buffer[4] = (RemoteValues.Roll & 0xFF00) >> 8;
+			buffer[5] = RemoteValues.Roll & 0x00FF;
+			buffer[6] = 'P';
+			buffer[7] = (RemoteValues.Pitch & 0xFF00) >> 8;
+			buffer[8] = RemoteValues.Pitch & 0x00FF;
+			buffer[9] = 'Y';
+			buffer[10] = (RemoteValues.Yaw & 0xFF00) >> 8;
+			buffer[11] = RemoteValues.Yaw & 0x00FF;
+			buffer[12] = 'G';
+			buffer[13] = RemoteValues.Gear;
+			SerialCOM_put_message(buffer, 0x02, 14);
+		}
+		
+		if(printSensorValues == true)
+		{
+			uint8_t buffer[12] = {0};
+			bool XIsNegative = CorrectedValues.X < 0;
+			bool YIsNegative = CorrectedValues.Y < 0;
+			bool ZIsNegative = CorrectedValues.Z < 0;
 			
-			if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
+			buffer[0] = 'X';
+			buffer[1] = XIsNegative;
+			if(XIsNegative)
 			{
-				
-				sendCount = 0;
-				if(printMotorValues == true)
-				{
-					uint8_t buffer[12] = {0};
-					buffer[0] = '0';
-					buffer[1] = (Motor_speeds[0] & 0xFF00) >> 8;
-					buffer[2] = Motor_speeds[0] & 0x00FF;
-					buffer[3] = '1';
-					buffer[4] = (Motor_speeds[1] & 0xFF00) >> 8;
-					buffer[5] = Motor_speeds[1] & 0x00FF;
-					buffer[6] = '2';
-					buffer[7] = (Motor_speeds[2] & 0xFF00) >> 8;
-					buffer[8] = Motor_speeds[2] & 0x00FF;
-					buffer[9] = '3';
-					buffer[10] = (Motor_speeds[3] & 0xFF00) >> 8;
-					buffer[11] = Motor_speeds[3] & 0x00FF;
-					SerialCOM_put_message(buffer, 0x01, 12);
-				}
-				
-				if(printRCValues == true)
-				{
-					uint8_t buffer[14] = {0};
-					buffer[0] = 'T';
-					buffer[1] = (RemoteValues.Throttle & 0xFF00) >> 8;
-					buffer[2] = RemoteValues.Throttle & 0x00FF;
-					buffer[3] = 'R';
-					buffer[4] = (RemoteValues.Roll & 0xFF00) >> 8;
-					buffer[5] = RemoteValues.Roll & 0x00FF;
-					buffer[6] = 'P';
-					buffer[7] = (RemoteValues.Pitch & 0xFF00) >> 8;
-					buffer[8] = RemoteValues.Pitch & 0x00FF;
-					buffer[9] = 'Y';
-					buffer[10] = (RemoteValues.Yaw & 0xFF00) >> 8;
-					buffer[11] = RemoteValues.Yaw & 0x00FF;
-					buffer[12] = 'G';
-					buffer[13] = RemoteValues.Gear;
-					SerialCOM_put_message(buffer, 0x02, 14);
-				}
-				
-				if(printSensorValues == true)
-				{
-					uint8_t buffer[12] = {0};
-					bool XIsNegative = CorrectedValues.X < 0;
-					bool YIsNegative = CorrectedValues.Y < 0;
-					bool ZIsNegative = CorrectedValues.Z < 0;
-					
-					buffer[0] = 'X';
-					buffer[1] = XIsNegative;
-					if(XIsNegative)
-					{
-						buffer[2] = (CorrectedValues.X*-1 & 0xFF00) >> 8;
-						buffer[3] = CorrectedValues.X*-1 & 0x00FF;
-					}
-					else
-					{
-						buffer[2] = (CorrectedValues.X & 0xFF00) >> 8;
-						buffer[3] = CorrectedValues.X & 0x00FF;
-					}
-					
-					buffer[4] = 'Y';
-					buffer[5] = YIsNegative;
-					if(YIsNegative)
-					{
-						buffer[6] = (CorrectedValues.Y*-1 & 0xFF00) >> 8;
-						buffer[7] = CorrectedValues.Y*-1 & 0x00FF;
-					}
-					else
-					{
-						buffer[6] = (CorrectedValues.Y & 0xFF00) >> 8;
-						buffer[7] = CorrectedValues.Y & 0x00FF;
-					}
-					
-					buffer[8] = 'Z';
-					buffer[9] = ZIsNegative;
-					if(ZIsNegative)
-					{
-						buffer[10] = (CorrectedValues.Z*-1 & 0xFF00) >> 8;
-						buffer[11] = CorrectedValues.Z*-1 & 0x00FF;
-					}
-					else
-					{
-						buffer[10] = (CorrectedValues.Z& 0xFF00) >> 8;
-						buffer[11] = CorrectedValues.Z & 0x00FF;
-					}
-					
-					SerialCOM_put_message(buffer, 0x03, 12);
-				}
+				buffer[2] = (CorrectedValues.X*-1 & 0xFF00) >> 8;
+				buffer[3] = CorrectedValues.X*-1 & 0x00FF;
 			}
+			else
+			{
+				buffer[2] = (CorrectedValues.X & 0xFF00) >> 8;
+				buffer[3] = CorrectedValues.X & 0x00FF;
+			}
+			
+			buffer[4] = 'Y';
+			buffer[5] = YIsNegative;
+			if(YIsNegative)
+			{
+				buffer[6] = (CorrectedValues.Y*-1 & 0xFF00) >> 8;
+				buffer[7] = CorrectedValues.Y*-1 & 0x00FF;
+			}
+			else
+			{
+				buffer[6] = (CorrectedValues.Y & 0xFF00) >> 8;
+				buffer[7] = CorrectedValues.Y & 0x00FF;
+			}
+			
+			buffer[8] = 'Z';
+			buffer[9] = ZIsNegative;
+			if(ZIsNegative)
+			{
+				buffer[10] = (CorrectedValues.Z*-1 & 0xFF00) >> 8;
+				buffer[11] = CorrectedValues.Z*-1 & 0x00FF;
+			}
+			else
+			{
+				buffer[10] = (CorrectedValues.Z& 0xFF00) >> 8;
+				buffer[11] = CorrectedValues.Z & 0x00FF;
+			}
+			
+			SerialCOM_put_message(buffer, 0x03, 12);
 		}
 	}
 }

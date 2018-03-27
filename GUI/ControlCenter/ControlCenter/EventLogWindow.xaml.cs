@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,13 +19,116 @@ namespace ControlCenter
     /// <summary>
     /// Interaktionslogik für EventLogWindow.xaml
     /// </summary>
+    /// 
+
+    public class ErrorLogEntry : INotifyPropertyChanged
+    {
+        private string _TimeInfo;
+        private EventLogWindow.LogTypes _LogType;
+        private string _LogTypeInfo;
+        private string _OriginatingFunctionInfo;
+        private string _MessageInfo;
+        private Brush _LogEntryBackgoundColor;
+
+        public string TimeInfo
+        {
+            get { return this._TimeInfo; }
+            set
+            {
+                if (this._TimeInfo != value)
+                {
+                    this._TimeInfo = value;
+                    this.NotifyPropertyChanged("TimeInfo");
+                }
+            }
+        }
+        public EventLogWindow.LogTypes LogType
+        {
+            get { return this._LogType; }
+            set
+            {
+                if (this._LogType != value)
+                {
+                    this._LogType = value;
+                    this.NotifyPropertyChanged("LogType");
+                }
+            }
+        }
+        public string LogTypeInfo
+        {
+            get { return this._LogTypeInfo; }
+            set
+            {
+                if (this._LogTypeInfo != value)
+                {
+                    this._LogTypeInfo = value;
+                    this.NotifyPropertyChanged("LogTypeInfo");
+                }
+            }
+        }
+        public string OriginatingFunctionInfo
+        {
+            get { return this._OriginatingFunctionInfo; }
+            set
+            {
+                if (this._OriginatingFunctionInfo != value)
+                {
+                    this._OriginatingFunctionInfo = value;
+                    this.NotifyPropertyChanged("OriginatingFunctionInfo");
+                }
+            }
+        }
+        public string MessageInfo
+        {
+            get { return this._MessageInfo; }
+            set
+            {
+                if (this._MessageInfo != value)
+                {
+                    this._MessageInfo = value;
+                    this.NotifyPropertyChanged("MessageInfo");
+                }
+            }
+        }
+        public Brush LogEntryBackgoundColor
+        {
+            get { return this._LogEntryBackgoundColor; }
+            set
+            {
+                if (this._LogEntryBackgoundColor != value)
+                {
+                    this._LogEntryBackgoundColor = value;
+                    this.NotifyPropertyChanged("LogEntryBackgoundColor");
+                }
+            }
+        }
+
+
+        private string name;
+        public string Name
+        {
+            get { return this.name; }
+            set
+            {
+                if (this.name != value)
+                {
+                    this.name = value;
+                    this.NotifyPropertyChanged("Name");
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public void NotifyPropertyChanged(string propName)
+        {
+            if (this.PropertyChanged != null)
+                this.PropertyChanged(this, new PropertyChangedEventArgs(propName));
+        }
+    }
+
     public partial class EventLogWindow : Window
     {
-
-        public ObservableCollection<ErrorLogEntry> ErrorLogList { get; set; }
-
-        private bool isShuttingDown = false;
-
         public enum LogTypes
         {
             INFO,
@@ -33,19 +137,39 @@ namespace ControlCenter
             ERROR,
             EXCEPTION
         }
-
+        /*
         public class ErrorLogEntry
         {
             public string TimeInfo { get; set; }
+            public LogTypes LogType { get; set; }
             public string LogTypeInfo { get; set; }
             public string OriginatingFunctionInfo { get; set; }
             public string MessageInfo { get; set; }
-            public LogTypes LogType { get; set; }
             public Brush LogEntryBackgoundColor { get; set; }
-            public bool ShowThisEntry { get; set; }
+        }
+        */
+
+        public ObservableCollection<ErrorLogEntry> ErrorLogList
+        {
+            get
+            {
+                return (ObservableCollection<ErrorLogEntry>)
+                GetValue(ErrorLogListProperty);
+            }
+            set
+            {
+                SetValue(ErrorLogListProperty, value);
+            }
         }
 
+        public static readonly DependencyProperty ErrorLogListProperty = DependencyProperty.Register("CustomerList", typeof(ObservableCollection<ErrorLogEntry>), typeof(EventLogWindow), new PropertyMetadata(new ObservableCollection<ErrorLogEntry>()));
+
+        private bool isShuttingDown = false;
+
+
         public ObservableCollection<BoolStringClass> FilterCheckboxList { get; set; }
+
+
 
         public class BoolStringClass
         {
@@ -91,17 +215,22 @@ namespace ControlCenter
                     break;
                 case LogTypes.ERROR:
                     bgColor = Brushes.OrangeRed;
-                    Show();
+                    if (!IsVisible)
+                        Show();
                     break;
                 case LogTypes.EXCEPTION:
                     bgColor = Brushes.Red;
-                    Show();
+                    if(!IsVisible)
+                        Show();
                     break;
                 default:
                     bgColor = Brushes.Yellow;
                     break;
             }
-            ErrorLogList.Add(new ErrorLogEntry { ShowThisEntry = true, LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, LogTypeInfo = Type.ToString(), OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription });
+            //LogEventTable.Items.Add(new ErrorLogEntry { LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription });
+            Dispatcher.BeginInvoke((Action)(() => 
+            ErrorLogList.Add(new ErrorLogEntry { LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, LogTypeInfo = Type.ToString(), OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription })
+            ));
         }
 
         public void Shutdown()
@@ -121,16 +250,7 @@ namespace ControlCenter
 
         private void CheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            for (int i = 0; i < FilterCheckboxList.Count; i++)
-            {
-                for (int j = 0; j < ErrorLogList.Count; j++)
-                {
-                    if (ErrorLogList.ElementAt(j).LogTypeInfo == FilterCheckboxList.ElementAt(i).LineDescription)
-                    {
-                        ErrorLogList.ElementAt(j).ShowThisEntry = FilterCheckboxList.ElementAt(i).IsSelected;
-                    }
-                }
-            }
+            
         }
     }
 }
