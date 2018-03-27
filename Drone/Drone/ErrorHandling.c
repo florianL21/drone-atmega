@@ -332,6 +332,9 @@ void ErrorHandling_get_function_description(ErrorCode Error, char errorDescripti
 		case FUNCTION_put_int_blocking:
 			strcat(errorDescription, "put_int_blocking");
 		break;
+		case FUNCTION_write_blocking:
+		strcat(errorDescription, "write_blocking");
+		break;
 		default:
 			strcat(errorDescription, "Unknown");
 		break;

@@ -9,7 +9,7 @@
 #define MIN_BAUD_RATE	9600
 #define MAX_BAUD_RATE	1843200
 
-uint8_t USART0TXBUFFER[270]; // UART PDC Transmit buffer
+uint8_t USART0TXBUFFER[300]; // UART PDC Transmit buffer
 USART_RECV_CALLBACK usart_reciveCallBack = NULL;
 uint32_t usart0_ReceiveLength = 1;
 uint8_t *usart0_ReceivePtr = NULL;

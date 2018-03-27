@@ -155,19 +155,13 @@
     <Compile Include="ASF_files\flash_efc.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="BNO055.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="BNO055.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="BNOCOM.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="BNOCOM.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="BNO055_reg_table.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="BNO_055.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="BNO_055.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="config.h">
