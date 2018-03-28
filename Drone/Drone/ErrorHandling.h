@@ -98,7 +98,9 @@ typedef enum {
 	FUNCTION_put_float								= 0x3C00,
 	FUNCTION_put_int								= 0x3D00,
 	FUNCTION_put_int_blocking						= 0x3E00,
-	FUNCTION_write_blocking							= 0x3F00		//<--
+	FUNCTION_write_blocking							= 0x3F00,
+	FUNCTION_read									= 0x4000,
+	FUNCTION_read_blocking							= 0x4100		//<--
 }Functions;
 
 typedef enum {

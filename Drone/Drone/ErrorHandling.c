@@ -335,6 +335,12 @@ void ErrorHandling_get_function_description(ErrorCode Error, char errorDescripti
 		case FUNCTION_write_blocking:
 		strcat(errorDescription, "write_blocking");
 		break;
+		case FUNCTION_read:
+		strcat(errorDescription, "read");
+		break;
+		case FUNCTION_read_blocking:
+		strcat(errorDescription, "read_blocking");
+		break;
 		default:
 			strcat(errorDescription, "Unknown");
 		break;
