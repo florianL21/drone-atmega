@@ -22,9 +22,9 @@ ErrorCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
-		return MODULE_UART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_UART0 | FUNCTION_init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength), MODULE_UART0, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength), MODULE_UART0, FUNCTION_init);
 	
 	PMC->PMC_PCER0 = 1 << ID_UART;
 	// Set pin in peripheral mode
@@ -52,7 +52,7 @@ ErrorCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	
 	uart0SendQueue = queue_new(UART0_QUEUE_MAX_ITEMS);
 	if(uart0SendQueue == NULL)
-		return MODULE_UART0 | FUNCTION_Init | ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_UART0 | FUNCTION_init | ERROR_MALLOC_RETURNED_NULL;
 	return SUCCESS;
 }
 

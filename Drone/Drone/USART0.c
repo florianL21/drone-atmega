@@ -22,9 +22,9 @@ ErrorCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
-		return MODULE_USART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_USART0 | FUNCTION_init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength), MODULE_USART0, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength), MODULE_USART0, FUNCTION_init);
 	
 	// Enable Clock for UART
 	PMC->PMC_PCER0 = 1 << ID_USART0;
@@ -54,7 +54,7 @@ ErrorCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	USART0->US_PTCR = US_PTCR_TXTEN | US_PTCR_RXTEN;
 	usart0SendQueue = queue_new(USART0_QUEUE_MAX_ITEMS);
 	if(usart0SendQueue == NULL)
-		return MODULE_USART0 | FUNCTION_Init | ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_USART0 | FUNCTION_init | ERROR_MALLOC_RETURNED_NULL;
 	return SUCCESS;
 }
 
@@ -144,10 +144,9 @@ void USART0_Handler(void)
 	
 	if (USART0->US_CSR & US_CSR_ENDRX)
 	{
-		
 		if(usart_reciveCallBack != NULL)
 		{
-			usart_reciveCallBack(usart0_ReceivePtr,usart0_ReceiveLength);
+			usart_reciveCallBack(usart0_ReceivePtr, usart0_ReceiveLength);
 		}
 		
 		USART0->US_RCR = usart0_ReceiveLength;

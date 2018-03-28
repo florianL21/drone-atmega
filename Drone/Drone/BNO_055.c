@@ -7,46 +7,151 @@
 
 #include "BNO_055.h"
 
-#define BNO_TRANSMISSION_STARTBYTE				0xAA
-#define BNO_TRANSMISSION_WRITE					0x00
-#define BNO_TRANSMISSION_READ					0x01
-#define BNO_TRANSMISSION_SUCCESS_RESPONSE		0xBB
-#define BNO_TRANSMISSION_ERROR_RESPONSE			0xEE
+#define BNO_TRANSMISSION_STARTBYTE					0xAA
+#define BNO_TRANSMISSION_WRITE						0x00
+#define BNO_TRANSMISSION_READ						0x01
+#define BNO_TRANSMISSION_READ_SUCCESS_RESPONSE		0xBB
+#define BNO_TRANSMISSION_ACK_RESPONSE				0xEE
 
-ErrorCode bno055_returnError = SUCCESS;
-bool bno055_wait_for_return = false;
-uint8_t* bno055_continousMeasurementRegister = NULL;
+#define BNO_TRANS_STATUS_WRITE_SUCCESS				0x01
+#define BNO_TRANS_STATUS_READ_FAIL					0x02
+#define BNO_TRANS_STATUS_WRITE_FAIL					0x03
+#define BNO_TRANS_STATUS_REGMAP_INVALID_ADDRESS		0x04
+#define BNO_TRANS_STATUS_REGMAP_WRITE_DISABLED		0x05
+#define BNO_TRANS_STATUS_WRONG_START_BYTE			0x06
+#define BNO_TRANS_STATUS_BUS_OVER_RUN_ERROR			0x07
+#define BNO_TRANS_STATUS_MAX_LENGTH_ERROR			0x08
+#define BNO_TRANS_STATUS_MIN_LENGTH_ERROR			0x09
+#define BNO_TRANS_STATUS_RECEIVE_CHARACTER_TIMEOUT	0x0A
+
+/*Predefined bno constants*/
+#define BNO055_ID				0xA0
+#define BNO_CONFIG_MODE			0x00
+#define BNO_PWR_MODE_NORMAL		0x00
+#define BNO_PAGE_ID0			0x00
+#define BNO_PAGE_ID1			0x01
+#define BNO_INTERNAL_OSC		0x00
+#define FUSION_MODE_NDOF		0x0C
+
+ErrorCode bno055_returnError = ERROR_GENERIC;
+bool bno055_wait_for_response = false;
+uint8_t bno055_continousMeasurementRegister = 0x00;
 uint8_t bno055_continousMeasurementLength = 0;
-uint8_t* bno055_lastReadRegister = NULL;
-uint8_t bno055_lastReadLength = 0;
+uint8_t* bno055_ReadResponseDestPtr = NULL;
+uint8_t bno055_RequestedReadLength = 0;
+bool bno055_isReady = true;
+BNO055_DATA_READY_CALLBACK bno_data_ready_callback = NULL;
+BNO055_ERROR_CALLBACK bno_error_callback = NULL;
 
 void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length);
 
-ErrorCode BNO055_init()
+ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib)
 {
-	DEFAULT_ERROR_HANDLER(USART0_init(115200,2), MODULE_BNO055, FUNCTION_Init);
-	DEFAULT_ERROR_HANDLER(USART0_register_received_callback(bno055_data_received_callback), MODULE_BNO055, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(USART0_init(115200,2), MODULE_BNO055, FUNCTION_init);
+	DEFAULT_ERROR_HANDLER(USART0_register_received_callback(bno055_data_received_callback), MODULE_BNO055, FUNCTION_init);
+	//start BNO initialisation:
+	uint8_t Data = 0;
+	DEFAULT_ERROR_HANDLER(BNO055_read_blocking(BNO_REG_CHIP_ID, &Data, 1), MODULE_BNO055, FUNCTION_init);
+	//1. check for the right ID:
+	if(Data != BNO055_ID)
+		return MODULE_BNO055 | FUNCTION_init | ERROR_WRONG_DEVICE_ID;
+	//2.sensor defaults to OPR_MODE -> config mode
+	Data = BNO_CONFIG_MODE;
+	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_OPR_MODE, &Data, 1), MODULE_BNO055, FUNCTION_init);
+	//3. sensor defaults to PWR_MODE -> normal mode
+	Data = BNO_PWR_MODE_NORMAL;
+	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_PWR_MODE, &Data, 1), MODULE_BNO055, FUNCTION_init);
+	//4. sensor defaults to PAGE_ID -> PAGE0
+	Data = BNO_PAGE_ID0;
+	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_PAGE_ID, &Data, 1), MODULE_BNO055, FUNCTION_init);
+	
+	//Set output units:
+	Data =	(0<<7) | //Format = Windows
+			(0<<4) | //Temperature = Celsius
+			(0<<2) | //Euler = Degrees
+			(1<<1) | //Gyro = Rad/s
+			(0<<0);  //Accelerometer = m/s^2
+	_Delay(1000000);
+	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_UNIT_SEL, &Data, 1), MODULE_BNO055, FUNCTION_init);
+	_Delay(10000);
+	//sensor defaults to SYS_TRIGGER -> Internal oscillator
+	Data = BNO_INTERNAL_OSC;
+	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_SYS_TRIGGER, &Data, 1), MODULE_BNO055, FUNCTION_init);
+		
+	switch (PerformCalib) //TODO: write a calib routine
+	{
+	case Force_calibration:
+		
+	break;
+	case Do_not_calibrate:
+		
+	break;
+	case Calibrate_if_necessary:
+		
+	break;
+	default:
+		return ERROR_INVALID_ARGUMENT | MODULE_BNO055 | FUNCTION_init;
+	break;
+	}
+	//Set Operation Mode to NDOF (nine degrees of freedom)
+	Data = FUSION_MODE_NDOF;
+	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_OPR_MODE, &Data, 1), MODULE_BNO055, FUNCTION_init);
+	
 	return SUCCESS;
 }
 
-
-ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], uint8_t* DataLength)
+ErrorCode BNO055_register_data_ready_callback(BNO055_DATA_READY_CALLBACK callback)
 {
+	if(callback == NULL)
+		return ERROR_GOT_NULL_POINTER | MODULE_BNO055 | FUNCTION_register_data_ready_callback;
+	bno_data_ready_callback = callback;
+	return SUCCESS;
+}
+
+ErrorCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback)
+{
+	if(callback == NULL)
+		return ERROR_GOT_NULL_POINTER | MODULE_BNO055 | FUNCTION_register_error_callback;
+	bno_error_callback = callback;
+	return SUCCESS;
+}
+
+bool BNO055_IsReady()
+{
+	return bno055_isReady;
+}
+
+ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], uint8_t DataLength)
+{
+	bno055_wait_for_response = true;
+	bno055_returnError = ERROR_GENERIC;
+	if(dataToRead == NULL)
+		return ERROR_GOT_NULL_POINTER | MODULE_BNO055 | FUNCTION_read_blocking;
+	if(DataLength == 0)
+		return ERROR_ARGUMENT_OUT_OF_RANGE | MODULE_BNO055 | FUNCTION_read_blocking;
+	bno055_RequestedReadLength = DataLength;
+	bno055_ReadResponseDestPtr = dataToRead;
+	DEFAULT_ERROR_HANDLER(BNO055_read(RegisterAddress, DataLength), MODULE_BNO055, FUNCTION_read_blocking);
+	while (bno055_wait_for_response == true);	//TODO: Timeout error
+	DEFAULT_ERROR_HANDLER(bno055_returnError, MODULE_BNO055, FUNCTION_read_blocking); //check for errors from the callback
+	//Data was copied in the callback.
 	return SUCCESS;
 }
 
 ErrorCode BNO055_write_blocking(uint8_t RegisterAddress, uint8_t dataToWrite[], uint8_t DataLength)
 {
-	bno055_wait_for_return = true;
-	bno055_returnError = SUCCESS;
-	DEFAULT_ERROR_HANDLER(BNO, MODULE_BNO055, FUNCTION_write_blocking);
-	while (bno055_wait_for_return == true);
+	bno055_wait_for_response = true;
+	bno055_returnError = ERROR_GENERIC;
+	DEFAULT_ERROR_HANDLER(BNO055_write(RegisterAddress, dataToWrite, DataLength), MODULE_BNO055, FUNCTION_write_blocking);
+	while (bno055_wait_for_response == true); //TODO: Timeout error
 	return bno055_returnError;
 }
 
 ErrorCode BNO055_write(uint8_t RegisterAddress, uint8_t dataToWrite[], uint8_t DataLength)
 {
 	//checking for wrong arguments:
+	if(BNO055_IsReady() != true)
+		return ERROR_NOT_READY_FOR_OPERATION | MODULE_BNO055 | FUNCTION_write;
 	if(DataLength == 0)
 		return ERROR_ARGUMENT_OUT_OF_RANGE | MODULE_BNO055 | FUNCTION_write;
 	if(dataToWrite == NULL)
@@ -62,12 +167,16 @@ ErrorCode BNO055_write(uint8_t RegisterAddress, uint8_t dataToWrite[], uint8_t D
 	memcpy(&sendBuffer[4], dataToWrite, DataLength);
 	//send the data
 	DEFAULT_ERROR_HANDLER(USART0_put_data(sendBuffer, DataLength + 4), MODULE_BNO055, FUNCTION_write);
+	bno055_isReady = false;
 	free(sendBuffer);
 	return SUCCESS;
 }
 
 ErrorCode BNO055_read(uint8_t RegisterAddress, uint8_t DataLength)
 {
+	//check if measurement in progress:
+	if(BNO055_IsReady() != true)
+		return ERROR_NOT_READY_FOR_OPERATION | MODULE_BNO055 | FUNCTION_write;
 	//checking for wrong arguments:
 	if(DataLength == 0)
 		return ERROR_ARGUMENT_OUT_OF_RANGE | MODULE_BNO055 | FUNCTION_read;
@@ -79,12 +188,111 @@ ErrorCode BNO055_read(uint8_t RegisterAddress, uint8_t DataLength)
 	readBuffer[3] = DataLength;
 	//send the data
 	DEFAULT_ERROR_HANDLER(USART0_put_data(readBuffer, 4), MODULE_BNO055, FUNCTION_read);
-	bno055_lastReadRegister = RegisterAddress;
-	bno055_lastReadLength = DataLength;
+	bno055_isReady = false;
 	return SUCCESS;
+}
+
+ErrorCode bno055_translate_bno_transmission_errors(uint8_t bnoTransError)
+{
+	switch(bnoTransError)
+	{
+		case BNO_TRANS_STATUS_WRITE_SUCCESS:
+			return SUCCESS;
+		break;
+		case BNO_TRANS_STATUS_READ_FAIL:
+			return ERROR_READ_FAIL;
+		break;
+		case BNO_TRANS_STATUS_WRITE_FAIL:
+			return ERROR_WRITE_FAIL;
+		break;
+		case BNO_TRANS_STATUS_REGMAP_INVALID_ADDRESS:
+			return ERROR_REGMAP_INVALID_ADDRESS;
+		break;
+		case BNO_TRANS_STATUS_REGMAP_WRITE_DISABLED:
+			return ERROR_REGMAP_WRITE_DISABLED;
+		break;
+		case BNO_TRANS_STATUS_WRONG_START_BYTE:
+			return ERROR_WRONG_START_BYTE;
+		break;
+		case BNO_TRANS_STATUS_BUS_OVER_RUN_ERROR:
+			return ERROR_BUS_OVER_RUN;
+		break;
+		case BNO_TRANS_STATUS_MAX_LENGTH_ERROR:
+			return ERROR_MAX_LENGTH;
+		break;
+		case BNO_TRANS_STATUS_MIN_LENGTH_ERROR:
+			return ERROR_MIN_LENGTH;
+		break;
+		case BNO_TRANS_STATUS_RECEIVE_CHARACTER_TIMEOUT:
+			return ERROR_RECEIVE_CHARACTER_TIMEOUT;
+		break;
+		default:
+			return ERROR_STATUS_BYTE_UNKNOWN;
+		break;
+	}
 }
 
 void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 {
-	
+	static uint8_t recState = 0;
+	if(Length == 2 && recState == 0 && startPtr[0] == BNO_TRANSMISSION_ACK_RESPONSE)
+	{
+		if(bno055_wait_for_response == true)		//write initialized by a blocking function
+		{
+			bno055_returnError = bno055_translate_bno_transmission_errors(startPtr[1]);
+			bno055_wait_for_response = false;
+		}else if(bno_error_callback != NULL && startPtr[1] != BNO_TRANS_STATUS_WRITE_SUCCESS) //write initialised by a start mesurement function
+		{
+			bno_error_callback(ErrorHandling_set_top_level(bno055_translate_bno_transmission_errors(startPtr[1]), MODULE_BNO055, FUNCTION_data_received_callback));
+		}
+	}else if(Length == 2 && recState == 0 && startPtr[0] == BNO_TRANSMISSION_READ_SUCCESS_RESPONSE)
+	{
+		recState = 1;
+		ErrorCode Uart_return = USART0_set_receiver_length(startPtr[1]);
+		if(bno055_wait_for_response == true && Uart_return != SUCCESS)
+		{
+			bno055_returnError = ErrorHandling_set_top_level(Uart_return, MODULE_BNO055, FUNCTION_data_received_callback);
+		}else if(bno055_wait_for_response == false && Uart_return != SUCCESS && bno_error_callback != NULL)
+		{
+			bno_error_callback(ErrorHandling_set_top_level(Uart_return, MODULE_BNO055, FUNCTION_data_received_callback));
+		}
+	} else if(recState == 1)
+	{
+		
+		if(bno055_wait_for_response == true)
+		{
+			if(Length != bno055_RequestedReadLength)
+			{
+				bno055_returnError = ERROR_LENGTH_MISSMATCH | MODULE_BNO055 | FUNCTION_data_received_callback;
+				return;
+			}
+			//copy data to its new dest.
+			memcpy(bno055_ReadResponseDestPtr, startPtr, Length);
+			//this frees the data --> thus should be called after copying!!
+			ErrorCode Uart_return = USART0_set_receiver_length(2);
+			if(Uart_return != SUCCESS)
+			{
+				bno055_returnError = ErrorHandling_set_top_level(Uart_return,MODULE_BNO055,FUNCTION_data_received_callback);
+				bno055_wait_for_response = false;
+			}
+			bno055_wait_for_response = false;
+			bno055_returnError = SUCCESS;
+		} else
+		{
+			if(Length != bno055_RequestedReadLength && bno_error_callback != NULL)
+			{
+				bno_error_callback(ERROR_LENGTH_MISSMATCH | MODULE_BNO055 | FUNCTION_data_received_callback);
+				return;
+			}
+			//trigger callback to process data
+			if(bno_data_ready_callback != NULL)
+				bno_data_ready_callback(startPtr, Length);
+			//this frees the data --> thus should be called after copying!!
+			ErrorCode Uart_return = USART0_set_receiver_length(2);
+			if(Uart_return != SUCCESS && bno_error_callback != NULL)
+				bno_error_callback(ErrorHandling_set_top_level(Uart_return,MODULE_BNO055,FUNCTION_data_received_callback));
+		}
+		recState = 0;
+	}
+	bno055_isReady = true;
 }

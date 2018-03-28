@@ -53,7 +53,7 @@ typedef enum {
 	FUNCTION_register_write_by_table				= 0x0F00,
 	FUNCTION_register_read_by_table					= 0x1000,
 	FUNCTION_register_read_1byte_by_table			= 0x1100,
-	FUNCTION_Init									= 0x1200,
+	FUNCTION_init									= 0x1200,
 	FUNCTION_register_success_callback				= 0x1300,
 	FUNCTION_register_read							= 0x1400,
 	FUNCTION_register_write							= 0x1500,
@@ -100,7 +100,8 @@ typedef enum {
 	FUNCTION_put_int_blocking						= 0x3E00,
 	FUNCTION_write_blocking							= 0x3F00,
 	FUNCTION_read									= 0x4000,
-	FUNCTION_read_blocking							= 0x4100		//<--
+	FUNCTION_read_blocking							= 0x4100,		//<--
+	FUNCTION_data_received_callback					= 0x4200
 }Functions;
 
 typedef enum {
@@ -128,7 +129,9 @@ typedef enum {
 	ERROR_BUS_OVER_RUN					= 0x15,
 	ERROR_MAX_LENGTH					= 0x16,
 	ERROR_MIN_LENGTH					= 0x17,
-	ERROR_RECEIVE_CHARACTER_TIMEOUT		= 0x18		//<--
+	ERROR_RECEIVE_CHARACTER_TIMEOUT		= 0x18,
+	ERROR_STATUS_BYTE_UNKNOWN			= 0x19,
+	ERROR_REGMAP_WRITE_DISABLED			= 0x1A		//<--
 }Errors;
 
 typedef uint64_t ErrorCode;

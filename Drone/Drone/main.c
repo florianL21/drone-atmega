@@ -20,7 +20,7 @@ PIOB->PIO_CODR = PIO_PB27;
 
 
 #include "sam.h"
-#include "BNO055.h"
+#include "BNO_055.h"
 #include "ESCControl.h"
 #include "RCReader.h"
 #include "PID.h"
@@ -28,7 +28,7 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "FlashStorage.h"
 #include "WDT.h"
 
-#define BNO_MEASURE BNO_REG_GRV_DATA
+#define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W,8)
 
 BNO055_Data SensorValues;
 //Init variables for the drone programm
@@ -63,50 +63,15 @@ bool ArmMotors = false;
 
 
 
-void BNO_Error(BNO_STATUS_BYTES Error, ErrorCode Transmit_error_code)
+void BNO_Error(ErrorCode Error)
 {
-	if(Error == BNO_STATUS_BUS_OVER_RUN_ERROR && (Transmit_error_code & 0xFF) == ERROR_GENERIC)		//BNO was not ready for operation, try again
-		ErrorHandling_throw(BNO055_start_measurement(true,true,BNO_MEASURE));
-	else if((Transmit_error_code & 0xFF) == ERROR_GENERIC)											//BNO reported an error
+	if((Error & 0xFF) == ERROR_BUS_OVER_RUN)		//BNO was not ready for operation, try again
 	{
-		_Delay(840000);
-		switch(Error)//translate the error codes
-		{
-			case BNO_STATUS_READ_FAIL:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_READ_FAIL, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_STATUS_WRITE_FAIL:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_WRITE_FAIL, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_STATUS_REGMAP_INVALID_ADDRESS:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_REGMAP_INVALID_ADDRESS, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_STATUS_WRONG_START_BYTE:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_WRONG_START_BYTE, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_STATUS_BUS_OVER_RUN_ERROR:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_BUS_OVER_RUN, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_STATUS_MAX_LENGTH_ERROR:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_MAX_LENGTH, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_STATUS_MIN_LENGTH_ERROR:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_MIN_LENGTH, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_STATUS_RECEIVE_CHARACTER_TIMEOUT:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_RECEIVE_CHARACTER_TIMEOUT, MODULE_MAIN, FUNCTION_error));
-			break;
-			case BNO_TRANSMIT_ERROR:
-				ErrorHandling_throw(ErrorHandling_set_top_level((Transmit_error_code&0xFFFF00) | ERROR_TRANSMISSION_ERROR, MODULE_MAIN, FUNCTION_error));
-			break;
-			default:
-				ErrorHandling_throw_b(MODULE_MAIN, FUNCTION_error, ERROR_GENERIC);
-			break;
-		}
-	} 
+		ErrorHandling_throw(BNO_MEASURE);
+	}
 	else																							//Some kind of other error
 	{
-		ErrorHandling_throw(ErrorHandling_set_top_level(Transmit_error_code, MODULE_MAIN, FUNCTION_error));				//throw the error
+		ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
 	}
 }
 
@@ -172,8 +137,9 @@ void LoadValuesFromFlash()
 	sensorOffsetY = FlashStorage_read_float(44);
 }
 
-void DataReady()
+void DataReady(uint8_t Data[], uint8_t Length)
 {
+	SerialCOM_print_debug("Data Length: %d", Length);
 	/*static uint16_t count1 = 0;
 	if(count1++ >= 100)
 	{
@@ -182,7 +148,7 @@ void DataReady()
 	}*/
 	
 	//BNO data calc:
-	
+	/*
 	BNO055_Data CorrectedValues;
 	CorrectedValues.X	= SensorValues.X - sensorOffsetX;
 	CorrectedValues.Y	= SensorValues.Y - sensorOffsetY;
@@ -203,7 +169,7 @@ void DataReady()
 	{
 		
 		//read Values from sensor and remote control:
-		SensorValues = BNO055_get_measurement_data();
+		//---SensorValues = BNO055_get_measurement_data();
 
 		RemoteValues = rc_read_values();
 		if(GearStateOld == false && RemoteValues.Gear == true && RemoteValues.Throttle == 0)
@@ -229,14 +195,14 @@ void DataReady()
 		Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
 		Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
 		Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
-			
+		*/
 		/*
 		Motor_speeds[0] = RemoteValues.Throttle;
 		Motor_speeds[1] = RemoteValues.Throttle;
 		Motor_speeds[2] = RemoteValues.Throttle;
 		Motor_speeds[3] = RemoteValues.Throttle;
 		*/			
-			
+		/*
 		if(Motor_speeds[0] < 0)
 			Motor_speeds[0] = 0;
 		if(Motor_speeds[1] < 0)
@@ -358,7 +324,8 @@ void DataReady()
 			
 			SerialCOM_put_message(buffer, 0x03, 12);
 		}
-	}
+	}*/
+	//ErrorHandling_throw(BNO_MEASURE);
 }
 
 void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
@@ -390,7 +357,7 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 	buffer[13] = (NumValue & 0x00FF0000) >> 16;
 	buffer[14] = (NumValue & 0x0000FF00) >> 8;
 	buffer[15] =  NumValue & 0x000000FF;
-	SerialCOM_put_message(buffer, 0x04, 16);
+	ErrorHandling_throw(SerialCOM_put_message(buffer, 0x04, 16));
 }
 
 //Receive:
@@ -526,6 +493,7 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 		case 0x07:
 			if(message[0] == 'S')
 			{
+				/*---
 				if(BNO055_is_connected())
 				{
 					BNO055_stop_continuous_measurement();	//stop BNO measurement
@@ -537,6 +505,7 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 					SaveValuesToFlash(0x00);				//save Values
 				}
 				ErrorHandling_throw(SerialCOM_put_debug("Saved values to flash"));
+				*/
 			}else
 			{
 				ErrorHandling_throw(SerialCOM_put_error("SaveToFlash command has errors"));
@@ -552,11 +521,13 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 
 void config_BNO()
 {
+
 	ErrorHandling_throw(SerialCOM_put_debug("Start BNO Init"));
-	ErrorHandling_throw(BNO055_init_fusion_mode(false));
+	ErrorHandling_throw(BNO055_init(Do_not_calibrate));
 	ErrorHandling_throw(SerialCOM_put_debug("Calib OK"));
 	ErrorHandling_throw(BNO055_register_error_callback(BNO_Error));
 	ErrorHandling_throw(BNO055_register_data_ready_callback(DataReady));
+
 	//configure MAG
 	/*error_handler_in(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID1));
 	uint8_t config = 0x07	//30Hz data rate
@@ -597,7 +568,7 @@ int main(void)
 	PID_Init();
 	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd, -250, 250, 10));
 	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd, -250, 250, 10));
-	ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
+	ErrorHandling_throw(BNO_MEASURE);
 	ErrorHandling_print();
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
 	WDT_init(330); //about 1s

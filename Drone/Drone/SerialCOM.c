@@ -42,9 +42,9 @@ ErrorCode SerialCOM_register_call_back(SerialCOM_RECV_CALLBACK callback)
 
 ErrorCode SerialCOM_init()
 {
-	DEFAULT_ERROR_HANDLER(UART0_init(115200, 1), MODULE_SERIALCOM, FUNCTION_Init);
-	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(3), MODULE_SERIALCOM, FUNCTION_Init);
-	DEFAULT_ERROR_HANDLER(UART0_register_received_callback(message_received), MODULE_SERIALCOM, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(UART0_init(115200, 1), MODULE_SERIALCOM, FUNCTION_init);
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(3), MODULE_SERIALCOM, FUNCTION_init);
+	DEFAULT_ERROR_HANDLER(UART0_register_received_callback(message_received), MODULE_SERIALCOM, FUNCTION_init);
 	return SUCCESS;
 }
 
