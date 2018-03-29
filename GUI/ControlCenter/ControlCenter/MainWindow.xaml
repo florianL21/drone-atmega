@@ -24,7 +24,8 @@
                 <GroupBox Header="Serial Connection" HorizontalAlignment="Left" Height="86" Margin="10,10,0,0" VerticalAlignment="Top" Width="544">
                     <Grid HorizontalAlignment="Left" Height="76" Margin="0,0,-2,-12" VerticalAlignment="Top" Width="534">
                         <TextBox x:Name="StatusTextBox" HorizontalAlignment="Left" Height="48" Margin="149,11,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="375" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" TextChanged="StatusTextBox_TextChanged" IsEnabled="False"/>
-                        <Button x:Name="Connect_DisconnectButton" Content="Connect" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="134" Click="Connect_DisconnectButton_Click"/>
+                        <Button x:Name="Button_RefreshCOMs" Content="Refresh" HorizontalAlignment="Left" Margin="97,38,0,0" VerticalAlignment="Top" Width="47" Click="Button_RefreshCOMs_Click"/>
+                        <Button x:Name="Connect_DisconnectButton" Content="Connect" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="82" Click="Connect_DisconnectButton_Click"/>
                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="COM Port:" VerticalAlignment="Top"/>
                         <ComboBox x:Name="Combobox_PortNames" HorizontalAlignment="Left" Margin="69,10,0,0" VerticalAlignment="Top" Width="75"/>
                     </Grid>

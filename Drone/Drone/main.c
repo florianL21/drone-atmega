@@ -309,10 +309,10 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 	serializeFloat(&kp,&buffer[2]);
 
 	buffer[6] = 'I';
-	serializeFloat(&kp,&buffer[7]);
+	serializeFloat(&ki,&buffer[7]);
 	
 	buffer[11] = 'D';
-	serializeFloat(&kp,&buffer[12]);
+	serializeFloat(&kd,&buffer[12]);
 	
 	ErrorHandling_throw(SerialCOM_put_message(buffer, 0x04, 16));
 }

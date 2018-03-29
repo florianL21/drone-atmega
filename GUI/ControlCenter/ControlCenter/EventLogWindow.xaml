@@ -17,7 +17,7 @@
                 </DataTemplate>
             </ComboBox.ItemTemplate>
         </ComboBox>
-        <DataGrid ItemsSource="{Binding ErrorLogList, NotifyOnSourceUpdated=True}" Margin="10,10,10,35" IsReadOnly="True" AutoGenerateColumns="False" CanUserSortColumns="False">
+        <DataGrid Name="EventLogTable" ItemsSource="{Binding ErrorLogList, NotifyOnSourceUpdated=True}" Margin="10,10,10,35" IsReadOnly="True" AutoGenerateColumns="False" CanUserSortColumns="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Time" Binding="{Binding TimeInfo}"/>
                 <DataGridTextColumn Header="Type" Binding="{Binding LogTypeInfo}"/>

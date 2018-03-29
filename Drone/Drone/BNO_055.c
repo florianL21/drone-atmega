@@ -40,6 +40,7 @@ uint8_t bno055_continousMeasurementLength = 0;
 uint8_t* bno055_ReadResponseDestPtr = NULL;
 uint8_t bno055_RequestedReadLength = 0;
 bool bno055_isReady = true;
+bool bno055_is_calibrating = false;
 BNO055_DATA_READY_CALLBACK bno_data_ready_callback = NULL;
 BNO055_ERROR_CALLBACK bno_error_callback = NULL;
 
@@ -108,6 +109,11 @@ ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib)
 	return SUCCESS;
 }
 
+bool BNO055_IsCalibrating()
+{
+	return bno055_is_calibrating;
+}
+
 ErrorCode BNO055_register_data_ready_callback(BNO055_DATA_READY_CALLBACK callback)
 {
 	if(callback == NULL)
@@ -122,6 +128,13 @@ ErrorCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback)
 		return ERROR_GOT_NULL_POINTER | MODULE_BNO055 | FUNCTION_register_error_callback;
 	bno_error_callback = callback;
 	return SUCCESS;
+}
+
+void BNO055_calibrate()
+{
+	bno055_is_calibrating = true;
+	BNO055_read(BNO_REG_CALIB_STAT,1);
+	while (bno055_is_calibrating == true);
 }
 
 bool BNO055_IsReady()
@@ -147,26 +160,7 @@ BNO055_Data ConvertQuaToYPR(uint8_t* startPtr)
 	quat.y = y * scale;
 	quat.z = z * scale;
 	
-	
-	
-	
-	/* Create Rotation Matrix rm from Quaternion 
-	
-	rm[1][1] = quat.w*quat.w + quat.x*quat.x - quat.y*quat.y - quat.z*quat.z;
-	rm[1][2] = 2*quat.x*quat.y - 2*quat.w*quat.z;
-	rm[1][3] = 2*quat.x*quat.z + 2*quat.w*quat.y;
-	rm[2][1] = 2*quat.x*quat.y + 2*quat.w*quat.z;
-	rm[2][2] = quat.w*quat.w - quat.x*quat.x + quat.y*quat.y - quat.z*quat.z;
-	rm[2][3] = 2*quat.y*quat.z - 2*quat.w*quat.x;
-	rm[3][1] = 2*quat.x*quat.z - 2*quat.w*quat.y;
-	rm[3][2] = 2*quat.y*quat.z + 2*quat.w*quat.x;
-	rm[3][3] = quat.w*quat.w - quat.x*quat.x - quat.y*quat.y + quat.z*quat.z;
-	*/
-	
 	/* Create Roll Pitch Yaw Angles from Quaternions */
-	
-
-	
 	double q2sqr = quat.y * quat.y;
 	double t0 = -2.0 * (q2sqr + quat.z * quat.z) + 1.0;
 	double t1 = +2.0 * (quat.x * quat.y + quat.w * quat.z);
@@ -356,6 +350,24 @@ void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 			//trigger callback to process data
 			if(bno_data_ready_callback != NULL)
 				bno_data_ready_callback(startPtr, Length);
+			//For calibration: check if fully calibrated, if not start the next measurement
+			if(bno055_is_calibrating == true)
+			{
+				if(Length == 1)
+				{
+					
+					if(startPtr[0] != 0xFF)
+					{
+						
+					} else
+					{
+						bno055_is_calibrating = false;
+					}
+				}else if(bno_error_callback != NULL)
+				{
+					bno_error_callback(ERROR_INVALID_ARGUMENT | MODULE_BNO055 | FUNCTION_data_received_callback);
+				}
+			}
 			//this frees the data --> thus should be called after copying!!
 			ErrorCode Uart_return = USART0_set_receiver_length(2);
 			if(Uart_return != SUCCESS && bno_error_callback != NULL)

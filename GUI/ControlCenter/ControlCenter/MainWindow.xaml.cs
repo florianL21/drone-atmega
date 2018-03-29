@@ -49,20 +49,7 @@ namespace ControlCenter
             dispatcherTestData.Tick += new EventHandler(sendTestData);
             dispatcherTestData.Interval = new TimeSpan(0, 0, 0, 0, 100);
             */
-            
-
-            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption like '%(COM%'"))
-            {
-                var portnames = System.IO.Ports.SerialPort.GetPortNames();
-                var ports = searcher.Get().Cast<ManagementBaseObject>().ToList().Select(p => p["Caption"].ToString());
-
-                var portList = portnames.Select(n => n + " - " + ports.FirstOrDefault(s => s.Contains(n))).ToList();
-
-                foreach (string s in portList)
-                {
-                    Combobox_PortNames.Items.Add(s);
-                }
-            }
+            RefreshSerialCOMs();
 
             LogWindow = new EventLogWindow();
             LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "MainWindow", "Application started");
@@ -231,7 +218,7 @@ namespace ControlCenter
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesRoll.Text = Roll.ToString()));
                 if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
                 {
-                    SensorValueGraphWindow.addDataPoint(Roll, "X");
+                    SensorValueGraphWindow.addDataPoint(Roll, "Roll");
                 }
             }
             if (Pitch == -100000)
@@ -245,7 +232,7 @@ namespace ControlCenter
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesPitch.Text = Pitch.ToString()));
                 if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
                 {
-                    SensorValueGraphWindow.addDataPoint(Pitch, "Y");
+                    SensorValueGraphWindow.addDataPoint(Pitch, "Pitch");
                 }
             }
             if (Yaw == -100000)
@@ -259,7 +246,7 @@ namespace ControlCenter
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesYaw.Text = Yaw.ToString()));
                 if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
                 {
-                    SensorValueGraphWindow.addDataPoint(Yaw, "Z");
+                    SensorValueGraphWindow.addDataPoint(Yaw, "Yaw");
                 }
             }
         }
@@ -306,6 +293,27 @@ namespace ControlCenter
 
         /* Misc Functions:
          */
+
+        void RefreshSerialCOMs()
+        {
+            Combobox_PortNames.Items.Clear();
+            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption like '%(COM%'"))
+            {
+                var portnames = System.IO.Ports.SerialPort.GetPortNames();
+                var ports = searcher.Get().Cast<ManagementBaseObject>().ToList().Select(p => p["Caption"].ToString());
+
+                var portList = portnames.Select(n => n + " - " + ports.FirstOrDefault(s => s.Contains(n))).ToList();
+
+                foreach (string s in portList)
+                {
+                    Combobox_PortNames.Items.Add(s);
+                }
+            }
+            if(Combobox_PortNames.Items.Count > 0)
+            {
+                Combobox_PortNames.SelectedIndex = 0;
+            }
+        }
         public void RefreshPIDValues()
         {
             SerialPort.sendMessage_and_wait_for_ack(0x05, 'Y');
@@ -428,6 +436,11 @@ namespace ControlCenter
                     SetStatus("Please specify a port");
                 }
             }
+        }
+
+        private void Button_RefreshCOMs_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshSerialCOMs();
         }
 
         private void Button_RollPIDSave_Click(object sender, RoutedEventArgs e)
@@ -584,6 +597,7 @@ namespace ControlCenter
                 LogWindow.clearErrorLog();
             }
         }
+
 
         /*Checkboxes:
          */
@@ -749,5 +763,7 @@ namespace ControlCenter
             SerialPort.Close();
             SerialPort.Dispose();
         }
+
+        
     }
 }

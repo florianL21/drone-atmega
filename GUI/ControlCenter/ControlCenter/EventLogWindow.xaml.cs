@@ -137,17 +137,6 @@ namespace ControlCenter
             ERROR,
             EXCEPTION
         }
-        /*
-        public class ErrorLogEntry
-        {
-            public string TimeInfo { get; set; }
-            public LogTypes LogType { get; set; }
-            public string LogTypeInfo { get; set; }
-            public string OriginatingFunctionInfo { get; set; }
-            public string MessageInfo { get; set; }
-            public Brush LogEntryBackgoundColor { get; set; }
-        }
-        */
 
         public ObservableCollection<ErrorLogEntry> ErrorLogList
         {
@@ -162,7 +151,7 @@ namespace ControlCenter
             }
         }
 
-        public static readonly DependencyProperty ErrorLogListProperty = DependencyProperty.Register("CustomerList", typeof(ObservableCollection<ErrorLogEntry>), typeof(EventLogWindow), new PropertyMetadata(new ObservableCollection<ErrorLogEntry>()));
+        public static readonly DependencyProperty ErrorLogListProperty = DependencyProperty.Register("LogList", typeof(ObservableCollection<ErrorLogEntry>), typeof(EventLogWindow), new PropertyMetadata(new ObservableCollection<ErrorLogEntry>()));
 
         private bool isShuttingDown = false;
 
@@ -227,10 +216,11 @@ namespace ControlCenter
                     bgColor = Brushes.Yellow;
                     break;
             }
+            //ErrorLogEntry newEntry = new ErrorLogEntry { LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, LogTypeInfo = Type.ToString(), OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription };
             //LogEventTable.Items.Add(new ErrorLogEntry { LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription });
-            Dispatcher.BeginInvoke((Action)(() => 
-            ErrorLogList.Add(new ErrorLogEntry { LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, LogTypeInfo = Type.ToString(), OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription })
-            ));
+            //EventLogTable.RowBackground = bgColor;
+            //ErrorLogList.Add(newEntry);
+            Dispatcher.BeginInvoke((Action)(() => ErrorLogList.Add(new ErrorLogEntry { LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, LogTypeInfo = Type.ToString(), OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription })));
         }
 
         public void Shutdown()
@@ -250,7 +240,17 @@ namespace ControlCenter
 
         private void CheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            
+            ICollectionView cv = CollectionViewSource.GetDefaultView(EventLogTable.ItemsSource);
+            cv.Filter = o =>
+            {
+                ErrorLogEntry p = o as ErrorLogEntry;
+                for (int i = 0; i < FilterCheckboxList.Count; i++)
+                {
+                    if (p.LogType.ToString() == FilterCheckboxList.ElementAt(i).LineDescription.ToString())
+                        return FilterCheckboxList.ElementAt(i).IsSelected == true;
+                }
+                return false;
+            };
         }
     }
 }
