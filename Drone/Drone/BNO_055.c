@@ -45,6 +45,14 @@ BNO055_ERROR_CALLBACK bno_error_callback = NULL;
 
 void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length);
 
+typedef struct Quaternion
+{
+	double w;
+	double x;
+	double y;
+	double z;
+}Quaternion;
+
 ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib)
 {
 	DEFAULT_ERROR_HANDLER(USART0_init(115200,2), MODULE_BNO055, FUNCTION_init);
@@ -121,6 +129,60 @@ bool BNO055_IsReady()
 	return bno055_isReady;
 }
 
+BNO055_Data ConvertQuaToYPR(uint8_t* startPtr)
+{
+	BNO055_Data YPRData;
+	int16_t x, y, z, w;
+	x = y = z = w = 0;
+	Quaternion quat;
+	const double scale = (1.0 / (1<<14));
+	//double rm[3][3];
+	
+	w = ((uint16_t)startPtr[0]) | (((uint16_t)startPtr[1]) << 8);
+	x = ((uint16_t)startPtr[2]) | (((uint16_t)startPtr[3]) << 8);
+	y = ((uint16_t)startPtr[4]) | (((uint16_t)startPtr[5]) << 8);
+	z = ((uint16_t)startPtr[6]) | (((uint16_t)startPtr[7]) << 8);
+	quat.w = w * scale;
+	quat.x = x * scale;
+	quat.y = y * scale;
+	quat.z = z * scale;
+	
+	
+	
+	
+	/* Create Rotation Matrix rm from Quaternion 
+	
+	rm[1][1] = quat.w*quat.w + quat.x*quat.x - quat.y*quat.y - quat.z*quat.z;
+	rm[1][2] = 2*quat.x*quat.y - 2*quat.w*quat.z;
+	rm[1][3] = 2*quat.x*quat.z + 2*quat.w*quat.y;
+	rm[2][1] = 2*quat.x*quat.y + 2*quat.w*quat.z;
+	rm[2][2] = quat.w*quat.w - quat.x*quat.x + quat.y*quat.y - quat.z*quat.z;
+	rm[2][3] = 2*quat.y*quat.z - 2*quat.w*quat.x;
+	rm[3][1] = 2*quat.x*quat.z - 2*quat.w*quat.y;
+	rm[3][2] = 2*quat.y*quat.z + 2*quat.w*quat.x;
+	rm[3][3] = quat.w*quat.w - quat.x*quat.x - quat.y*quat.y + quat.z*quat.z;
+	*/
+	
+	/* Create Roll Pitch Yaw Angles from Quaternions */
+	
+
+	
+	double q2sqr = quat.y * quat.y;
+	double t0 = -2.0 * (q2sqr + quat.z * quat.z) + 1.0;
+	double t1 = +2.0 * (quat.x * quat.y + quat.w * quat.z);
+	double t2 = -2.0 * (quat.x * quat.z - quat.w * quat.y);
+	double t3 = +2.0 * (quat.y * quat.z + quat.w * quat.x);
+	double t4 = -2.0 * (quat.x * quat.x + q2sqr) + 1.0;
+
+	t2 = t2 > 1.0 ? 1.0 : t2;
+	t2 = t2 < -1.0 ? -1.0 : t2;
+
+	YPRData.Pitch = ((float) 57.2958 * asin(t2));
+	YPRData.Roll = ((float) 57.2958 * atan2(t3, t4));
+	YPRData.Yaw = ((float) 57.2958 * atan2(t1, t0));
+	return YPRData;
+}
+
 ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], uint8_t DataLength)
 {
 	bno055_wait_for_response = true;
@@ -129,7 +191,8 @@ ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], ui
 		return ERROR_GOT_NULL_POINTER | MODULE_BNO055 | FUNCTION_read_blocking;
 	if(DataLength == 0)
 		return ERROR_ARGUMENT_OUT_OF_RANGE | MODULE_BNO055 | FUNCTION_read_blocking;
-	bno055_RequestedReadLength = DataLength;
+	//RequestedReadLength is set in the read() function no need to set it here
+	//bno055_RequestedReadLength = DataLength;
 	bno055_ReadResponseDestPtr = dataToRead;
 	DEFAULT_ERROR_HANDLER(BNO055_read(RegisterAddress, DataLength), MODULE_BNO055, FUNCTION_read_blocking);
 	while (bno055_wait_for_response == true);	//TODO: Timeout error
@@ -188,6 +251,7 @@ ErrorCode BNO055_read(uint8_t RegisterAddress, uint8_t DataLength)
 	readBuffer[3] = DataLength;
 	//send the data
 	DEFAULT_ERROR_HANDLER(USART0_put_data(readBuffer, 4), MODULE_BNO055, FUNCTION_read);
+	bno055_RequestedReadLength = DataLength;
 	bno055_isReady = false;
 	return SUCCESS;
 }
@@ -264,6 +328,9 @@ void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 			if(Length != bno055_RequestedReadLength)
 			{
 				bno055_returnError = ERROR_LENGTH_MISSMATCH | MODULE_BNO055 | FUNCTION_data_received_callback;
+				recState = 0;
+				bno055_isReady = true;
+				bno055_wait_for_response = false;
 				return;
 			}
 			//copy data to its new dest.
@@ -273,7 +340,6 @@ void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 			if(Uart_return != SUCCESS)
 			{
 				bno055_returnError = ErrorHandling_set_top_level(Uart_return,MODULE_BNO055,FUNCTION_data_received_callback);
-				bno055_wait_for_response = false;
 			}
 			bno055_wait_for_response = false;
 			bno055_returnError = SUCCESS;
@@ -282,6 +348,9 @@ void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 			if(Length != bno055_RequestedReadLength && bno_error_callback != NULL)
 			{
 				bno_error_callback(ERROR_LENGTH_MISSMATCH | MODULE_BNO055 | FUNCTION_data_received_callback);
+				//make the BNO ready again and exit the function.
+				recState = 0;
+				bno055_isReady = true;
 				return;
 			}
 			//trigger callback to process data

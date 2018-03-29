@@ -32,9 +32,9 @@
                 <GroupBox x:Name="GroupBox_SensorValues" Header="Sensor Values" HorizontalAlignment="Left" Height="197" Margin="10,101,0,0" VerticalAlignment="Top" Width="273" IsEnabled="False">
                     <Grid Margin="4,-6,-2,-2">
                         <CheckBox x:Name="CheckBox_SensorValuesEnable" Content="Enable Logging" HorizontalAlignment="Left" Margin="78,10,0,0" VerticalAlignment="Top" Unchecked="CheckBox_SensorValuesEnable_Unchecked" Checked="CheckBox_SensorValuesEnable_Checked"/>
-                        <ProgressBar x:Name="ProgressBar_SensorValuesRoll" Height="30" Margin="49,34,10,0" VerticalAlignment="Top" Maximum="1000" Minimum="-1000"/>
-                        <ProgressBar x:Name="ProgressBar_SensorValuesPitch" HorizontalAlignment="Left" Height="30" Margin="49,68,0,0" VerticalAlignment="Top" Width="200" Maximum="1000" Minimum="-1000"/>
-                        <ProgressBar x:Name="ProgressBar_SensorValuesYaw" HorizontalAlignment="Left" Height="30" Margin="49,103,0,0" VerticalAlignment="Top" Width="200" Maximum="1000" Minimum="-1000"/>
+                        <ProgressBar x:Name="ProgressBar_SensorValuesRoll" Height="30" Margin="49,34,10,0" VerticalAlignment="Top" Maximum="180" Minimum="-180"/>
+                        <ProgressBar x:Name="ProgressBar_SensorValuesPitch" HorizontalAlignment="Left" Height="30" Margin="49,68,0,0" VerticalAlignment="Top" Width="200" Maximum="180" Minimum="-180"/>
+                        <ProgressBar x:Name="ProgressBar_SensorValuesYaw" HorizontalAlignment="Left" Height="30" Margin="49,103,0,0" VerticalAlignment="Top" Width="200" Maximum="180" Minimum="-180"/>
                         <TextBlock x:Name="TextBlock_SensorValuesRoll" HorizontalAlignment="Left" Margin="49,34,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
                         <TextBlock x:Name="TextBlock_SensorValuesPitch" HorizontalAlignment="Left" Margin="49,68,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
                         <TextBlock x:Name="TextBlock_SensorValuesYaw" HorizontalAlignment="Left" Margin="49,103,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>

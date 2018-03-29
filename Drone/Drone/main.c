@@ -30,18 +30,17 @@ PIOB->PIO_CODR = PIO_PB27;
 
 #define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W,8)
 
-BNO055_Data SensorValues;
 //Init variables for the drone programm
+BNO055_Data SensorValues;
 RemoteControlValues RemoteValues;
 int16_t Motor_speeds[4] = {0};
-float ValueMapFactor = 0.3;
-uint8_t maximumControlDegree = 10;
+bool bno_contionous_measurement_active = true;
+
 
 //PID Config:
 float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
-
 float PitchKp = 0.1,  PitchKi = 0.05,    PitchKd = 0.05;
 float RollKp = 0.1,  RollKi = 0.05,    RollKd = 0.05;
 float YawKp = 0.1,    YawKi = 0.1,    YawKd = 0.1;
@@ -50,8 +49,9 @@ pidData RollPid;
 pidData YawPid;
 
 //sonsor offsetValues:
-float sensorOffsetY = 39;
-float sensorOffsetX = -28;
+float sensorOffsetPitch = 0;
+float sensorOffsetRoll = 0;
+float sensorOffsetYaw  = 0;
 
 //Status variables for whitch values are printing:
 bool printSensorValues = 0;
@@ -61,6 +61,8 @@ uint8_t sendCount = 0;
 
 bool ArmMotors = false;
 
+
+void serializeFloat(float* Value, uint8_t* startptr);
 
 
 void BNO_Error(ErrorCode Error)
@@ -117,9 +119,9 @@ void SaveValuesToFlash(uint8_t type)
 	if(type == 0x00 || type == 0x09)
 		ErrorHandling_throw(FlashStorage_write_float(36, YawKd));
 	if(type == 0x00 || type == 0x0A)
-		ErrorHandling_throw(FlashStorage_write_float(40, sensorOffsetX));
+		ErrorHandling_throw(FlashStorage_write_float(40, sensorOffsetRoll));
 	if(type == 0x00 || type == 0x0B)
-		ErrorHandling_throw(FlashStorage_write_float(44, sensorOffsetY));
+		ErrorHandling_throw(FlashStorage_write_float(44, sensorOffsetPitch));
 }
 
 void LoadValuesFromFlash()
@@ -133,32 +135,28 @@ void LoadValuesFromFlash()
 	YawKp = FlashStorage_read_float(28);
 	YawKi = FlashStorage_read_float(32);
 	YawKd = FlashStorage_read_float(36);
-	sensorOffsetX = FlashStorage_read_float(40);
-	sensorOffsetY = FlashStorage_read_float(44);
+	sensorOffsetRoll = FlashStorage_read_float(40);
+	sensorOffsetPitch = FlashStorage_read_float(44);
 }
 
 void DataReady(uint8_t Data[], uint8_t Length)
 {
-	SerialCOM_print_debug("Data Length: %d", Length);
-	/*static uint16_t count1 = 0;
-	if(count1++ >= 100)
-	{
-		error_handler_in(SerialCOM_put_debug("S"));
-		count1 = 0;
-	}*/
+	SensorValues = ConvertQuaToYPR(Data);
 	
 	//BNO data calc:
-	/*
+
 	BNO055_Data CorrectedValues;
-	CorrectedValues.X	= SensorValues.X - sensorOffsetX;
-	CorrectedValues.Y	= SensorValues.Y - sensorOffsetY;
-	CorrectedValues.Z	= SensorValues.Z;
+	CorrectedValues.Roll	= SensorValues.Roll - sensorOffsetRoll;
+	CorrectedValues.Pitch	= SensorValues.Pitch - sensorOffsetPitch;
+	CorrectedValues.Yaw		= SensorValues.Yaw - sensorOffsetYaw;
 	
-	PID_PitchInput		= CorrectedValues.X;
-	PID_RollInput		= CorrectedValues.Y;
+	PID_PitchInput		= CorrectedValues.Roll;
+	PID_RollInput		= CorrectedValues.Pitch;
+	PID_YawInput		= CorrectedValues.Yaw;
 	
-	PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -50, 50);
-	PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -50, 50);
+	//a full range of stick movement represents a +- 10 degree tilt
+	PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -10, 10);
+	PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -10, 10);
 	
 	//PID Loop calc:
 	
@@ -195,14 +193,12 @@ void DataReady(uint8_t Data[], uint8_t Length)
 		Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
 		Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
 		Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
-		*/
 		/*
 		Motor_speeds[0] = RemoteValues.Throttle;
 		Motor_speeds[1] = RemoteValues.Throttle;
 		Motor_speeds[2] = RemoteValues.Throttle;
 		Motor_speeds[3] = RemoteValues.Throttle;
 		*/			
-		/*
 		if(Motor_speeds[0] < 0)
 			Motor_speeds[0] = 0;
 		if(Motor_speeds[1] < 0)
@@ -233,10 +229,8 @@ void DataReady(uint8_t Data[], uint8_t Length)
 	}
 	
 	//-----Data Logging:
-	
 	if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
 	{
-		
 		sendCount = 0;
 		if(printMotorValues == true)
 		{
@@ -278,85 +272,48 @@ void DataReady(uint8_t Data[], uint8_t Length)
 		
 		if(printSensorValues == true)
 		{
-			uint8_t buffer[12] = {0};
-			bool XIsNegative = CorrectedValues.X < 0;
-			bool YIsNegative = CorrectedValues.Y < 0;
-			bool ZIsNegative = CorrectedValues.Z < 0;
+			uint8_t buffer[15] = {0};
 			
-			buffer[0] = 'X';
-			buffer[1] = XIsNegative;
-			if(XIsNegative)
-			{
-				buffer[2] = (CorrectedValues.X*-1 & 0xFF00) >> 8;
-				buffer[3] = CorrectedValues.X*-1 & 0x00FF;
-			}
-			else
-			{
-				buffer[2] = (CorrectedValues.X & 0xFF00) >> 8;
-				buffer[3] = CorrectedValues.X & 0x00FF;
-			}
+			buffer[0] = 'R';
+			serializeFloat(&CorrectedValues.Roll, &buffer[1]);
 			
-			buffer[4] = 'Y';
-			buffer[5] = YIsNegative;
-			if(YIsNegative)
-			{
-				buffer[6] = (CorrectedValues.Y*-1 & 0xFF00) >> 8;
-				buffer[7] = CorrectedValues.Y*-1 & 0x00FF;
-			}
-			else
-			{
-				buffer[6] = (CorrectedValues.Y & 0xFF00) >> 8;
-				buffer[7] = CorrectedValues.Y & 0x00FF;
-			}
+			buffer[5] = 'P';
+			serializeFloat(&CorrectedValues.Pitch, &buffer[6]);
 			
-			buffer[8] = 'Z';
-			buffer[9] = ZIsNegative;
-			if(ZIsNegative)
-			{
-				buffer[10] = (CorrectedValues.Z*-1 & 0xFF00) >> 8;
-				buffer[11] = CorrectedValues.Z*-1 & 0x00FF;
-			}
-			else
-			{
-				buffer[10] = (CorrectedValues.Z& 0xFF00) >> 8;
-				buffer[11] = CorrectedValues.Z & 0x00FF;
-			}
+			buffer[10] = 'Y';
+			serializeFloat(&CorrectedValues.Yaw, &buffer[11]);
 			
-			SerialCOM_put_message(buffer, 0x03, 12);
+			ErrorHandling_throw(SerialCOM_put_message(buffer, 0x03, 15));
 		}
-	}*/
-	//ErrorHandling_throw(BNO_MEASURE);
+	}
+	if(bno_contionous_measurement_active)
+		ErrorHandling_throw(BNO_MEASURE);
+}
+
+void serializeFloat(float* Value, uint8_t* startptr)
+{
+	uint32_t NumValue;
+	memcpy(&NumValue, Value, 4);
+	startptr[0] = (NumValue & 0xFF000000) >> 24;
+	startptr[1] = (NumValue & 0x00FF0000) >> 16;
+	startptr[2] = (NumValue & 0x0000FF00) >> 8;
+	startptr[3]=  NumValue & 0x000000FF;
 }
 
 void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 {
 	uint8_t buffer[16] = {0};
-	uint32_t NumValue;
 	
 	buffer[0] = PIDIdentifier;
 	buffer[1] = 'P';
-	memcpy(&NumValue, &kp, 4);
-	/*char temp[20] = "";
-	sprintf(temp,"%.4f: %lu", kp, NumValue);
-	SerialCOM_put_debug(temp);*/
-	buffer[2] = (NumValue & 0xFF000000) >> 24;
-	buffer[3] = (NumValue & 0x00FF0000) >> 16;
-	buffer[4] = (NumValue & 0x0000FF00) >> 8;
-	buffer[5] =  NumValue & 0x000000FF;
-	
+	serializeFloat(&kp,&buffer[2]);
+
 	buffer[6] = 'I';
-	memcpy(&NumValue, &ki, 4);
-	buffer[7] = (NumValue & 0xFF000000) >> 24;
-	buffer[8] = (NumValue & 0x00FF0000) >> 16;
-	buffer[9] = (NumValue & 0x0000FF00) >> 8;
-	buffer[10]=  NumValue & 0x000000FF;
+	serializeFloat(&kp,&buffer[7]);
 	
 	buffer[11] = 'D';
-	memcpy(&NumValue, &kd, 4);
-	buffer[12] = (NumValue & 0xFF000000) >> 24;
-	buffer[13] = (NumValue & 0x00FF0000) >> 16;
-	buffer[14] = (NumValue & 0x0000FF00) >> 8;
-	buffer[15] =  NumValue & 0x000000FF;
+	serializeFloat(&kp,&buffer[12]);
+	
 	ErrorHandling_throw(SerialCOM_put_message(buffer, 0x04, 16));
 }
 
@@ -409,12 +366,14 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			switch(message[0])
 			{
 				case 'S':
-					sensorOffsetX = SensorValues.X;
-					sensorOffsetY = SensorValues.Y;
+					sensorOffsetRoll = SensorValues.Roll;
+					sensorOffsetPitch = SensorValues.Pitch;
+					sensorOffsetYaw = SensorValues.Yaw;
 					//SaveValuesToFlash(0x0A);
 					//SaveValuesToFlash(0x0B);
 					PID_Reset(&RollPid);
 					PID_Reset(&PitchPid);
+					PID_Reset(&YawPid);
 				break;
 				case 'R':
 					if(RemoteValues.Gear == false)
@@ -442,12 +401,6 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			{
 				ErrorHandling_throw(SerialCOM_put_error("SendPIDValues command has errors"));
 			}
-			//restart BNO measurement if necessary
-			/*if(BNO055_is_busy() == false)
-			{
-				ErrorHandling_throw(BNO055_start_measurement(true, true, BNO_MEASURE));
-				ErrorHandling_throw(SerialCOM_put_debug("Restart BNO"));
-			}*/
 		break;
 		case 0x06:
 			//check message integrity:
@@ -493,19 +446,12 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 		case 0x07:
 			if(message[0] == 'S')
 			{
-				/*---
-				if(BNO055_is_connected())
-				{
-					BNO055_stop_continuous_measurement();	//stop BNO measurement
-					while(BNO055_is_busy() == true);		//wait for a bit to make sure that all measurements are finished
-					SaveValuesToFlash(0x00);				//save Values
-					BNO055_start_measurement(true, true, BNO_MEASURE);	//resume Measurement
-				} else
-				{
-					SaveValuesToFlash(0x00);				//save Values
-				}
+				bno_contionous_measurement_active = false;
+				while(BNO055_IsReady() == false);		//wait for a bit to make sure that all measurements are finished
+				SaveValuesToFlash(0x00);				//save Values
+				bno_contionous_measurement_active = true;
+				ErrorHandling_throw(BNO_MEASURE);				//resume Measurement
 				ErrorHandling_throw(SerialCOM_put_debug("Saved values to flash"));
-				*/
 			}else
 			{
 				ErrorHandling_throw(SerialCOM_put_error("SaveToFlash command has errors"));

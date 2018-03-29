@@ -306,6 +306,39 @@ namespace ControlCenter
                     }
                     break;
                 case 0x03:
+                    float SensorRoll, SensorPitch, SensorYaw;
+                    if (receivedText[0] == 'R' && receivedText[5] == 'P' && receivedText[10] == 'Y')
+                    {
+                        byte[] array = new byte[4];
+                        array[0] = (byte)receivedText[4];
+                        array[1] = (byte)receivedText[3];
+                        array[2] = (byte)receivedText[2];
+                        array[3] = (byte)receivedText[1];
+                        SensorRoll = BitConverter.ToSingle(array, 0);
+                        array[0] = (byte)receivedText[9];
+                        array[1] = (byte)receivedText[8];
+                        array[2] = (byte)receivedText[7];
+                        array[3] = (byte)receivedText[6];
+                        SensorPitch = BitConverter.ToSingle(array, 0);
+                        array[0] = (byte)receivedText[14];
+                        array[1] = (byte)receivedText[13];
+                        array[2] = (byte)receivedText[12];
+                        array[3] = (byte)receivedText[11];
+                        SensorYaw = BitConverter.ToSingle(array, 0);
+
+                        myMainWindow.DisplaySensorData(SensorRoll, SensorPitch, SensorYaw);
+                    }
+                    else
+                    {
+                        myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.WARNING, "processData", "Sensor transmission has errors, discarding Data.");
+                    }
+
+
+
+
+
+
+
                     short X, Y, Z;
                     //check message integetry:
                     if (receivedText[0] == 'X' && receivedText[4] == 'Y' && receivedText[8] == 'Z')
@@ -325,7 +358,7 @@ namespace ControlCenter
                     }
                     else
                     {
-                        myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.WARNING, "processData", "Sensor transmission has errors, discarding Data.");
+                        
                     }
                     break;
                 case 0x04:
@@ -337,31 +370,31 @@ namespace ControlCenter
                         array[1] = (byte)receivedText[4];
                         array[2] = (byte)receivedText[3];
                         array[3] = (byte)receivedText[2];
-                        kp = BitConverter.ToSingle(array, 0);
+                        SensorRoll = BitConverter.ToSingle(array, 0);
                         array[0] = (byte)receivedText[10];
                         array[1] = (byte)receivedText[9];
                         array[2] = (byte)receivedText[8];
                         array[3] = (byte)receivedText[7];
-                        ki = BitConverter.ToSingle(array, 0);
+                        SensorPitch = BitConverter.ToSingle(array, 0);
                         array[0] = (byte)receivedText[15];
                         array[1] = (byte)receivedText[14];
                         array[2] = (byte)receivedText[13];
                         array[3] = (byte)receivedText[12];
-                        kd = BitConverter.ToSingle(array, 0);
+                        SensorYaw = BitConverter.ToSingle(array, 0);
 
                         switch (receivedText[0])
                         {
                             case 'R':
                                 myMainWindow.SetStatus("Received Roll Data.");
-                                myMainWindow.DisplayRollPIDData(kp, ki, kd);
+                                myMainWindow.DisplayRollPIDData(SensorRoll, SensorPitch, SensorYaw);
                                 break;
                             case 'P':
                                 myMainWindow.SetStatus("Received Pitch Data.");
-                                myMainWindow.DisplayPitchPIDData(kp, ki, kd);
+                                myMainWindow.DisplayPitchPIDData(SensorRoll, SensorPitch, SensorYaw);
                                 break;
                             case 'Y':
                                 myMainWindow.SetStatus("Received Yaw Data.");
-                                myMainWindow.DisplayYawPIDData(kp, ki, kd);
+                                myMainWindow.DisplayYawPIDData(SensorRoll, SensorPitch, SensorYaw);
                                 break;
                         }
                     }
