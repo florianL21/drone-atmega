@@ -221,6 +221,7 @@ namespace ControlCenter
             //EventLogTable.RowBackground = bgColor;
             //ErrorLogList.Add(newEntry);
             Dispatcher.BeginInvoke((Action)(() => ErrorLogList.Add(new ErrorLogEntry { LogEntryBackgoundColor = bgColor, TimeInfo = DateTime.Now.ToString("HH:mm:ttss"), LogType = Type, LogTypeInfo = Type.ToString(), OriginatingFunctionInfo = OriginatingFunction, MessageInfo = MessageDescription })));
+            
         }
 
         public void Shutdown()
@@ -251,6 +252,11 @@ namespace ControlCenter
                 }
                 return false;
             };
+        }
+
+        private void EventLogTable_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            //EventLogTable.ScrollIntoView(EventLogTable.Items.GetItemAt(EventLogTable.Items.Count - 1));
         }
     }
 }

@@ -70,7 +70,9 @@ void rc_init()
 	// Enables the Input Change Interrupt on the I/O line.
 	RCREADER_PIO_PORT->PIO_IER = RCREADER_ENABLED_PINS;
 	// Enable Interrupt Handling in NVIC
+	NVIC_SetPriority(RCREADER_PIO_IRQN, 1);
 	NVIC_EnableIRQ(RCREADER_PIO_IRQN);
+	
 	
 	//Initialize the measurement structure to zero
 	ReaderValues.error						= false;

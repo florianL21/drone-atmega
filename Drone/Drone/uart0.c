@@ -46,6 +46,7 @@ ErrorCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	UART->UART_IER = UART_IER_RXRDY;//| UART_IER_TXRDY;
 	//UART->UART_IDR = UART_IDR_ENDRX|UART_IDR_ENDTX|UART_IDR_TXBUFE|UART_IDR_TXEMPTY|UART_IDR_TXRDY;
 	// Enable UART Interrupt Handling in NVIC
+	NVIC_SetPriority(UART_IRQn, 2);
 	NVIC_EnableIRQ(UART_IRQn);
 	// Enable Peripheral DMA Controller Transmission
 	UART->UART_PTCR = UART_PTCR_TXTEN | UART_PTCR_RXTEN;

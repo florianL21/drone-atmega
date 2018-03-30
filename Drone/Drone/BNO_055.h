@@ -35,6 +35,8 @@ ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib);
 
 bool BNO055_IsReady();
 
+bool BNO055_IsCalibrating();
+
 //WARNING: dataToRead must be a preallocated array in the exact same length as DataLength!!!!
 ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], uint8_t DataLength);
 

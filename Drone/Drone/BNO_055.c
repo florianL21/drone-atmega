@@ -358,7 +358,7 @@ void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 					
 					if(startPtr[0] != 0xFF)
 					{
-						
+						BNO055_read(BNO_REG_CALIB_STAT,1);
 					} else
 					{
 						bno055_is_calibrating = false;

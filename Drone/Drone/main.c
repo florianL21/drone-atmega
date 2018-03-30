@@ -41,8 +41,8 @@ bool bno_contionous_measurement_active = true;
 float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
-float PitchKp = 0.1,  PitchKi = 0.05,    PitchKd = 0.05;
-float RollKp = 0.1,  RollKi = 0.05,    RollKd = 0.05;
+float PitchKp = 1.5,  PitchKi = 0.3,    PitchKd = 0.05;
+float RollKp = 1.5,  RollKi = 0.3,    RollKd = 0.05;
 float YawKp = 0.1,    YawKi = 0.1,    YawKd = 0.1;
 pidData PitchPid;
 pidData RollPid;
@@ -141,153 +141,161 @@ void LoadValuesFromFlash()
 
 void DataReady(uint8_t Data[], uint8_t Length)
 {
-	SensorValues = ConvertQuaToYPR(Data);
-	
-	//BNO data calc:
-
-	BNO055_Data CorrectedValues;
-	CorrectedValues.Roll	= SensorValues.Roll - sensorOffsetRoll;
-	CorrectedValues.Pitch	= SensorValues.Pitch - sensorOffsetPitch;
-	CorrectedValues.Yaw		= SensorValues.Yaw - sensorOffsetYaw;
-	
-	PID_PitchInput		= CorrectedValues.Roll;
-	PID_RollInput		= CorrectedValues.Pitch;
-	PID_YawInput		= CorrectedValues.Yaw;
-	
-	//a full range of stick movement represents a +- 10 degree tilt
-	PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -10, 10);
-	PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -10, 10);
-	
-	//PID Loop calc:
-	
-	static bool GearStateOld = false;
-	bool needComputePitch = PID_need_compute(&PitchPid);
-	bool needComputeRoll = PID_need_compute(&RollPid);
-	if(needComputeRoll == true || needComputePitch == true)
+	WDT_restart();
+	if(BNO055_IsCalibrating() == true)
 	{
 		
-		//read Values from sensor and remote control:
-		//---SensorValues = BNO055_get_measurement_data();
-
-		RemoteValues = rc_read_values();
-		if(GearStateOld == false && RemoteValues.Gear == true && RemoteValues.Throttle == 0)
-		{
-			GearStateOld = true;
-			ArmMotors = true;
-		} else if(RemoteValues.Gear == false)
-		{
-			ArmMotors = false;
-			GearStateOld = false;
-		}
-		
-		// Compute new PID output value
-		if (needComputePitch)
-			ErrorHandling_throw(PID_Compute(&PitchPid));
-		if (needComputeRoll)
-			ErrorHandling_throw(PID_Compute(&RollPid));
-		//float factor = 0.0005;
-		//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
-		//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
-			
-		Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
-		Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
-		Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
-		Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
-		/*
-		Motor_speeds[0] = RemoteValues.Throttle;
-		Motor_speeds[1] = RemoteValues.Throttle;
-		Motor_speeds[2] = RemoteValues.Throttle;
-		Motor_speeds[3] = RemoteValues.Throttle;
-		*/			
-		if(Motor_speeds[0] < 0)
-			Motor_speeds[0] = 0;
-		if(Motor_speeds[1] < 0)
-			Motor_speeds[1] = 0;
-		if(Motor_speeds[2] < 0)
-			Motor_speeds[2] = 0;
-		if(Motor_speeds[3] < 0)
-			Motor_speeds[3] = 0;
-		
-		if(RemoteValues.error != true)
-		{
-			if(ArmMotors == true)
-			{
-				ErrorHandling_throw(esc_set(1, Motor_speeds[0]));
-				ErrorHandling_throw(esc_set(2, Motor_speeds[1]));
-				ErrorHandling_throw(esc_set(3, Motor_speeds[2]));
-				ErrorHandling_throw(esc_set(4, Motor_speeds[3]));
-			}
-			else
-			{
-				ErrorHandling_throw(esc_set(1, 0));
-				ErrorHandling_throw(esc_set(2, 0));
-				ErrorHandling_throw(esc_set(3, 0));
-				ErrorHandling_throw(esc_set(4, 0));
-			}
-
-		}
 	}
-	
-	//-----Data Logging:
-	if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
+	else
 	{
-		sendCount = 0;
-		if(printMotorValues == true)
+		SensorValues = ConvertQuaToYPR(Data);
+	
+		//BNO data calc:
+
+		BNO055_Data CorrectedValues;
+		CorrectedValues.Roll	= SensorValues.Roll - sensorOffsetRoll;
+		CorrectedValues.Pitch	= -(SensorValues.Pitch - sensorOffsetPitch);
+		CorrectedValues.Yaw		= SensorValues.Yaw - sensorOffsetYaw;
+	
+		PID_PitchInput		= CorrectedValues.Pitch;
+		PID_RollInput		= CorrectedValues.Roll;
+		PID_YawInput		= CorrectedValues.Yaw;
+	
+		//a full range of stick movement represents a +- 20 degree tilt
+		PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -20, 20);
+		PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -20, 20);
+	
+		//PID Loop calc:
+	
+		static bool GearStateOld = false;
+		bool needComputePitch = PID_need_compute(&PitchPid);
+		bool needComputeRoll = PID_need_compute(&RollPid);
+		if(needComputeRoll == true || needComputePitch == true)
 		{
-			uint8_t buffer[12] = {0};
-			buffer[0] = '0';
-			buffer[1] = (Motor_speeds[0] & 0xFF00) >> 8;
-			buffer[2] = Motor_speeds[0] & 0x00FF;
-			buffer[3] = '1';
-			buffer[4] = (Motor_speeds[1] & 0xFF00) >> 8;
-			buffer[5] = Motor_speeds[1] & 0x00FF;
-			buffer[6] = '2';
-			buffer[7] = (Motor_speeds[2] & 0xFF00) >> 8;
-			buffer[8] = Motor_speeds[2] & 0x00FF;
-			buffer[9] = '3';
-			buffer[10] = (Motor_speeds[3] & 0xFF00) >> 8;
-			buffer[11] = Motor_speeds[3] & 0x00FF;
-			SerialCOM_put_message(buffer, 0x01, 12);
-		}
 		
-		if(printRCValues == true)
-		{
-			uint8_t buffer[14] = {0};
-			buffer[0] = 'T';
-			buffer[1] = (RemoteValues.Throttle & 0xFF00) >> 8;
-			buffer[2] = RemoteValues.Throttle & 0x00FF;
-			buffer[3] = 'R';
-			buffer[4] = (RemoteValues.Roll & 0xFF00) >> 8;
-			buffer[5] = RemoteValues.Roll & 0x00FF;
-			buffer[6] = 'P';
-			buffer[7] = (RemoteValues.Pitch & 0xFF00) >> 8;
-			buffer[8] = RemoteValues.Pitch & 0x00FF;
-			buffer[9] = 'Y';
-			buffer[10] = (RemoteValues.Yaw & 0xFF00) >> 8;
-			buffer[11] = RemoteValues.Yaw & 0x00FF;
-			buffer[12] = 'G';
-			buffer[13] = RemoteValues.Gear;
-			SerialCOM_put_message(buffer, 0x02, 14);
-		}
+			//read Values from sensor and remote control:
+			//---SensorValues = BNO055_get_measurement_data();
+
+			RemoteValues = rc_read_values();
+			if(GearStateOld == false && RemoteValues.Gear == true && RemoteValues.Throttle == 0)
+			{
+				GearStateOld = true;
+				ArmMotors = true;
+			} else if(RemoteValues.Gear == false)
+			{
+				ArmMotors = false;
+				GearStateOld = false;
+			}
 		
-		if(printSensorValues == true)
-		{
-			uint8_t buffer[15] = {0};
+			// Compute new PID output value
+			if (needComputePitch)
+				ErrorHandling_throw(PID_Compute(&PitchPid));
+			if (needComputeRoll)
+				ErrorHandling_throw(PID_Compute(&RollPid));
+			//float factor = 0.0005;
+			//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
+			//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
 			
-			buffer[0] = 'R';
-			serializeFloat(&CorrectedValues.Roll, &buffer[1]);
-			
-			buffer[5] = 'P';
-			serializeFloat(&CorrectedValues.Pitch, &buffer[6]);
-			
-			buffer[10] = 'Y';
-			serializeFloat(&CorrectedValues.Yaw, &buffer[11]);
-			
-			ErrorHandling_throw(SerialCOM_put_message(buffer, 0x03, 15));
+			Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
+			Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
+			Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
+			Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
+			/*
+			Motor_speeds[0] = RemoteValues.Throttle;
+			Motor_speeds[1] = RemoteValues.Throttle;
+			Motor_speeds[2] = RemoteValues.Throttle;
+			Motor_speeds[3] = RemoteValues.Throttle;
+			*/			
+			if(Motor_speeds[0] < 0)
+				Motor_speeds[0] = 0;
+			if(Motor_speeds[1] < 0)
+				Motor_speeds[1] = 0;
+			if(Motor_speeds[2] < 0)
+				Motor_speeds[2] = 0;
+			if(Motor_speeds[3] < 0)
+				Motor_speeds[3] = 0;
+		
+			if(RemoteValues.error != true)
+			{
+				if(ArmMotors == true)
+				{
+					ErrorHandling_throw(esc_set(1, Motor_speeds[0]));
+					ErrorHandling_throw(esc_set(2, Motor_speeds[1]));
+					ErrorHandling_throw(esc_set(3, Motor_speeds[2]));
+					ErrorHandling_throw(esc_set(4, Motor_speeds[3]));
+				}
+				else
+				{
+					ErrorHandling_throw(esc_set(1, 0));
+					ErrorHandling_throw(esc_set(2, 0));
+					ErrorHandling_throw(esc_set(3, 0));
+					ErrorHandling_throw(esc_set(4, 0));
+				}
+
+			}
 		}
+	
+		//-----Data Logging:
+		if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
+		{
+			sendCount = 0;
+			if(printMotorValues == true)
+			{
+				uint8_t buffer[12] = {0};
+				buffer[0] = '0';
+				buffer[1] = (Motor_speeds[0] & 0xFF00) >> 8;
+				buffer[2] = Motor_speeds[0] & 0x00FF;
+				buffer[3] = '1';
+				buffer[4] = (Motor_speeds[1] & 0xFF00) >> 8;
+				buffer[5] = Motor_speeds[1] & 0x00FF;
+				buffer[6] = '2';
+				buffer[7] = (Motor_speeds[2] & 0xFF00) >> 8;
+				buffer[8] = Motor_speeds[2] & 0x00FF;
+				buffer[9] = '3';
+				buffer[10] = (Motor_speeds[3] & 0xFF00) >> 8;
+				buffer[11] = Motor_speeds[3] & 0x00FF;
+				SerialCOM_put_message(buffer, 0x01, 12);
+			}
+		
+			if(printRCValues == true)
+			{
+				uint8_t buffer[14] = {0};
+				buffer[0] = 'T';
+				buffer[1] = (RemoteValues.Throttle & 0xFF00) >> 8;
+				buffer[2] = RemoteValues.Throttle & 0x00FF;
+				buffer[3] = 'R';
+				buffer[4] = (RemoteValues.Roll & 0xFF00) >> 8;
+				buffer[5] = RemoteValues.Roll & 0x00FF;
+				buffer[6] = 'P';
+				buffer[7] = (RemoteValues.Pitch & 0xFF00) >> 8;
+				buffer[8] = RemoteValues.Pitch & 0x00FF;
+				buffer[9] = 'Y';
+				buffer[10] = (RemoteValues.Yaw & 0xFF00) >> 8;
+				buffer[11] = RemoteValues.Yaw & 0x00FF;
+				buffer[12] = 'G';
+				buffer[13] = RemoteValues.Gear;
+				SerialCOM_put_message(buffer, 0x02, 14);
+			}
+		
+			if(printSensorValues == true)
+			{
+				uint8_t buffer[15] = {0};
+			
+				buffer[0] = 'R';
+				serializeFloat(&CorrectedValues.Roll, &buffer[1]);
+			
+				buffer[5] = 'P';
+				serializeFloat(&CorrectedValues.Pitch, &buffer[6]);
+			
+				buffer[10] = 'Y';
+				serializeFloat(&CorrectedValues.Yaw, &buffer[11]);
+			
+				ErrorHandling_throw(SerialCOM_put_message(buffer, 0x03, 15));
+			}
+		}
+		if(bno_contionous_measurement_active)
+			ErrorHandling_throw(BNO_MEASURE);
 	}
-	if(bno_contionous_measurement_active)
-		ErrorHandling_throw(BNO_MEASURE);
 }
 
 void serializeFloat(float* Value, uint8_t* startptr)
@@ -493,6 +501,7 @@ int main(void)
 	ErrorHandling_throw(FlashStorage_init());
 	
 	ErrorHandling_throw(SerialCOM_put_debug("MCU RESET!"));
+	WDT_restart();
 	if(FlashStorage_read(0))
 	{
 		ErrorHandling_throw(SerialCOM_print_debug("Running for the first time, populating Flash with default values"));
@@ -504,16 +513,18 @@ int main(void)
 		ErrorHandling_throw(SerialCOM_print_debug("loading values from flash"));		
 		LoadValuesFromFlash();
 	}
+	WDT_restart();
 	_Delay(8400000);
+	WDT_restart();
 	config_BNO();
-	
+	WDT_restart();
 	//rc control and esc init:
 	rc_init();
 	esc_init();
 	
 	PID_Init();
-	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd, -250, 250, 10));
-	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd, -250, 250, 10));
+	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd, -350, 350, 10));
+	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd, -350, 350, 10));
 	ErrorHandling_throw(BNO_MEASURE);
 	ErrorHandling_print();
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
