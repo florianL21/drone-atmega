@@ -134,6 +134,7 @@ ErrorCode queue_write(Queue *queue, uint8_t* data, uint16_t Length)
 	return SUCCESS;
 }
 
+/*
 ErrorCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue)
 {
 	if(size == 0)
@@ -178,4 +179,4 @@ uint16_t median_filter_get(MedianFilter* Filter)
 			lowest = Filter->FilterValues[i];
 	}
 	return (sum - (lowest+biggest))/(Filter->FilterSize-2);
-}
+}*/

@@ -28,7 +28,7 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "FlashStorage.h"
 #include "WDT.h"
 
-#define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W,8)
+#define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W, 14)
 
 //Init variables for the drone programm
 BNO055_Data SensorValues;
@@ -74,6 +74,7 @@ void BNO_Error(ErrorCode Error)
 	else																							//Some kind of other error
 	{
 		ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
+		ErrorHandling_throw(BNO_MEASURE);																//restart measurement
 	}
 }
 
@@ -141,10 +142,14 @@ void LoadValuesFromFlash()
 
 void DataReady(uint8_t Data[], uint8_t Length)
 {
-	WDT_restart();
-	if(BNO055_IsCalibrating() == true)
+	sendCount++;
+	if(SerialCOM_get_free_space() >= 1 && BNO055_IsCalibrating() == true)// && sendCount++ >= 10
 	{
-		
+		if(sendCount >= 10)
+		{
+			sendCount = 0;
+			ErrorHandling_throw(SerialCOM_put_message(Data, 0x07, 1));
+		}
 	}
 	else
 	{
@@ -236,7 +241,7 @@ void DataReady(uint8_t Data[], uint8_t Length)
 		}
 	
 		//-----Data Logging:
-		if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount++ >= 10)
+		if(SerialCOM_get_free_space() >= printMotorValues + printRCValues + printSensorValues && sendCount >= 10)
 		{
 			sendCount = 0;
 			if(printMotorValues == true)
@@ -254,7 +259,7 @@ void DataReady(uint8_t Data[], uint8_t Length)
 				buffer[9] = '3';
 				buffer[10] = (Motor_speeds[3] & 0xFF00) >> 8;
 				buffer[11] = Motor_speeds[3] & 0x00FF;
-				SerialCOM_put_message(buffer, 0x01, 12);
+				ErrorHandling_throw(SerialCOM_put_message(buffer, 0x01, 12));
 			}
 		
 			if(printRCValues == true)
@@ -274,7 +279,7 @@ void DataReady(uint8_t Data[], uint8_t Length)
 				buffer[11] = RemoteValues.Yaw & 0x00FF;
 				buffer[12] = 'G';
 				buffer[13] = RemoteValues.Gear;
-				SerialCOM_put_message(buffer, 0x02, 14);
+				ErrorHandling_throw(SerialCOM_put_message(buffer, 0x02, 14));
 			}
 		
 			if(printSensorValues == true)
@@ -344,6 +349,7 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 //0x04: PID Values
 //0x05: Reset GUI
 //0x06: ACK
+//0x07: calib status
 //0x64: Error Message
 void message_from_PC(uint8_t* message, uint8_t Type)
 {
@@ -477,10 +483,11 @@ void config_BNO()
 {
 
 	ErrorHandling_throw(SerialCOM_put_debug("Start BNO Init"));
-	ErrorHandling_throw(BNO055_init(Do_not_calibrate));
-	ErrorHandling_throw(SerialCOM_put_debug("Calib OK"));
 	ErrorHandling_throw(BNO055_register_error_callback(BNO_Error));
 	ErrorHandling_throw(BNO055_register_data_ready_callback(DataReady));
+	ErrorHandling_throw(BNO055_init(Force_calibration));
+	ErrorHandling_throw(SerialCOM_put_debug("Calib OK"));
+	
 
 	//configure MAG
 	/*error_handler_in(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID1));
@@ -515,6 +522,7 @@ int main(void)
 	}
 	WDT_restart();
 	_Delay(8400000);
+	WDT_init(330); //about 1s
 	WDT_restart();
 	config_BNO();
 	WDT_restart();
@@ -528,7 +536,7 @@ int main(void)
 	ErrorHandling_throw(BNO_MEASURE);
 	ErrorHandling_print();
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
-	WDT_init(330); //about 1s
+	
 	while(1)
 	{
 		WDT_restart();

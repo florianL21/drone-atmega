@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace ControlCenter
 {
     class SerialCom
@@ -184,8 +185,8 @@ namespace ControlCenter
 
         private bool IsTypeValid(int Type)
         {
-            //                                                       ACK  ERROR
-            int[] validTypes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x64 };
+            //                                                       ACK,  calib,ERROR
+            int[] validTypes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x64 };
             for (int i = 0; i < validTypes.Length; i++)
             {
                 if (Type == validTypes[i])
@@ -429,6 +430,9 @@ namespace ControlCenter
                             }
                         }
                     }
+                    break;
+                case 0x07:
+                    myMainWindow.DisplayCalibData(receivedText[0]);
                     break;
                 case 0x64:
                     myMainWindow.LogWindow.WriteToLog(EventLogWindow.LogTypes.ERROR, "ARDUINO", receivedText);

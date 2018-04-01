@@ -33,6 +33,10 @@
 #define BNO_INTERNAL_OSC		0x00
 #define FUSION_MODE_NDOF		0x0C
 
+//various settings
+#define NUM_OF_RETRYS_ON_ERROR	5
+#define DELAY_BEFORE_RETRY		1000000
+
 ErrorCode bno055_returnError = ERROR_GENERIC;
 bool bno055_wait_for_response = false;
 uint8_t bno055_continousMeasurementRegister = 0x00;
@@ -90,7 +94,14 @@ ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib)
 	switch (PerformCalib) //TODO: write a calib routine
 	{
 	case Force_calibration:
-		
+		//switch to fusion mode
+		Data = FUSION_MODE_NDOF;
+		DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_OPR_MODE, &Data, 1), MODULE_BNO055, FUNCTION_init);
+		//Calibrating
+		DEFAULT_ERROR_HANDLER(BNO055_calibrate(),MODULE_BNO055,FUNCTION_init);
+		//Switch to Config Mode
+		Data = BNO_CONFIG_MODE;
+		DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_OPR_MODE, &Data, 1), MODULE_BNO055, FUNCTION_init);
 	break;
 	case Do_not_calibrate:
 		
@@ -130,11 +141,16 @@ ErrorCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback)
 	return SUCCESS;
 }
 
-void BNO055_calibrate()
+ErrorCode BNO055_calibrate()
 {
 	bno055_is_calibrating = true;
-	BNO055_read(BNO_REG_CALIB_STAT,1);
-	while (bno055_is_calibrating == true);
+	DEFAULT_ERROR_HANDLER(BNO055_read(BNO_REG_CALIB_STAT, 1),MODULE_BNO055,FUNCTION_calibrate);
+	while (bno055_is_calibrating == true)
+	{
+		WDT_restart();
+		//ErrorHandling_throw(SerialCOM_put_debug("w"));
+	}
+	return SUCCESS;
 }
 
 bool BNO055_IsReady()
@@ -179,7 +195,8 @@ BNO055_Data ConvertQuaToYPR(uint8_t* startPtr)
 
 ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], uint8_t DataLength)
 {
-	bno055_wait_for_response = true;
+	static uint8_t numOfTries = 0;
+	//bno055_wait_for_response = true;
 	bno055_returnError = ERROR_GENERIC;
 	if(dataToRead == NULL)
 		return ERROR_GOT_NULL_POINTER | MODULE_BNO055 | FUNCTION_read_blocking;
@@ -187,21 +204,50 @@ ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], ui
 		return ERROR_ARGUMENT_OUT_OF_RANGE | MODULE_BNO055 | FUNCTION_read_blocking;
 	//RequestedReadLength is set in the read() function no need to set it here
 	//bno055_RequestedReadLength = DataLength;
-	bno055_ReadResponseDestPtr = dataToRead;
-	DEFAULT_ERROR_HANDLER(BNO055_read(RegisterAddress, DataLength), MODULE_BNO055, FUNCTION_read_blocking);
-	while (bno055_wait_for_response == true);	//TODO: Timeout error
-	DEFAULT_ERROR_HANDLER(bno055_returnError, MODULE_BNO055, FUNCTION_read_blocking); //check for errors from the callback
+	//bno055_ReadResponseDestPtr = dataToRead;
+	//DEFAULT_ERROR_HANDLER(BNO055_read(RegisterAddress, DataLength), MODULE_BNO055, FUNCTION_read_blocking);
+	//while (bno055_wait_for_response == true);	//TODO: Timeout error
+	while(bno055_returnError != SUCCESS && numOfTries <= NUM_OF_RETRYS_ON_ERROR)
+	{
+		if(numOfTries != 0)//if this run is a retry:
+		{
+			SerialCOM_put_error("read_retry");//TODO: proper error handling
+		}
+		bno055_wait_for_response = true;
+		bno055_returnError = ERROR_GENERIC;
+		bno055_ReadResponseDestPtr = dataToRead;
+		DEFAULT_ERROR_HANDLER(BNO055_read(RegisterAddress, DataLength), MODULE_BNO055, FUNCTION_read_blocking);
+		while (bno055_wait_for_response == true);	//TODO: Timeout error
+		numOfTries++;
+		_Delay(DELAY_BEFORE_RETRY);
+	}
+	numOfTries = 0;
 	//Data was copied in the callback.
-	return SUCCESS;
+	return ErrorHandling_set_top_level(bno055_returnError,MODULE_BNO055,FUNCTION_read_blocking);
 }
 
 ErrorCode BNO055_write_blocking(uint8_t RegisterAddress, uint8_t dataToWrite[], uint8_t DataLength)
 {
-	bno055_wait_for_response = true;
+	static uint8_t numOfTries = 0;
+	//bno055_wait_for_response = true;
 	bno055_returnError = ERROR_GENERIC;
-	DEFAULT_ERROR_HANDLER(BNO055_write(RegisterAddress, dataToWrite, DataLength), MODULE_BNO055, FUNCTION_write_blocking);
-	while (bno055_wait_for_response == true); //TODO: Timeout error
-	return bno055_returnError;
+	//DEFAULT_ERROR_HANDLER(BNO055_write(RegisterAddress, dataToWrite, DataLength), MODULE_BNO055, FUNCTION_write_blocking);
+	//while (bno055_wait_for_response == true); //TODO: Timeout error
+	while(bno055_returnError != SUCCESS && numOfTries <= NUM_OF_RETRYS_ON_ERROR)
+	{
+		if(numOfTries != 0)//if this run is a retry:
+		{
+			SerialCOM_put_error("write_retry");//TODO: proper error handling
+		}
+		bno055_wait_for_response = true;
+		bno055_returnError = ERROR_GENERIC;
+		DEFAULT_ERROR_HANDLER(BNO055_write(RegisterAddress, dataToWrite, DataLength), MODULE_BNO055, FUNCTION_write_blocking);
+		while (bno055_wait_for_response == true); //TODO: Timeout error
+		numOfTries++;
+		_Delay(DELAY_BEFORE_RETRY);
+	}
+	numOfTries = 0;
+	return ErrorHandling_set_top_level(bno055_returnError,MODULE_BNO055,FUNCTION_write_blocking);
 }
 
 ErrorCode BNO055_write(uint8_t RegisterAddress, uint8_t dataToWrite[], uint8_t DataLength)
@@ -355,10 +401,13 @@ void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 			{
 				if(Length == 1)
 				{
-					
-					if(startPtr[0] != 0xFF)
+					if((startPtr[0] & 0xC0) != 0xC0)
 					{
-						BNO055_read(BNO_REG_CALIB_STAT,1);
+						ErrorCode BNO_return = BNO055_read(BNO_REG_CALIB_STAT,1);
+						if(BNO_return != SUCCESS && bno_error_callback != NULL)
+						{
+							bno_error_callback(ErrorHandling_set_top_level(BNO_return,MODULE_BNO055,FUNCTION_data_received_callback));
+						}
 					} else
 					{
 						bno055_is_calibrating = false;
@@ -371,7 +420,7 @@ void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length)
 			//this frees the data --> thus should be called after copying!!
 			ErrorCode Uart_return = USART0_set_receiver_length(2);
 			if(Uart_return != SUCCESS && bno_error_callback != NULL)
-				bno_error_callback(ErrorHandling_set_top_level(Uart_return,MODULE_BNO055,FUNCTION_data_received_callback));
+				bno_error_callback(ErrorHandling_set_top_level(Uart_return, MODULE_BNO055, FUNCTION_data_received_callback));
 		}
 		recState = 0;
 	}

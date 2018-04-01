@@ -281,6 +281,15 @@ namespace ControlCenter
             Dispatcher.BeginInvoke((Action)(() => Label_Yaw_D_Arduino.Content = string.Format("{0:N4}", kd)));
         }
 
+        public void DisplayCalibData(int calibData)
+        {
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Mag.Value = (calibData & 0x03)));
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Acc.Value = (calibData & 0x0C) >> 2));
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Gyro.Value = (calibData & 0x30) >> 4));
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Sys.Value = (calibData & 0xC0) >> 6));
+            Dispatcher.BeginInvoke((Action)(() => TextBlock_LastCalibUptade.Text = "Last Updated: " + DateTime.Now.ToString("HH:mm:ttss")));
+        }
+        
         /* Logging Functions:
          */
 
@@ -288,7 +297,7 @@ namespace ControlCenter
 
         public void SetStatus(string statusText)
         {
-            Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "[" + DateTime.Now.ToString("h:mm:ttss") + "]: " + statusText));
+            Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "[" + DateTime.Now.ToString("HH:mm:ttss") + "]: " + statusText));
         }
 
         /* Misc Functions:

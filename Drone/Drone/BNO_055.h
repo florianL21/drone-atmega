@@ -14,6 +14,7 @@
 #include "ErrorHandling.h"
 #include "HelperFunctions.h"
 #include <math.h>
+#include "WDT.h"
 
 //TODO: Remove after testing done:
 #include "SerialCOM.h"
@@ -36,6 +37,8 @@ ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib);
 bool BNO055_IsReady();
 
 bool BNO055_IsCalibrating();
+
+ErrorCode BNO055_calibrate();
 
 //WARNING: dataToRead must be a preallocated array in the exact same length as DataLength!!!!
 ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], uint8_t DataLength);
