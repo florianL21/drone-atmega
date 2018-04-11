@@ -37,4 +37,5 @@ void rc_init();
  */
 RemoteControlValues rc_read_values();
 
+
 #endif /* RCREADER_H_ */

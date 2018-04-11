@@ -48,6 +48,7 @@ typedef struct MedianFilter MedianFilter;
  *		out_max	- upper bound of output range
  */
 int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max);
+float map_float(float x, float in_min, float in_max, float out_min, float out_max);
 
 void _Delay(uint32_t delayCycles);
 

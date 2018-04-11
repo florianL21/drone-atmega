@@ -49,7 +49,7 @@ ErrorCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	// Enable UART interrupt
 	USART0->US_IER = US_IER_ENDRX;
 	// Enable UART Interrupt Handling in NVIC
-	NVIC_SetPriority(USART0_IRQn, 2);
+	NVIC_SetPriority(USART0_IRQn, ISR_PRIORITY_USART0);
 	NVIC_EnableIRQ(USART0_IRQn);
 	// Enable Peripheral DMA Controller Transmission
 	USART0->US_PTCR = US_PTCR_TXTEN | US_PTCR_RXTEN;

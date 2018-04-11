@@ -73,7 +73,7 @@ void rc_init()
 	// Enables the Input Change Interrupt on the I/O line.
 	RCREADER_PIO_PORT->PIO_IER = RCREADER_ENABLED_PINS;
 	// Enable Interrupt Handling in NVIC
-	NVIC_SetPriority(RCREADER_PIO_IRQN, 1);
+	NVIC_SetPriority(RCREADER_PIO_IRQN, ISR_PRIORITY_RCREADER);
 	NVIC_EnableIRQ(RCREADER_PIO_IRQN);
 	
 	
@@ -94,7 +94,6 @@ void rc_init()
 	ReaderValues.Yaw.LastMeasuredValue			= 0;
 	ReaderValues.Yaw.LastState				= 0;
 	ReaderValues.Yaw.mStartCount			= 0;
-	
 	/*
 	median_filter_new(&rcreader_filter_throttle, FILTER_SIZE, 0);
 	median_filter_new(&rcreader_filter_role, FILTER_SIZE, 0);

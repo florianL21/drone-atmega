@@ -8,22 +8,6 @@
 
 #include "PID.h"
 
-uint32_t pid_calculateTicks(uint32_t start, uint32_t stop)
-{
-	if(stop > start) // no overflow
-		return (stop - start);
-	else if(stop < start) // overflow
-		return (stop + (4294967295 - start));
-	else if(stop == start) // perfect overflow
-		return 4294967295;
-	return 0;
-}
-
-uint32_t pid_getTicks()
-{
-	return TC0->TC_CHANNEL[0].TC_CV;
-}
-
 void PID_Init()
 {
 	// Enable TC0 (27 is TC0)
@@ -67,8 +51,8 @@ ErrorCode PID_Initialize(pidData* pidController, float *Input, float *Output, fl
 	else if(pidController->ITerm < pidController->outMin)
 		pidController->ITerm = pidController->outMin;
 	
-	pidController->SampleTime = SampleTime*(TICKS_PER_SECOND / 1000);
-	pidController->LastTime = pid_getTicks() - pidController->SampleTime;
+	pidController->SampleTime = SampleTime;
+	pidController->LastTime = GPT_GetPreciseTime() - pidController->SampleTime;
 	
 	DEFAULT_ERROR_HANDLER(PID_SetTunings(pidController, Kp, Ki, Kd), MODULE_PID, FUNCTION_Initialize);
 	
@@ -80,7 +64,7 @@ bool PID_need_compute(pidData* pidController)
 {
 	if(pidController == NULL)
 		return false;
-	return pid_calculateTicks(pidController->LastTime, pid_getTicks()) >= pidController->SampleTime;
+	return (GPT_GetPreciseTime() - pidController->LastTime) >= pidController->SampleTime;
 }
 
 ErrorCode PID_Compute(pidData* pidController)
@@ -114,7 +98,7 @@ ErrorCode PID_Compute(pidData* pidController)
 		
 		/*Remember some variables for next time*/
 		pidController->lastInput = input;
-		pidController->LastTime = pid_getTicks();
+		pidController->LastTime = GPT_GetPreciseTime();
 	}
 	return SUCCESS;
 }
@@ -132,7 +116,7 @@ ErrorCode PID_SetTunings(pidData* pidController, float Kp, float Ki, float Kd)
 	if (Kp < 0 || Ki < 0 || Kd < 0)
 		return MODULE_PID | FUNCTION_SetTunings | ERROR_ARGUMENT_OUT_OF_RANGE;
 	
-	float SampleTimeInSec = (float)(pidController->SampleTime) / ((float) TICKS_PER_SECOND);
+	float SampleTimeInSec = pidController->SampleTime * 100.0;
 	pidController->kp = Kp;
 	pidController->ki = Ki * SampleTimeInSec;
 	pidController->kd = Kd / SampleTimeInSec;
@@ -154,11 +138,11 @@ ErrorCode PID_SetSampleTime(pidData* pidController, float NewSampleTime)
 		return MODULE_PID | FUNCTION_SetSampleTime | ERROR_GOT_NULL_POINTER;
 	if (NewSampleTime > 0)
 	{
-		float ratio  = (float)(NewSampleTime* (TICKS_PER_SECOND / 1000)) / (float)(pidController->SampleTime);
+		float ratio  = NewSampleTime / pidController->SampleTime;
 		
 		pidController->ki *= ratio;
 		pidController->kd /= ratio;
-		pidController->SampleTime = (uint32_t)NewSampleTime * (TICKS_PER_SECOND / 1000);
+		pidController->SampleTime = NewSampleTime;
 		return SUCCESS;
 	}
 	return MODULE_PID | FUNCTION_SetSampleTime | ERROR_ARGUMENT_OUT_OF_RANGE;

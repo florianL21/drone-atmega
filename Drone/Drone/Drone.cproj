@@ -191,6 +191,12 @@
     <Compile Include="FlashStorage.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="GPT.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="GPT.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="HelperFunctions.c">
       <SubType>compile</SubType>
     </Compile>

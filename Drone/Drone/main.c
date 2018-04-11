@@ -27,6 +27,7 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "SerialCOM.h"
 #include "FlashStorage.h"
 #include "WDT.h"
+#include "GPT.h"
 
 #define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W, 14)
 
@@ -41,8 +42,8 @@ bool bno_contionous_measurement_active = true;
 float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
-float PitchKp = 1.5,  PitchKi = 0.3,    PitchKd = 0.05;
-float RollKp = 1.5,  RollKi = 0.3,    RollKd = 0.05;
+float PitchKp = 0.05,  PitchKi = 0.01,    PitchKd = 0;
+float RollKp = 0.05,  RollKi = 0.01,    RollKd = 0;
 float YawKp = 0.1,    YawKi = 0.1,    YawKd = 0.1;
 pidData PitchPid;
 pidData RollPid;
@@ -53,7 +54,7 @@ float sensorOffsetPitch = 0;
 float sensorOffsetRoll = 0;
 float sensorOffsetYaw  = 0;
 
-//Status variables for whitch values are printing:
+//Status variables for which values are printing:
 bool printSensorValues = 0;
 bool printRCValues = 0;
 bool printMotorValues = 0;
@@ -61,20 +62,25 @@ uint8_t sendCount = 0;
 
 bool ArmMotors = false;
 
+float timeOfLastMeasurement = 0;
+
 
 void serializeFloat(float* Value, uint8_t* startptr);
 
 
 void BNO_Error(ErrorCode Error)
 {
-	if((Error & 0xFF) == ERROR_BUS_OVER_RUN)		//BNO was not ready for operation, try again
+	if(BNO055_IsCalibrating() == false)
 	{
-		ErrorHandling_throw(BNO_MEASURE);
-	}
-	else																							//Some kind of other error
-	{
-		ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
-		ErrorHandling_throw(BNO_MEASURE);																//restart measurement
+		if((Error & 0xFF) == ERROR_BUS_OVER_RUN)		//BNO was not ready for operation, try again
+		{
+			ErrorHandling_throw(BNO_MEASURE);
+		}
+		else																							//Some kind of other error
+		{
+			ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
+			ErrorHandling_throw(BNO_MEASURE);																//restart measurement
+		}
 	}
 }
 
@@ -140,10 +146,38 @@ void LoadValuesFromFlash()
 	sensorOffsetPitch = FlashStorage_read_float(44);
 }
 
+float CorrectSensorOffsets(float UncorrectedValue, float ValueOffset, float min_max)
+{
+	float CorrectedValue = UncorrectedValue - ValueOffset;
+	if(CorrectedValue > min_max)
+	{
+		CorrectedValue = CorrectedValue - min_max*2;
+	}else if(CorrectedValue < -min_max)
+	{
+		CorrectedValue = CorrectedValue + min_max*2;
+	}
+	return CorrectedValue;
+}
+
+float _CorrectSensorOffsets(float UncorrectedValue, float ValueOffset, float min_max)
+{
+	float CorrectedValue = UncorrectedValue - ValueOffset;
+	/*if(CorrectedValue > min_max)
+	{
+		CorrectedValue = min_max - (CorrectedValue - min_max);
+	}else if(CorrectedValue < -min_max)
+	{
+		CorrectedValue = (-min_max) - (CorrectedValue + min_max);
+	}*/
+	return CorrectedValue;
+}
+
+float PosX = 0, PosY = 0;
 void DataReady(uint8_t Data[], uint8_t Length)
 {
+	WDT_restart();
 	sendCount++;
-	if(SerialCOM_get_free_space() >= 1 && BNO055_IsCalibrating() == true)// && sendCount++ >= 10
+	if(SerialCOM_get_free_space() >= 1 && BNO055_IsCalibrating() == true && Length == 1)// && sendCount++ >= 10
 	{
 		if(sendCount >= 10)
 		{
@@ -154,13 +188,38 @@ void DataReady(uint8_t Data[], uint8_t Length)
 	else
 	{
 		SensorValues = ConvertQuaToYPR(Data);
+		
+		
+		//Relative Position calculation:
+		/*
+		int16_t X, Y, Z;
+		if(Length >= 14)
+		{
+			//unit: 1m/s^2
+			X = ((uint16_t)Data[8])  | (((uint16_t)Data[9] ) << 8);
+			Y = ((uint16_t)Data[10]) | (((uint16_t)Data[11]) << 8);
+			Z = ((uint16_t)Data[12]) | (((uint16_t)Data[13]) << 8);
+		}
+		
+		float LinAccX = ((float)X);
+		float LinAccY = ((float)Y);
+		
+		float timePassed = (GPT_GetPreciseTime() - timeOfLastMeasurement) / 1000.0;
+		float timePassedPower2 = timePassed * timePassed;
+		
+		
+		PosX += timePassedPower2*LinAccX;
+		PosY += timePassedPower2*LinAccY;
+		*/
 	
-		//BNO data calc:
+		//BNO data calculation:
 
 		BNO055_Data CorrectedValues;
-		CorrectedValues.Roll	= SensorValues.Roll - sensorOffsetRoll;
-		CorrectedValues.Pitch	= -(SensorValues.Pitch - sensorOffsetPitch);
-		CorrectedValues.Yaw		= SensorValues.Yaw - sensorOffsetYaw;
+		CorrectedValues.Roll = CorrectSensorOffsets(SensorValues.Roll, sensorOffsetRoll, 180);
+		
+		CorrectedValues.Pitch = _CorrectSensorOffsets(SensorValues.Pitch, sensorOffsetPitch, 90);
+		CorrectedValues.Yaw = CorrectSensorOffsets(SensorValues.Yaw, sensorOffsetYaw, 180);
+			
 	
 		PID_PitchInput		= CorrectedValues.Pitch;
 		PID_RollInput		= CorrectedValues.Roll;
@@ -170,14 +229,14 @@ void DataReady(uint8_t Data[], uint8_t Length)
 		PID_PitchSetPoint	= map(RemoteValues.Pitch, 0, 2200, -20, 20);
 		PID_RollSetPoint	= map(RemoteValues.Roll, 0, 2200, -20, 20);
 	
-		//PID Loop calc:
+		//PID Loop calculation:
 	
 		static bool GearStateOld = false;
 		bool needComputePitch = PID_need_compute(&PitchPid);
 		bool needComputeRoll = PID_need_compute(&RollPid);
 		if(needComputeRoll == true || needComputePitch == true)
 		{
-		
+			
 			//read Values from sensor and remote control:
 			//---SensorValues = BNO055_get_measurement_data();
 
@@ -191,26 +250,32 @@ void DataReady(uint8_t Data[], uint8_t Length)
 				ArmMotors = false;
 				GearStateOld = false;
 			}
-		
+			
+			
+			
 			// Compute new PID output value
 			if (needComputePitch)
+			{
+				//adjust output values of the PID Controller:
+				PID_SetOutputLimits(&PitchPid, -RemoteValues.Throttle, ESC_MAX_ALLOWED_SPEED - RemoteValues.Throttle);
+				
+				//Calculate the controller:
 				ErrorHandling_throw(PID_Compute(&PitchPid));
+			}
 			if (needComputeRoll)
+			{
+				//adjust output values of the PID Controller:
+				PID_SetOutputLimits(&RollPid, -RemoteValues.Throttle, ESC_MAX_ALLOWED_SPEED - RemoteValues.Throttle);
+				
+				//Calculate the controller:
 				ErrorHandling_throw(PID_Compute(&RollPid));
-			//float factor = 0.0005;
-			//int16_t PitchAdjust = PID_PitchInput*2;//*(factor*RemoteValues.Throttle); 
-			//int16_t RollAdjust = PID_RollInput*2;//*(factor*RemoteValues.Throttle);
+			}
 			
 			Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
 			Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
 			Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
 			Motor_speeds[3] = RemoteValues.Throttle + PID_PitchOutput + PID_RollOutput;// + MappedYaw;
-			/*
-			Motor_speeds[0] = RemoteValues.Throttle;
-			Motor_speeds[1] = RemoteValues.Throttle;
-			Motor_speeds[2] = RemoteValues.Throttle;
-			Motor_speeds[3] = RemoteValues.Throttle;
-			*/			
+		
 			if(Motor_speeds[0] < 0)
 				Motor_speeds[0] = 0;
 			if(Motor_speeds[1] < 0)
@@ -287,10 +352,10 @@ void DataReady(uint8_t Data[], uint8_t Length)
 				uint8_t buffer[15] = {0};
 			
 				buffer[0] = 'R';
-				serializeFloat(&CorrectedValues.Roll, &buffer[1]);
+				serializeFloat(&PID_RollOutput, &buffer[1]);
 			
 				buffer[5] = 'P';
-				serializeFloat(&CorrectedValues.Pitch, &buffer[6]);
+				serializeFloat(&PID_PitchOutput, &buffer[6]);
 			
 				buffer[10] = 'Y';
 				serializeFloat(&CorrectedValues.Yaw, &buffer[11]);
@@ -301,6 +366,7 @@ void DataReady(uint8_t Data[], uint8_t Length)
 		if(bno_contionous_measurement_active)
 			ErrorHandling_throw(BNO_MEASURE);
 	}
+	timeOfLastMeasurement = GPT_GetPreciseTime();
 }
 
 void serializeFloat(float* Value, uint8_t* startptr)
@@ -383,8 +449,6 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 					sensorOffsetRoll = SensorValues.Roll;
 					sensorOffsetPitch = SensorValues.Pitch;
 					sensorOffsetYaw = SensorValues.Yaw;
-					//SaveValuesToFlash(0x0A);
-					//SaveValuesToFlash(0x0B);
 					PID_Reset(&RollPid);
 					PID_Reset(&PitchPid);
 					PID_Reset(&YawPid);
@@ -481,21 +545,11 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 
 void config_BNO()
 {
-
 	ErrorHandling_throw(SerialCOM_put_debug("Start BNO Init"));
 	ErrorHandling_throw(BNO055_register_error_callback(BNO_Error));
 	ErrorHandling_throw(BNO055_register_data_ready_callback(DataReady));
-	ErrorHandling_throw(BNO055_init(Force_calibration));
+	ErrorHandling_throw(BNO055_init(Do_not_calibrate));
 	ErrorHandling_throw(SerialCOM_put_debug("Calib OK"));
-	
-
-	//configure MAG
-	/*error_handler_in(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 0, BNO_PAGE_ID1));
-	uint8_t config = 0x07	//30Hz data rate
-					|0x18	//High accuracy data
-					|0x00;	//power mode normal
-	error_handler_in(BNOCOM_write_and_wait_for_response_1byte(BNO_REG1_MAG_CONFIG, 1, config));
-	error_handler_in(BNOCOM_write_and_wait_for_response_1byte(BNO_REG_PAGE_ID, 1, BNO_PAGE_ID0));*/
 }
 
 int main(void)
@@ -522,7 +576,7 @@ int main(void)
 	}
 	WDT_restart();
 	_Delay(8400000);
-	WDT_init(330); //about 1s
+	WDT_init(660); //about 1s
 	WDT_restart();
 	config_BNO();
 	WDT_restart();
@@ -537,6 +591,7 @@ int main(void)
 	ErrorHandling_print();
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
 	
+	GPT_Init();
 	while(1)
 	{
 		WDT_restart();
