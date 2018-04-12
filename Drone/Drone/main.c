@@ -42,8 +42,8 @@ bool bno_contionous_measurement_active = true;
 float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
-float PitchKp = 0.05,  PitchKi = 0.01,    PitchKd = 0;
-float RollKp = 0.05,  RollKi = 0.01,    RollKd = 0;
+float PitchKp = 1.6,  PitchKi = 0.001,    PitchKd = 0.001;
+float RollKp = 1.6,  RollKi = 0.001,    RollKd = 0.001;
 float YawKp = 0.1,    YawKi = 0.1,    YawKd = 0.1;
 pidData PitchPid;
 pidData RollPid;
@@ -215,7 +215,7 @@ void DataReady(uint8_t Data[], uint8_t Length)
 		//BNO data calculation:
 
 		BNO055_Data CorrectedValues;
-		CorrectedValues.Roll = CorrectSensorOffsets(SensorValues.Roll, sensorOffsetRoll, 180);
+		CorrectedValues.Roll = -CorrectSensorOffsets(SensorValues.Roll, sensorOffsetRoll, 180);
 		
 		CorrectedValues.Pitch = _CorrectSensorOffsets(SensorValues.Pitch, sensorOffsetPitch, 90);
 		CorrectedValues.Yaw = CorrectSensorOffsets(SensorValues.Yaw, sensorOffsetYaw, 180);
@@ -257,7 +257,7 @@ void DataReady(uint8_t Data[], uint8_t Length)
 			if (needComputePitch)
 			{
 				//adjust output values of the PID Controller:
-				PID_SetOutputLimits(&PitchPid, -RemoteValues.Throttle, ESC_MAX_ALLOWED_SPEED - RemoteValues.Throttle);
+				PID_SetOutputLimits(&PitchPid, -RemoteValues.Throttle, RemoteValues.Throttle);
 				
 				//Calculate the controller:
 				ErrorHandling_throw(PID_Compute(&PitchPid));
@@ -265,12 +265,13 @@ void DataReady(uint8_t Data[], uint8_t Length)
 			if (needComputeRoll)
 			{
 				//adjust output values of the PID Controller:
-				PID_SetOutputLimits(&RollPid, -RemoteValues.Throttle, ESC_MAX_ALLOWED_SPEED - RemoteValues.Throttle);
+				PID_SetOutputLimits(&RollPid, -RemoteValues.Throttle, RemoteValues.Throttle);
 				
 				//Calculate the controller:
 				ErrorHandling_throw(PID_Compute(&RollPid));
 			}
 			
+			//calculate motor speeds:
 			Motor_speeds[0] = RemoteValues.Throttle - PID_PitchOutput - PID_RollOutput;// - MappedYaw;
 			Motor_speeds[1] = RemoteValues.Throttle - PID_PitchOutput + PID_RollOutput;// + MappedYaw;
 			Motor_speeds[2] = RemoteValues.Throttle + PID_PitchOutput - PID_RollOutput;// - MappedYaw;
@@ -284,25 +285,6 @@ void DataReady(uint8_t Data[], uint8_t Length)
 				Motor_speeds[2] = 0;
 			if(Motor_speeds[3] < 0)
 				Motor_speeds[3] = 0;
-		
-			if(RemoteValues.error != true)
-			{
-				if(ArmMotors == true)
-				{
-					ErrorHandling_throw(esc_set(1, Motor_speeds[0]));
-					ErrorHandling_throw(esc_set(2, Motor_speeds[1]));
-					ErrorHandling_throw(esc_set(3, Motor_speeds[2]));
-					ErrorHandling_throw(esc_set(4, Motor_speeds[3]));
-				}
-				else
-				{
-					ErrorHandling_throw(esc_set(1, 0));
-					ErrorHandling_throw(esc_set(2, 0));
-					ErrorHandling_throw(esc_set(3, 0));
-					ErrorHandling_throw(esc_set(4, 0));
-				}
-
-			}
 		}
 	
 		//-----Data Logging:
@@ -352,10 +334,10 @@ void DataReady(uint8_t Data[], uint8_t Length)
 				uint8_t buffer[15] = {0};
 			
 				buffer[0] = 'R';
-				serializeFloat(&PID_RollOutput, &buffer[1]);
+				serializeFloat(&CorrectedValues.Roll, &buffer[1]);
 			
 				buffer[5] = 'P';
-				serializeFloat(&PID_PitchOutput, &buffer[6]);
+				serializeFloat(&CorrectedValues.Pitch, &buffer[6]);
 			
 				buffer[10] = 'Y';
 				serializeFloat(&CorrectedValues.Yaw, &buffer[11]);
@@ -365,6 +347,21 @@ void DataReady(uint8_t Data[], uint8_t Length)
 		}
 		if(bno_contionous_measurement_active)
 			ErrorHandling_throw(BNO_MEASURE);
+	}
+	
+	if(ArmMotors == true && RemoteValues.error != true)
+	{
+		ErrorHandling_throw(esc_set(1, Motor_speeds[0]));
+		ErrorHandling_throw(esc_set(2, Motor_speeds[1]));
+		ErrorHandling_throw(esc_set(3, Motor_speeds[2]));
+		ErrorHandling_throw(esc_set(4, Motor_speeds[3]));
+	}
+	else
+	{
+		ErrorHandling_throw(esc_set(1, 0));
+		ErrorHandling_throw(esc_set(2, 0));
+		ErrorHandling_throw(esc_set(3, 0));
+		ErrorHandling_throw(esc_set(4, 0));
 	}
 	timeOfLastMeasurement = GPT_GetPreciseTime();
 }

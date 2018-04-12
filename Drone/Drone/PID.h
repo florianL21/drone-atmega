@@ -16,11 +16,6 @@
 #include "ErrorHandling.h"
 #include "GPT.h"
 
-//SampleTime in ms
-
-
-#define NUM_PID_CONTROLLERS 5
-
 #define DIRECT 0
 #define REVERSE 1
 
