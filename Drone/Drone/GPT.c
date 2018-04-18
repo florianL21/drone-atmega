@@ -11,6 +11,7 @@ typedef struct {
 	uint16_t timeCount;
 	GPT_TIMER_CALLBACK callback;
 	bool IsEnabled;
+	bool IsEmpty;
 }GPT_Timer;
 
 GPT_Timer allTimers[MAX_NUM_GPT];
@@ -53,6 +54,7 @@ void GPT_Init()
 	NullTimer.callback = NULL;
 	NullTimer.timeInMs = 0;
 	NullTimer.IsEnabled = false;
+	NullTimer.IsEmpty = true;
 	NullTimer.timeCount = 0;
 	for (Timer i = 0; i < MAX_NUM_GPT; i++)
 	{
@@ -62,19 +64,25 @@ void GPT_Init()
 
 Timer GPT_TimerSetup(uint16_t timeInMs, GPT_TIMER_CALLBACK callback, bool enabled)
 {
-	if(timeInMs != 0 && callback != NULL)
+	bool hasSpace = false;
+	uint8_t emptyTimerIndex = 0;
+	for (Timer i = 0; i < MAX_NUM_GPT; i++)
 	{
-		for (Timer i = 0; i < MAX_NUM_GPT; i++)
+		if(allTimers[i].IsEmpty == true)
 		{
-			if(allTimers[i].callback == NULL && allTimers[i].timeInMs == 0)
-			{
-				allTimers[i].callback = callback;
-				allTimers[i].timeInMs = timeInMs;
-				allTimers[i].IsEnabled = enabled;
-				numTimers++;
-				return i+1;
-			}
+			hasSpace = true;
+			emptyTimerIndex = i;
+			break;
 		}
+	}
+	if(hasSpace == true)
+	{
+		allTimers[emptyTimerIndex].IsEmpty = false;
+		allTimers[emptyTimerIndex].callback = callback;
+		allTimers[emptyTimerIndex].timeInMs = timeInMs;
+		allTimers[emptyTimerIndex].IsEnabled = enabled;
+		numTimers++;
+		return emptyTimerIndex + 1;
 	}
 	return 0;
 }
@@ -99,9 +107,7 @@ void GPT_TimerDelete(Timer TimerNum)
 {
 	if(TimerNum != 0)
 	{
-		allTimers[TimerNum - 1].timeInMs = 0;
-		allTimers[TimerNum - 1].callback = NULL;
-		allTimers[TimerNum - 1].timeCount = 0;
+		allTimers[TimerNum - 1].IsEmpty = true;
 		numTimers--;
 	}
 }
@@ -131,11 +137,18 @@ void TC1_Handler()
 	uint8_t numCheckedTimers = 0;
 	for (Timer i = 0; i < MAX_NUM_GPT; i++)
 	{
-		if(allTimers[i].callback != NULL && allTimers[i].timeInMs != 0)
+		if(allTimers[i].IsEmpty == false)
 		{
-			numCheckedTimers++;
-
-			if(numCheckedTimers >= numTimers)
+			if(allTimers[i].callback != NULL && allTimers[i].IsEnabled == true)
+			{
+				if(++allTimers[i].timeCount >= allTimers[i].timeInMs)
+				{
+					allTimers[i].timeCount = 0;
+					allTimers[i].callback();
+				}
+			}
+			
+			if(++numCheckedTimers >= numTimers)
 				return;
 		}
 	}

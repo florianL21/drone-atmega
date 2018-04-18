@@ -24,6 +24,9 @@ struct BNO055_Data
 	float Roll;
 	float Pitch;
 	float Yaw;
+	int16_t AccX;
+	int16_t AccY;
+	int16_t AccZ;
 };
 typedef struct BNO055_Data BNO055_Data;
 

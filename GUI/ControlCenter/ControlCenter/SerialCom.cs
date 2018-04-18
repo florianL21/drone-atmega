@@ -363,7 +363,6 @@ namespace ControlCenter
                     }
                     break;
                 case 0x04:
-                    float kp, ki, kd;
                     if (receivedText[1] == 'P' && receivedText[6] == 'I' && receivedText[11] == 'D')
                     {
                         byte[] array = new byte[4];
