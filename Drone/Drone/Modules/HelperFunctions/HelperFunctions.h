@@ -12,8 +12,8 @@
 #include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
-#include "config.h"
-#include "ErrorHandling.h"
+#include "../../config.h"
+#include "../ErrorHandling/ErrorHandling.h"
 
 struct queue_node {
 	struct queue_node *next;
@@ -30,11 +30,13 @@ struct Queue {
 };
 typedef struct Queue Queue;
 
+/*
 struct MedianFilter {
 	uint16_t* FilterValues;
 	uint8_t FilterSize;
 };
 typedef struct MedianFilter MedianFilter;
+*/
 
 /*
  *	Maps the value x from an input range to an output range
@@ -46,8 +48,7 @@ typedef struct MedianFilter MedianFilter;
  *		out_max	- upper bound of output range
  */
 int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max);
-
-void _Delay(uint32_t delayCycles);
+float map_float(float x, float in_min, float in_max, float out_min, float out_max);
 
 
 /*
@@ -99,10 +100,12 @@ uint32_t queue_get_item_count(Queue* queue);
 ErrorCode queue_delete(Queue* queue);
 
 
-
+/*
 ErrorCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue);
 ErrorCode median_filter_add(MedianFilter* Filter, uint16_t newValue);
 uint16_t median_filter_get(MedianFilter* Filter);
+
+*/
 
 
 #endif /* HELPERFUNCTIONS_H_ */

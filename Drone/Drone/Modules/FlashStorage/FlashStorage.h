@@ -14,12 +14,12 @@ Rewritten and modified by Sebastian Nilsson
 #ifndef FLASHSTORAGE_H
 #define FLASHSTORAGE_H
 
-#include "ASF_files/flash_efc.h"
-#include "ASF_files/efc.h"
+#include "../../ASF_files/flash_efc.h"
+#include "../../ASF_files/efc.h"
 #include <stdbool.h>
-#include "config.h"
+#include "../../config.h"
 #include <string.h>
-#include "ErrorHandling.h"
+#include "../ErrorHandling/ErrorHandling.h"
 
 // 1Kb of data
 #define DATA_LENGTH   ((IFLASH1_PAGE_SIZE/sizeof(uint8_t))*4)

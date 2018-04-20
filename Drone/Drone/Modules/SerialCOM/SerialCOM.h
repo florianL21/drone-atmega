@@ -12,9 +12,9 @@
 #include "sam.h"
 #include <stdlib.h>
 #include <stdarg.h>
-#include "config.h"
-#include "uart0.h"
-#include "ErrorHandling.h"
+#include "../../config.h"
+#include "../UART/uart0.h"
+#include "../ErrorHandling/ErrorHandling.h"
 
 /*
 * Transmission Types:
@@ -35,6 +35,7 @@ ErrorCode SerialCOM_put_message(uint8_t message[], uint8_t Type, uint8_t Length)
 ErrorCode SerialCOM_put_Command(char CommandChar, uint8_t Type);
 ErrorCode SerialCOM_print_error(const char *fmt, ...);
 ErrorCode SerialCOM_print_debug(const char *fmt, ...);
+void SerialCOM_serializeFloat(float* Value, uint8_t* startptr);
 
 
 #endif /* SERIALCOM_H_ */

@@ -20,11 +20,12 @@
             <StackPanel></StackPanel>
         </DockPanel>
         <Grid Background="#FFE5E5E5" Margin="0,20,0,-3" HorizontalAlignment="Left" Width="595">
-            <Grid HorizontalAlignment="Left" Width="585" Margin="0,0,0,77">
+            <Grid HorizontalAlignment="Left" Width="585" Margin="0,0,0,10">
                 <GroupBox Header="Serial Connection" HorizontalAlignment="Left" Height="86" Margin="10,10,0,0" VerticalAlignment="Top" Width="544">
                     <Grid HorizontalAlignment="Left" Height="76" Margin="0,0,-2,-12" VerticalAlignment="Top" Width="534">
                         <TextBox x:Name="StatusTextBox" HorizontalAlignment="Left" Height="48" Margin="149,11,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="375" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" TextChanged="StatusTextBox_TextChanged" IsEnabled="False"/>
-                        <Button x:Name="Connect_DisconnectButton" Content="Connect" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="134" Click="Connect_DisconnectButton_Click"/>
+                        <Button x:Name="Button_RefreshCOMs" Content="Refresh" HorizontalAlignment="Left" Margin="97,38,0,0" VerticalAlignment="Top" Width="47" Click="Button_RefreshCOMs_Click"/>
+                        <Button x:Name="Connect_DisconnectButton" Content="Connect" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="82" Click="Connect_DisconnectButton_Click"/>
                         <TextBlock HorizontalAlignment="Left" Margin="10,11,0,0" TextWrapping="Wrap" Text="COM Port:" VerticalAlignment="Top"/>
                         <ComboBox x:Name="Combobox_PortNames" HorizontalAlignment="Left" Margin="69,10,0,0" VerticalAlignment="Top" Width="75"/>
                     </Grid>
@@ -32,9 +33,9 @@
                 <GroupBox x:Name="GroupBox_SensorValues" Header="Sensor Values" HorizontalAlignment="Left" Height="197" Margin="10,101,0,0" VerticalAlignment="Top" Width="273" IsEnabled="False">
                     <Grid Margin="4,-6,-2,-2">
                         <CheckBox x:Name="CheckBox_SensorValuesEnable" Content="Enable Logging" HorizontalAlignment="Left" Margin="78,10,0,0" VerticalAlignment="Top" Unchecked="CheckBox_SensorValuesEnable_Unchecked" Checked="CheckBox_SensorValuesEnable_Checked"/>
-                        <ProgressBar x:Name="ProgressBar_SensorValuesRoll" Height="30" Margin="49,34,10,0" VerticalAlignment="Top" Maximum="1000" Minimum="-1000"/>
-                        <ProgressBar x:Name="ProgressBar_SensorValuesPitch" HorizontalAlignment="Left" Height="30" Margin="49,68,0,0" VerticalAlignment="Top" Width="200" Maximum="1000" Minimum="-1000"/>
-                        <ProgressBar x:Name="ProgressBar_SensorValuesYaw" HorizontalAlignment="Left" Height="30" Margin="49,103,0,0" VerticalAlignment="Top" Width="200" Maximum="1000" Minimum="-1000"/>
+                        <ProgressBar x:Name="ProgressBar_SensorValuesRoll" Height="30" Margin="49,34,10,0" VerticalAlignment="Top" Maximum="180" Minimum="-180"/>
+                        <ProgressBar x:Name="ProgressBar_SensorValuesPitch" HorizontalAlignment="Left" Height="30" Margin="49,68,0,0" VerticalAlignment="Top" Width="200" Maximum="180" Minimum="-180"/>
+                        <ProgressBar x:Name="ProgressBar_SensorValuesYaw" HorizontalAlignment="Left" Height="30" Margin="49,103,0,0" VerticalAlignment="Top" Width="200" Maximum="180" Minimum="-180"/>
                         <TextBlock x:Name="TextBlock_SensorValuesRoll" HorizontalAlignment="Left" Margin="49,34,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
                         <TextBlock x:Name="TextBlock_SensorValuesPitch" HorizontalAlignment="Left" Margin="49,68,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
                         <TextBlock x:Name="TextBlock_SensorValuesYaw" HorizontalAlignment="Left" Margin="49,103,0,0" TextWrapping="Wrap" Text="N/A" VerticalAlignment="Top" Width="200" Height="30" TextAlignment="Center"/>
@@ -138,6 +139,19 @@
                 <Button x:Name="Button_StartMotorValuesGraph" Content="Start Motor Values Graph" HorizontalAlignment="Left" Margin="288,364,0,0" VerticalAlignment="Top" Width="273" Height="28" Click="Button_StartMotorValuesGraph_Click" IsEnabled="False"/>
                 <Button x:Name="Button_ResetArduino" Content="Reset Arduino" HorizontalAlignment="Left" Margin="288,397,0,0" VerticalAlignment="Top" Width="118" Click="Button_ResetArduino_Click" IsEnabled="False"/>
                 <CheckBox x:Name="CheckBox_ClearLogOnReset" Content="Clear error log on reset" HorizontalAlignment="Left" Margin="411,400,0,0" VerticalAlignment="Top" IsEnabled="False" IsChecked="True"/>
+                <GroupBox Header="Sensor Calibration" HorizontalAlignment="Left" Height="137" Margin="288,420,0,0" VerticalAlignment="Top" Width="287">
+                    <Grid HorizontalAlignment="Left" Height="118" Margin="0,9,-2,-12" VerticalAlignment="Top" Width="277">
+                        <TextBlock x:Name="TextBlock_LastCalibUptade" HorizontalAlignment="Left" Margin="10,0,0,0" TextWrapping="Wrap" Text="Last Updated:" VerticalAlignment="Top"/>
+                        <ProgressBar x:Name="PrograssBar_Gyro" HorizontalAlignment="Left" Height="17" Margin="43,21,0,0" VerticalAlignment="Top" Width="224" Maximum="3" LargeChange="0"/>
+                        <TextBlock HorizontalAlignment="Left" Margin="10,21,0,0" TextWrapping="Wrap" Text="Gyro:" VerticalAlignment="Top"/>
+                        <ProgressBar x:Name="PrograssBar_Acc" HorizontalAlignment="Left" Height="17" Margin="43,42,0,0" VerticalAlignment="Top" Width="224" Maximum="3" LargeChange="0"/>
+                        <TextBlock HorizontalAlignment="Left" Margin="10,42,0,0" TextWrapping="Wrap" Text="Acc:" VerticalAlignment="Top"/>
+                        <ProgressBar x:Name="PrograssBar_Mag" HorizontalAlignment="Left" Height="17" Margin="43,63,0,0" VerticalAlignment="Top" Width="224" Maximum="3" LargeChange="0"/>
+                        <TextBlock HorizontalAlignment="Left" Margin="10,63,0,0" TextWrapping="Wrap" Text="Mag:" VerticalAlignment="Top"/>
+                        <ProgressBar x:Name="PrograssBar_Sys" HorizontalAlignment="Left" Height="17" Margin="43,84,0,0" VerticalAlignment="Top" Width="224" Maximum="3" LargeChange="0"/>
+                        <TextBlock HorizontalAlignment="Left" Margin="10,84,0,0" TextWrapping="Wrap" Text="Sys:" VerticalAlignment="Top"/>
+                    </Grid>
+                </GroupBox>
             </Grid>
         </Grid>
     </Grid>

@@ -12,12 +12,9 @@ int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t 
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-void _Delay(uint32_t delayCycles)
+float map_float(float x, float in_min, float in_max, float out_min, float out_max)
 {
-	for(uint32_t i = 0; i < delayCycles; i++)
-	{
-		asm("nop");
-	}
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 bool queue_has_space(Queue *queue)
@@ -134,6 +131,7 @@ ErrorCode queue_write(Queue *queue, uint8_t* data, uint16_t Length)
 	return SUCCESS;
 }
 
+/*
 ErrorCode median_filter_new(MedianFilter* newFilter, uint8_t size, uint16_t initValue)
 {
 	if(size == 0)
@@ -178,4 +176,4 @@ uint16_t median_filter_get(MedianFilter* Filter)
 			lowest = Filter->FilterValues[i];
 	}
 	return (sum - (lowest+biggest))/(Filter->FilterSize-2);
-}
+}*/

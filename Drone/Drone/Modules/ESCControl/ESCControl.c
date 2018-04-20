@@ -42,9 +42,9 @@ ErrorCode esc_set(uint8_t MotorNum, int16_t speed)
 	if(MotorNum < 4 || MotorNum > 7)
 		return MODULE_ESCCONTROL | FUNCTION_set | ERROR_ARGUMENT_OUT_OF_RANGE;
 	
-	if(speed > (ESC_MaxLimit-ESC_PWM_MIN_DUTY_CYCLE))
+	if(speed > (ESC_MAX_LIMIT-ESC_PWM_MIN_DUTY_CYCLE))
 	{
-		speed = (ESC_MaxLimit-ESC_PWM_MIN_DUTY_CYCLE);
+		speed = (ESC_MAX_LIMIT-ESC_PWM_MIN_DUTY_CYCLE);
 	}
 	if(speed <= 0)
 	{

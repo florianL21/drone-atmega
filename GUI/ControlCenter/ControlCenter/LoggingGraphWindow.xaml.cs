@@ -18,12 +18,18 @@ using System.Collections.ObjectModel;
 using Microsoft.Win32;
 using System.IO;
 using System.Globalization;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Threading;
 
 namespace ControlCenter
 {
     /// <summary>
     /// Interaktionslogik für LoggingGraph.xaml
     /// </summary>
+    /// 
+
+
     public partial class LoggingGraph : Window
     {
         public int test = 0;
