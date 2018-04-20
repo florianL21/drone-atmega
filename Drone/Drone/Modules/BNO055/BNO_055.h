@@ -10,14 +10,15 @@
 #define BNO_055_H_
 
 #include "BNO055_reg_table.h"
-#include "USART0.h"
-#include "ErrorHandling.h"
-#include "HelperFunctions.h"
+#include "../UART/USART0.h"
+#include "../ErrorHandling/ErrorHandling.h"
+#include "../HelperFunctions/HelperFunctions.h"
 #include <math.h>
-#include "WDT.h"
+#include "../WDT/WDT.h"
+#include "../GPT/GPT.h"
 
 //TODO: Remove after testing done:
-#include "SerialCOM.h"
+#include "../SerialCOM/SerialCOM.h"
 
 struct BNO055_Data
 {
@@ -34,6 +35,7 @@ typedef enum {Calibrate_if_necessary, Do_not_calibrate, Force_calibration}BNO_IN
 	
 typedef void (*BNO055_DATA_READY_CALLBACK)(uint8_t Data[], uint8_t Length);
 typedef void (*BNO055_ERROR_CALLBACK)(ErrorCode Transmit_error_code);
+
 
 ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib);
 

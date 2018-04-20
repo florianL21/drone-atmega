@@ -10,7 +10,7 @@
 #define ERRORHANDLING_H_
 
 #include "sam.h"
-#include "config.h"
+#include "../../config.h"
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
@@ -131,7 +131,9 @@ typedef enum {
 	ERROR_MIN_LENGTH					= 0x17,
 	ERROR_RECEIVE_CHARACTER_TIMEOUT		= 0x18,
 	ERROR_STATUS_BYTE_UNKNOWN			= 0x19,
-	ERROR_REGMAP_WRITE_DISABLED			= 0x1A		//<--
+	ERROR_REGMAP_WRITE_DISABLED			= 0x1A,
+	ERROR_BNO_READ_TIMEOUT				= 0x1B,		//<--
+	ERROR_BNO_WRITE_TIMEOUT				= 0x1C
 }Errors;
 
 typedef uint64_t ErrorCode;

@@ -12,9 +12,9 @@
 #include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
-#include "config.h"
-#include "ErrorHandling.h"
-#include "GPT.h"
+#include "../../config.h"
+#include "../ErrorHandling/ErrorHandling.h"
+#include "../GPT/GPT.h"
 
 #define DIRECT 0
 #define REVERSE 1

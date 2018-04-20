@@ -17,14 +17,6 @@ float map_float(float x, float in_min, float in_max, float out_min, float out_ma
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-void _Delay(uint32_t delayCycles)
-{
-	for(uint32_t i = 0; i < delayCycles; i++)
-	{
-		asm("nop");
-	}
-}
-
 bool queue_has_space(Queue *queue)
 {
 	if (queue == NULL) {

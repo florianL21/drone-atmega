@@ -12,6 +12,7 @@ typedef struct {
 	GPT_TIMER_CALLBACK callback;
 	bool IsEnabled;
 	bool IsEmpty;
+	bool IsDelay;
 }GPT_Timer;
 
 GPT_Timer allTimers[MAX_NUM_GPT];
@@ -122,10 +123,24 @@ float GPT_GetPreciseTime()
 	return runtime_in_ms + (((float)TC0->TC_CHANNEL[1].TC_CV) * (1.0/2625.0));
 }
 
-void GPT_Delay(uint16_t Delay_in_ms)
+void GPT_Delay(float Delay_in_ms)
 {
-	uint32_t startTime = GPT_GetTime();
-	while(startTime - GPT_GetTime() < Delay_in_ms);
+	float startTime = GPT_GetPreciseTime();
+	while(GPT_GetPreciseTime() - startTime < Delay_in_ms);
+}
+
+Timer GPT_DelayedCall(GPT_TIMER_CALLBACK callback, uint16_t Delay_in_ms)
+{
+	Timer timerNum = 0;
+	timerNum = GPT_TimerSetup(Delay_in_ms, callback, true);
+	if(timerNum != 0)
+		allTimers[timerNum - 1].IsDelay = true;
+	return timerNum;
+}
+
+void GPT_CancelDelayedCall(Timer TimerNum)
+{
+	GPT_TimerDelete(TimerNum);
 }
 
 void TC1_Handler()
@@ -145,6 +160,8 @@ void TC1_Handler()
 				{
 					allTimers[i].timeCount = 0;
 					allTimers[i].callback();
+					if(allTimers[i].IsDelay == true)
+						GPT_TimerDelete(i);
 				}
 			}
 			

@@ -10,7 +10,7 @@
 #define GPT_H_
 
 #include "sam.h"
-#include "config.h"
+#include "../../config.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -43,7 +43,7 @@ float GPT_GetPreciseTime();
 	Parameters:
 		- Delay_in_ms: Time to wait in ms
 */
-void GPT_Delay(uint16_t Delay_in_ms);
+void GPT_Delay(float Delay_in_ms);
 
 
 /*
@@ -79,6 +79,24 @@ void GPT_TimerSetEnabled(Timer TimerNum, bool enabled);
 		- timerNum: number of the timer which should be changed
 */
 void GPT_TimerDelete(Timer TimerNum);
+
+/*
+	This sets up a timer to call a function after a specified amount of time in ms. 
+	After the time has passed, the function will be executed and the timer is automatically deleted
+	Parameters:
+		- callback: function to be called after time has passed
+		- Delay_in_ms: delay in ms
+	returns:
+		Number of the used timer. This is 0 if there was no space for a new timer.
+*/
+Timer GPT_DelayedCall(GPT_TIMER_CALLBACK callback, uint16_t Delay_in_ms);
+
+/*
+	This cancels a delayed function call before it can be executed
+	Parameters:
+		- TimerNum: the number of the timer which handles the delayed call
+*/
+void GPT_CancelDelayedCall(Timer TimerNum);
 
 
 

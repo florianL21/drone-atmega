@@ -20,14 +20,14 @@ PIOB->PIO_CODR = PIO_PB27;
 
 
 #include "sam.h"
-#include "BNO_055.h"
-#include "ESCControl.h"
-#include "RCReader.h"
-#include "PID.h"
-#include "SerialCOM.h"
-#include "FlashStorage.h"
-#include "WDT.h"
-#include "GPT.h"
+#include "Modules/BNO055/BNO_055.h"
+#include "Modules/ESCControl/ESCControl.h"
+#include "Modules/RCReader/RCReader.h"
+#include "Modules/PID/PID.h"
+#include "Modules/SerialCOM/SerialCOM.h"
+#include "Modules/FlashStorage/FlashStorage.h"
+#include "Modules/WDT/WDT.h"
+#include "Modules/GPT/GPT.h"
 
 #define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W, 14)
 #define SERIALCOM_SEND_INTERVALL_MS 20
@@ -41,14 +41,15 @@ int16_t Motor_speeds[4] = {0};
 bool bno_contionous_measurement_active = true;
 bool ArmMotors = false;
 float timeOfLastMeasurement = 0;
+Timer Wdt_resetTimer;
 
 
 //PID Config:
 float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
 float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
 float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
-float PitchKp = 0,  PitchKi = 0,    PitchKd = 0;
-float RollKp = 0,  RollKi = 0,    RollKd = 0;
+float PitchKp = 1.3,  PitchKi = 0.2,    PitchKd = 1.2;
+float RollKp = 0.8,  RollKi = 0.1,    RollKd = 0.7;
 float YawKp = 0,    YawKi = 0,    YawKd = 0;
 pidData PitchPid;
 pidData RollPid;
@@ -69,15 +70,8 @@ void BNO_Error(ErrorCode Error)
 {
 	if(BNO055_IsCalibrating() == false)
 	{
-		if((Error & 0xFF) == ERROR_BUS_OVER_RUN)		//BNO was not ready for operation, try again
-		{
-			ErrorHandling_throw(BNO_MEASURE);
-		}
-		else																							//Some kind of other error
-		{
-			ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
-			ErrorHandling_throw(BNO_MEASURE);																//restart measurement
-		}
+		ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
+		ErrorHandling_throw(BNO_MEASURE);																//restart measurement
 	}
 }
 
@@ -156,7 +150,7 @@ float CorrectSensorOffsets(float UncorrectedValue, float ValueOffset, float min_
 	return CorrectedValue;
 }
 
-float _CorrectSensorOffsets(float UncorrectedValue, float ValueOffset, float min_max)
+float _CorrectSensorOffsets(float UncorrectedValue, float ValueOffset, float min_max)//TODO
 {
 	float CorrectedValue = UncorrectedValue - ValueOffset;
 	/*if(CorrectedValue > min_max)
@@ -334,7 +328,7 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				break;
 				case 'R':
 					if(ArmMotors == false)
-						while(1);
+						GPT_TimerSetEnabled(Wdt_resetTimer, false);
 					else
 						ErrorHandling_throw(SerialCOM_put_error("Motors have to be disarmt before reset!"));
 				break;
@@ -443,7 +437,7 @@ void Init()
 	SystemInit();
 
 	GPT_Init();//Init the gpt timer for using system time functions and delays
-	GPT_TimerSetup(300, WDT_restart, true);	//call wdt reset every 300 ms
+	Wdt_resetTimer = GPT_TimerSetup(300, WDT_restart, true);	//call wdt reset every 300 ms
 	
 	//rc control and esc init:
 	rc_init();
@@ -471,18 +465,27 @@ void Init()
 	WDT_init(660); //about 1s
 	
 	//BNO Init:
-	ErrorHandling_throw(SerialCOM_put_debug("Start BNO Init"));
+	ErrorCode BNOErrors = ERROR_GENERIC;
+	ErrorHandling_throw(SerialCOM_put_debug("Start BNO Init:"));
 	ErrorHandling_throw(BNO055_register_error_callback(BNO_Error));
 	ErrorHandling_throw(BNO055_register_data_ready_callback(DataReady));
-	ErrorHandling_throw(BNO055_init(Do_not_calibrate));
-	ErrorHandling_throw(SerialCOM_put_debug("Calib OK"));
+	BNOErrors = BNO055_init(Do_not_calibrate);
+	ErrorHandling_throw(BNOErrors);
+	ErrorHandling_print();	//Print out all occured errors
+	if(BNOErrors == SUCCESS)
+		ErrorHandling_throw(SerialCOM_put_debug("BNO Init Succsessful"));
+	else
+		ErrorHandling_throw(SerialCOM_put_debug("BNO Init has errors, starting without IMU"));
 	
 	//Config PID controllers:
 	PID_Init();
 	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd, -1000, 1000, 4));
 	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd, -1000, 1000, 4));
 	//ErrorHandling_throw(PID_Initialize(&YawPid, &PID_YawInput, &PID_YawOutput, &PID_YawSetPoint, YawKp, YawKi, YawKd, -360, 360, 4));
-	ErrorHandling_throw(BNO_MEASURE);
+	
+	bno_contionous_measurement_active = true;
+	if(BNOErrors == SUCCESS)	//Start the first BNO055 measurement if init was sucessful
+		ErrorHandling_throw(BNO_MEASURE);
 	ErrorHandling_print();	//Print out all occured errors
 	ErrorHandling_throw(SerialCOM_put_debug("Init Done!"));
 }
@@ -508,16 +511,16 @@ void Dont()
 	
 	CorrectedValues.Roll	= -CorrectSensorOffsets(LastSensorMeasurement.Roll, sensorOffsetRoll, 180);
 	CorrectedValues.Pitch	= _CorrectSensorOffsets(LastSensorMeasurement.Pitch, sensorOffsetPitch, 90);
-	//CorrectedValues.Yaw		= CorrectSensorOffsets(LastSensorMeasurement.Yaw, sensorOffsetYaw, 180);
+	CorrectedValues.Yaw		= CorrectSensorOffsets(LastSensorMeasurement.Yaw, sensorOffsetYaw, 180);
 	
 	PID_PitchInput			= CorrectedValues.Pitch;
 	PID_RollInput			= CorrectedValues.Roll;
-	//PID_YawInput			= CorrectedValues.Yaw;
+	PID_YawInput			= CorrectedValues.Yaw;
 	
 	//a full range of stick movement represents a +- 20 degree tilt
 	PID_PitchSetPoint		= map_float(RemoteValues.Pitch, 0, 2200, -20, 20);
 	PID_RollSetPoint		= map_float(RemoteValues.Roll, 0, 2200, -20, 20);
-	//PID_YawSetPoint			= 0;// TODO: Yaw Logic
+	PID_YawSetPoint			= 0;// TODO: Yaw Logic
 	
 	static bool GearStateOld = false;
 	RemoteValues = rc_read_values();

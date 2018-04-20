@@ -136,6 +136,12 @@ void ErrorHandling_get_error_description(ErrorCode Error, char errorDescription[
 		case ERROR_REGMAP_WRITE_DISABLED:
 			strcat(errorDescription, "Regmap write disabled");
 		break;
+		case ERROR_BNO_READ_TIMEOUT:
+			strcat(errorDescription, "BNO read timeout");
+		break;
+		case ERROR_BNO_WRITE_TIMEOUT:
+			strcat(errorDescription, "BNO write timeout");
+		break;
 		default:
 			strcat(errorDescription, "Unknown");
 		break;

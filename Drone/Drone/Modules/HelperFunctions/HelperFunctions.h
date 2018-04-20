@@ -12,8 +12,8 @@
 #include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
-#include "config.h"
-#include "ErrorHandling.h"
+#include "../../config.h"
+#include "../ErrorHandling/ErrorHandling.h"
 
 struct queue_node {
 	struct queue_node *next;
@@ -49,8 +49,6 @@ typedef struct MedianFilter MedianFilter;
  */
 int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max);
 float map_float(float x, float in_min, float in_max, float out_min, float out_max);
-
-void _Delay(uint32_t delayCycles);
 
 
 /*

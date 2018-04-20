@@ -12,9 +12,9 @@
 #include "sam.h"
 #include <stdlib.h>
 #include <stdarg.h>
-#include "config.h"
-#include "uart0.h"
-#include "ErrorHandling.h"
+#include "../../config.h"
+#include "../UART/uart0.h"
+#include "../ErrorHandling/ErrorHandling.h"
 
 /*
 * Transmission Types:

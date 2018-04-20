@@ -11,8 +11,8 @@
 
 #include "sam.h"
 #include <stdbool.h>
-#include "config.h"
-#include "ErrorHandling.h"
+#include "../../config.h"
+#include "../ErrorHandling/ErrorHandling.h"
 
 /*	MOTOR LAYOUT
 

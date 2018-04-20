@@ -35,7 +35,7 @@
 
 //various settings
 #define NUM_OF_RETRYS_ON_ERROR	5
-#define DELAY_BEFORE_RETRY		1000000
+#define DELAY_BEFORE_RETRY		300
 
 ErrorCode bno055_returnError = ERROR_GENERIC;
 bool bno055_wait_for_response = false;
@@ -84,9 +84,9 @@ ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib)
 			(0<<2) | //Euler = Degrees
 			(1<<1) | //Gyro = Rad/s
 			(0<<0);  //Accelerometer = m/s^2
-	_Delay(1000000);
+	GPT_Delay(200);
 	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_UNIT_SEL, &Data, 1), MODULE_BNO055, FUNCTION_init);
-	_Delay(10000);
+	GPT_Delay(100);
 	//sensor defaults to SYS_TRIGGER -> Internal oscillator
 	Data = BNO_INTERNAL_OSC;
 	DEFAULT_ERROR_HANDLER(BNO055_write_blocking(BNO_REG_SYS_TRIGGER, &Data, 1), MODULE_BNO055, FUNCTION_init);
@@ -196,55 +196,62 @@ BNO055_Data ConvertQuaToYPR(uint8_t* startPtr)
 ErrorCode BNO055_read_blocking(uint8_t RegisterAddress, uint8_t dataToRead[], uint8_t DataLength)
 {
 	static uint8_t numOfTries = 0;
-	//bno055_wait_for_response = true;
 	bno055_returnError = ERROR_GENERIC;
 	if(dataToRead == NULL)
 		return ERROR_GOT_NULL_POINTER | MODULE_BNO055 | FUNCTION_read_blocking;
 	if(DataLength == 0)
 		return ERROR_ARGUMENT_OUT_OF_RANGE | MODULE_BNO055 | FUNCTION_read_blocking;
-	//RequestedReadLength is set in the read() function no need to set it here
-	//bno055_RequestedReadLength = DataLength;
-	//bno055_ReadResponseDestPtr = dataToRead;
-	//DEFAULT_ERROR_HANDLER(BNO055_read(RegisterAddress, DataLength), MODULE_BNO055, FUNCTION_read_blocking);
-	//while (bno055_wait_for_response == true);	//TODO: Timeout error
 	while(bno055_returnError != SUCCESS && numOfTries <= NUM_OF_RETRYS_ON_ERROR)
 	{
-		if(numOfTries != 0)//if this run is a retry:
+		if(numOfTries != 0)//if this runs it is a retry:
 		{
-			SerialCOM_put_error("read_retry");//TODO: proper error handling
+			//SerialCOM_put_error("read_retry");//TODO: proper error handling
 		}
 		bno055_wait_for_response = true;
 		bno055_returnError = ERROR_GENERIC;
 		bno055_ReadResponseDestPtr = dataToRead;
 		DEFAULT_ERROR_HANDLER(BNO055_read(RegisterAddress, DataLength), MODULE_BNO055, FUNCTION_read_blocking);
-		while (bno055_wait_for_response == true);	//TODO: Timeout error
+		float startCommandTimestamp = GPT_GetPreciseTime();
+		while (bno055_wait_for_response == true)
+		{
+			if(GPT_GetPreciseTime() - startCommandTimestamp >= BNO_TRANSMISSION_TIMEOUT_MS)
+			{
+				bno055_returnError = ERROR_BNO_READ_TIMEOUT | MODULE_BNO055 | FUNCTION_read_blocking;
+				break;
+			}
+		}
 		numOfTries++;
-		_Delay(DELAY_BEFORE_RETRY);
+		GPT_Delay(DELAY_BEFORE_RETRY);
 	}
 	numOfTries = 0;
 	//Data was copied in the callback.
-	return ErrorHandling_set_top_level(bno055_returnError,MODULE_BNO055,FUNCTION_read_blocking);
+	return ErrorHandling_set_top_level(bno055_returnError, MODULE_BNO055, FUNCTION_read_blocking);
 }
 
 ErrorCode BNO055_write_blocking(uint8_t RegisterAddress, uint8_t dataToWrite[], uint8_t DataLength)
 {
 	static uint8_t numOfTries = 0;
-	//bno055_wait_for_response = true;
 	bno055_returnError = ERROR_GENERIC;
-	//DEFAULT_ERROR_HANDLER(BNO055_write(RegisterAddress, dataToWrite, DataLength), MODULE_BNO055, FUNCTION_write_blocking);
-	//while (bno055_wait_for_response == true); //TODO: Timeout error
 	while(bno055_returnError != SUCCESS && numOfTries <= NUM_OF_RETRYS_ON_ERROR)
 	{
-		if(numOfTries != 0)//if this run is a retry:
+		if(numOfTries != 0)//if this runs it is a retry:
 		{
-			SerialCOM_put_error("write_retry");//TODO: proper error handling
+			//SerialCOM_put_error("write_retry");//TODO: proper error handling
 		}
 		bno055_wait_for_response = true;
 		bno055_returnError = ERROR_GENERIC;
 		DEFAULT_ERROR_HANDLER(BNO055_write(RegisterAddress, dataToWrite, DataLength), MODULE_BNO055, FUNCTION_write_blocking);
-		while (bno055_wait_for_response == true); //TODO: Timeout error
+		float startCommandTimestamp = GPT_GetPreciseTime();
+		while (bno055_wait_for_response == true)
+		{
+			if(GPT_GetPreciseTime() - startCommandTimestamp >= BNO_TRANSMISSION_TIMEOUT_MS)
+			{
+				bno055_returnError = ERROR_BNO_WRITE_TIMEOUT | MODULE_BNO055 | FUNCTION_read_blocking;
+				break;
+			}
+		}
 		numOfTries++;
-		_Delay(DELAY_BEFORE_RETRY);
+		GPT_Delay(DELAY_BEFORE_RETRY);
 	}
 	numOfTries = 0;
 	return ErrorHandling_set_top_level(bno055_returnError,MODULE_BNO055,FUNCTION_write_blocking);

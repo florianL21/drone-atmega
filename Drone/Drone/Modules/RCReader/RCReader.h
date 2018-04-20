@@ -10,9 +10,9 @@
 #define RCREADER_H_
 
 #include "sam.h"
-#include "config.h"
+#include "../../config.h"
 #include <stdbool.h>
-#include "HelperFunctions.h"
+#include "../HelperFunctions/HelperFunctions.h"
 
 struct RemoteControlValues
 {

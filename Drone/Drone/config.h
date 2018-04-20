@@ -13,37 +13,18 @@
 
 /*
  *
- *	Debugging settings
- *
- */
-
-//Main debug switch
-//#define DEBUG_SWITCH
-//debug switch for UARTCOM
-//#define DEBUG_UARTCOM
-//force the UARTCOM debug to send its messages through the force debug command. DEBUG_UARTCOM Has to be enabled!!!
-//#define FORCE_UARTCOM_DEBUG
-//debug switch for UART0
-//#define DEBUG_UART0
-
-
-//interrupt priority:
-#define ISR_PRIORITY_RCREADER	1
-#define ISR_PRIORITY_GPT		2
-#define ISR_PRIORITY_USART0		3
-#define ISR_PRIORITY_UART0		4
-
-
-
-
-/*
- *
  *	General Configuration
  *
  */
 
 // CPU frequency
 #define F_CPU 84000000
+
+//interrupt priority:
+#define ISR_PRIORITY_RCREADER	1
+#define ISR_PRIORITY_GPT		2
+#define ISR_PRIORITY_USART0		3
+#define ISR_PRIORITY_UART0		4
 
 
 /*
@@ -88,9 +69,9 @@
 #define ESC_PWM_PERIOD 52500
 #define ESC_PWM_MIN_DUTY_CYCLE 2625	// 1ms duty cycle
 // Maximum ESC Speed
-#define ESC_MaxLimit 3937 // half of maximum motor power
+#define ESC_MAX_LIMIT 3937 // half of maximum motor power
 
-//this is ESC_MaxLimit - ESC_PWM_MIN_DUTY_CYCLE recalculated.
+//this is ESC_MAX_LIMIT - ESC_PWM_MIN_DUTY_CYCLE precalculated.
 #define ESC_MAX_ALLOWED_SPEED	1312
 //#define ESC_MinLimit ESC_PWM_MIN_DUTY_CYCLE 
 
@@ -148,8 +129,6 @@ RC_ControlCenter
 
 */
 
-
-
 //PORT Configuration:
 #define RCREADER_PIO_PORT	PIOB				//IO Port
 #define RCREADER_PIO_IRQN	PIOB_IRQn			//interrupt routine
@@ -164,9 +143,13 @@ RC_ControlCenter
 
 #define RCREADER_ENABLED_PINS	THROTTLE_PIN | ROLE_PIN | PITCH_PIN | YAW_PIN | GEAR_PIN;
 
-//filter size for measurements, higher number = lesser value breakouts and smoother but slower reaction.
-#define FILTER_SIZE			5
+/*
+ *
+ *	BNO055 Configuration
+ *
+ */
 
+#define BNO_TRANSMISSION_TIMEOUT_MS	300
 /*
  *
  *	UART Configuration
@@ -184,17 +167,6 @@ RC_ControlCenter
 
 //maximum number of entrys in the send queue (uint16_t)	
 #define USART0_QUEUE_MAX_ITEMS	50	
-
-/*
- *
- *	BNO055 Configuration
- *
- */
-
-// ONLY USE THIS OPTION FOR ERROR DIAGNOSIS!!!
-// It validates every register and register length with every call of register_write and register_read
-// thus resulting in higher CPU usage and slower Communication with the BNO.
-//#define BNO_USE_REGISTER_VALIDATION
 
 /*
  *
@@ -221,6 +193,6 @@ RC_ControlCenter
  */
 
 //defines the maximum amount of General Purpose Timers that can be used
-#define MAX_NUM_GPT 10
+#define MAX_NUM_GPT 20
 
 #endif /* CONFIG_H_ */
