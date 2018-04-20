@@ -5,7 +5,7 @@
  *  Author: flola
  */ 
 
-#include "BNO_055.h"
+#include "BNO055.h"
 
 #define BNO_TRANSMISSION_STARTBYTE					0xAA
 #define BNO_TRANSMISSION_WRITE						0x00

@@ -20,7 +20,7 @@ PIOB->PIO_CODR = PIO_PB27;
 
 
 #include "sam.h"
-#include "Modules/BNO055/BNO_055.h"
+#include "Modules/BNO055/BNO055.h"
 #include "Modules/ESCControl/ESCControl.h"
 #include "Modules/RCReader/RCReader.h"
 #include "Modules/PID/PID.h"
@@ -440,8 +440,8 @@ void Init()
 	Wdt_resetTimer = GPT_TimerSetup(300, WDT_restart, true);	//call wdt reset every 300 ms
 	
 	//rc control and esc init:
-	rc_init();
 	esc_init();
+	rc_init();
 	//Setup SerialCOM:
 	ErrorHandling_throw(SerialCOM_init());
 	ErrorHandling_throw(SerialCOM_register_call_back(message_from_PC));
@@ -582,7 +582,6 @@ bool aboutToCrash()
 
 int main(void)
 {
-	
 	Init();
 	while(1)
 	{

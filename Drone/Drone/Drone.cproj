@@ -173,10 +173,10 @@
     <Compile Include="Modules\BNO055\BNO055_reg_table.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="Modules\BNO055\BNO_055.c">
+    <Compile Include="Modules\BNO055\BNO055.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="Modules\BNO055\BNO_055.h">
+    <Compile Include="Modules\BNO055\BNO055.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Modules\ErrorHandling\ErrorHandling.c">

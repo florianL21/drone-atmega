@@ -1,16 +1,25 @@
 # 3D-Printed Quadcopter (Drone) - Controller
 
-This Controller for our self-designed 3D-printed Quadcopter is based on an ATmega2560 microprocessor.
-The controller program and the different modules are written in C in Atmel Studio.
+This Controller is for our self-designed 3D-printed Quadcopter which is based on an ATSAM3X8E microprocessor.
+The Controller program and the different modules are written in C in Atmel Studio, with performance in mind.
+The Controller is programmed to use Interrupts and DMA Controllers wherever possible to reduce processor load.
+The update frequency of the PID Controllers reaches 250Hz and the IMU MEasurement frequency takes 4ms on average 
+resulting in a 200Hz refresh frequency
 
 # Modules
 
-  - ESCControl - Controls the 4 motor-controllers (ESC) with PWM signals
-  - RCReader - Reads the incoming PWM signals from the RC-receiver
-  - I2C - Implements the TWI/I2C communication, used by BNOCOM
-  - UART0 - Implements the UART0 communication, used by UARTCOM
-  - UARTCOM (WIP) - Creates an interface for PC-Drone communication with a custom protocol
-  - BNOCOM (TBD) - Creates an interface to read data from the BNO055 sensor
+  - BNO055 			- Creates an interface for easy access of the bno msurements an other functions
+  - ErrorHandling 	- Manages the custom error handling system used in this project
+  - ESCControl 		- Controls the 4 motor-controllers (ESC) with PWM signals
+  - FlashStorage 	- Creates an interface for easily accessing the flash storage on the ATSAM3x8e (Modified version of https://github.com/sebnil/DueFlashStorage)
+  - GPT				- A module for easy access to general purpose timers and delay functions
+  - HelperFunctions	- Diverse Functions for queues, mapping and other misc. functions
+  - PID				- A Module that provises a PID Controller implementation (Modified version of https://github.com/geekfactory/PID)
+  - RCReader 		- Reads the incoming PWM signals from the RC-receiver
+  - SerialCOM		- Creates an interrupt based interface for PC-to-Drone communication with a custom protocol
+  - UART0			- Provides functions for easy access to the UART0 control registers and DMA Controllers based on interrupts
+  - USART0			- Provides functions for easy access to the USART0 control registers and DMA Controllers based on interrupts
+  - WDT				- Functions for managing the WDT
   - more modules might come...
  
 
