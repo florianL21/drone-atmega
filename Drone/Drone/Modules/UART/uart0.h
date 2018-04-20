@@ -13,10 +13,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "HelperFunctions.h"
-#include "config.h"
+#include "../HelperFunctions/HelperFunctions.h"
+#include "../../config.h"
 #include <stdio.h>
-#include "ErrorHandling.h"
+#include "../ErrorHandling/ErrorHandling.h"
+#include "../GPT/GPT.h"
 
 typedef void (*UART_RECV_CALLBACK)(uint8_t* startPtr, uint16_t Length);
 

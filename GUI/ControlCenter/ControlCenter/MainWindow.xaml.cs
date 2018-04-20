@@ -49,20 +49,7 @@ namespace ControlCenter
             dispatcherTestData.Tick += new EventHandler(sendTestData);
             dispatcherTestData.Interval = new TimeSpan(0, 0, 0, 0, 100);
             */
-            
-
-            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption like '%(COM%'"))
-            {
-                var portnames = System.IO.Ports.SerialPort.GetPortNames();
-                var ports = searcher.Get().Cast<ManagementBaseObject>().ToList().Select(p => p["Caption"].ToString());
-
-                var portList = portnames.Select(n => n + " - " + ports.FirstOrDefault(s => s.Contains(n))).ToList();
-
-                foreach (string s in portList)
-                {
-                    Combobox_PortNames.Items.Add(s);
-                }
-            }
+            RefreshSerialCOMs();
 
             LogWindow = new EventLogWindow();
             LogWindow.WriteToLog(EventLogWindow.LogTypes.INFO, "MainWindow", "Application started");
@@ -218,48 +205,48 @@ namespace ControlCenter
             }
         }
 
-        public void DisplaySensorData(int X, int Y, int Z)
+        public void DisplaySensorData(float Roll, float Pitch, float Yaw)
         {
-            if (X == -100000)
+            if (Roll == -100000)
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesRoll.Value = 0));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesRoll.Text = "N/A"));
             }
             else
             {
-                Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesRoll.Value = X));
-                Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesRoll.Text = X.ToString()));
+                Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesRoll.Value = Roll));
+                Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesRoll.Text = Roll.ToString()));
                 if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
                 {
-                    SensorValueGraphWindow.addDataPoint(X, "X");
+                    SensorValueGraphWindow.addDataPoint(Roll, "Roll");
                 }
             }
-            if (Y == -100000)
+            if (Pitch == -100000)
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesPitch.Value = 0));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesPitch.Text = "N/A"));
             }
             else
             {
-                Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesPitch.Value = Y));
-                Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesPitch.Text = Y.ToString()));
+                Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesPitch.Value = Pitch));
+                Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesPitch.Text = Pitch.ToString()));
                 if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
                 {
-                    SensorValueGraphWindow.addDataPoint(Y, "Y");
+                    SensorValueGraphWindow.addDataPoint(Pitch, "Pitch");
                 }
             }
-            if (Z == -100000)
+            if (Yaw == -100000)
             {
                 Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesYaw.Value = 0));
                 Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesYaw.Text = "N/A"));
             }
             else
             {
-                Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesYaw.Value = Z));
-                Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesYaw.Text = Z.ToString()));
+                Dispatcher.BeginInvoke((Action)(() => ProgressBar_SensorValuesYaw.Value = Yaw));
+                Dispatcher.BeginInvoke((Action)(() => TextBlock_SensorValuesYaw.Text = Yaw.ToString()));
                 if (SensorValueGraphWindow != null && SensorValueGraphWindow.IsOpen == true)
                 {
-                    SensorValueGraphWindow.addDataPoint(Z, "Z");
+                    SensorValueGraphWindow.addDataPoint(Yaw, "Yaw");
                 }
             }
         }
@@ -294,6 +281,15 @@ namespace ControlCenter
             Dispatcher.BeginInvoke((Action)(() => Label_Yaw_D_Arduino.Content = string.Format("{0:N4}", kd)));
         }
 
+        public void DisplayCalibData(int calibData)
+        {
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Mag.Value = (calibData & 0x03)));
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Acc.Value = (calibData & 0x0C) >> 2));
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Gyro.Value = (calibData & 0x30) >> 4));
+            Dispatcher.BeginInvoke((Action)(() => PrograssBar_Sys.Value = (calibData & 0xC0) >> 6));
+            Dispatcher.BeginInvoke((Action)(() => TextBlock_LastCalibUptade.Text = "Last Updated: " + DateTime.Now.ToString("HH:mm:ttss")));
+        }
+        
         /* Logging Functions:
          */
 
@@ -301,11 +297,32 @@ namespace ControlCenter
 
         public void SetStatus(string statusText)
         {
-            Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "[" + DateTime.Now.ToString("h:mm:ttss") + "]: " + statusText));
+            Dispatcher.BeginInvoke((Action)(() => StatusText.Text = "[" + DateTime.Now.ToString("HH:mm:ttss") + "]: " + statusText));
         }
 
         /* Misc Functions:
          */
+
+        void RefreshSerialCOMs()
+        {
+            Combobox_PortNames.Items.Clear();
+            using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption like '%(COM%'"))
+            {
+                var portnames = System.IO.Ports.SerialPort.GetPortNames();
+                var ports = searcher.Get().Cast<ManagementBaseObject>().ToList().Select(p => p["Caption"].ToString());
+
+                var portList = portnames.Select(n => n + " - " + ports.FirstOrDefault(s => s.Contains(n))).ToList();
+
+                foreach (string s in portList)
+                {
+                    Combobox_PortNames.Items.Add(s);
+                }
+            }
+            if(Combobox_PortNames.Items.Count > 0)
+            {
+                Combobox_PortNames.SelectedIndex = 0;
+            }
+        }
         public void RefreshPIDValues()
         {
             SerialPort.sendMessage_and_wait_for_ack(0x05, 'Y');
@@ -430,6 +447,11 @@ namespace ControlCenter
             }
         }
 
+        private void Button_RefreshCOMs_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshSerialCOMs();
+        }
+
         private void Button_RollPIDSave_Click(object sender, RoutedEventArgs e)
         {
             float kp, ki, kd;
@@ -524,11 +546,11 @@ namespace ControlCenter
             {
                 SensorValueGraphWindow = new LoggingGraph();
                 SensorValueGraphWindow.MyModel.Title = "Sensor Values";
-                string[] dataLineNames = { "X", "Y", "Z" };
-                double[,] maxMins = new double[,] { { 1024, 1024, 1024, 1024, 1 }, { -1024, -1024, -1024, -1024, -1024 } };
+                string[] dataLineNames = { "Yaw", "Pitch", "Roll" };
+                double[,] maxMins = new double[,] { { 180, 180, 180}, { -180, -180, -180 } };
                 SensorValueGraphWindow.setDataLines(dataLineNames, maxMins, 10); //updates set to a maximum of 10 times per second
-                SensorValueGraphWindow.yAxis.Maximum = 1024;
-                SensorValueGraphWindow.yAxis.Minimum = -1024;
+                SensorValueGraphWindow.yAxis.Maximum = 180;
+                SensorValueGraphWindow.yAxis.Minimum = -180;
                 SensorValueGraphWindow.Show();
             }
             else
@@ -584,6 +606,7 @@ namespace ControlCenter
                 LogWindow.clearErrorLog();
             }
         }
+
 
         /*Checkboxes:
          */
@@ -749,5 +772,7 @@ namespace ControlCenter
             SerialPort.Close();
             SerialPort.Dispose();
         }
+
+        
     }
 }

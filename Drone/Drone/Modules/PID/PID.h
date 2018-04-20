@@ -12,14 +12,9 @@
 #include "sam.h"
 #include <stdbool.h>
 #include <stdlib.h>
-#include "config.h"
-#include "ErrorHandling.h"
-
-//SampleTime in ms
-
-
-#define NUM_PID_CONTROLLERS 5
-#define TICKS_PER_SECOND	2625000
+#include "../../config.h"
+#include "../ErrorHandling/ErrorHandling.h"
+#include "../GPT/GPT.h"
 
 #define DIRECT 0
 #define REVERSE 1
@@ -33,7 +28,7 @@ struct pidData
 	float SampleTime;
 	float outMin, outMax;
 	uint8_t controllerDirection;
-	uint32_t LastTime;
+	float LastTime;
 };
 typedef struct pidData pidData;
 

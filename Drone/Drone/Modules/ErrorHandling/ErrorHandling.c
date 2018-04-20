@@ -130,6 +130,18 @@ void ErrorHandling_get_error_description(ErrorCode Error, char errorDescription[
 		case ERROR_RECEIVE_CHARACTER_TIMEOUT:
 			strcat(errorDescription, "Receive character timeout");
 		break;
+		case ERROR_STATUS_BYTE_UNKNOWN:
+			strcat(errorDescription, "Unknown status byte");
+		break;
+		case ERROR_REGMAP_WRITE_DISABLED:
+			strcat(errorDescription, "Regmap write disabled");
+		break;
+		case ERROR_BNO_READ_TIMEOUT:
+			strcat(errorDescription, "BNO read timeout");
+		break;
+		case ERROR_BNO_WRITE_TIMEOUT:
+			strcat(errorDescription, "BNO write timeout");
+		break;
 		default:
 			strcat(errorDescription, "Unknown");
 		break;
@@ -200,7 +212,7 @@ void ErrorHandling_get_function_description(ErrorCode Error, char errorDescripti
 		case FUNCTION_register_read_1byte_by_table:
 			strcat(errorDescription, "register_read_1byte_by_table");
 		break;
-		case FUNCTION_Init:
+		case FUNCTION_init:
 			strcat(errorDescription, "Init");
 		break;
 		case FUNCTION_register_success_callback:
@@ -331,6 +343,18 @@ void ErrorHandling_get_function_description(ErrorCode Error, char errorDescripti
 		break;
 		case FUNCTION_put_int_blocking:
 			strcat(errorDescription, "put_int_blocking");
+		break;
+		case FUNCTION_write_blocking:
+			strcat(errorDescription, "write_blocking");
+		break;
+		case FUNCTION_read:
+			strcat(errorDescription, "read");
+		break;
+		case FUNCTION_read_blocking:
+			strcat(errorDescription, "read_blocking");
+		break;
+		case FUNCTION_data_received_callback:
+			strcat(errorDescription, "data_received_callback");
 		break;
 		default:
 			strcat(errorDescription, "Unknown");

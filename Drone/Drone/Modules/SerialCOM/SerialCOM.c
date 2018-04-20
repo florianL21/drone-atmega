@@ -42,9 +42,9 @@ ErrorCode SerialCOM_register_call_back(SerialCOM_RECV_CALLBACK callback)
 
 ErrorCode SerialCOM_init()
 {
-	DEFAULT_ERROR_HANDLER(UART0_init(115200, 1), MODULE_SERIALCOM, FUNCTION_Init);
-	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(3), MODULE_SERIALCOM, FUNCTION_Init);
-	DEFAULT_ERROR_HANDLER(UART0_register_received_callback(message_received), MODULE_SERIALCOM, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(UART0_init(115200, 1), MODULE_SERIALCOM, FUNCTION_init);
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(3), MODULE_SERIALCOM, FUNCTION_init);
+	DEFAULT_ERROR_HANDLER(UART0_register_received_callback(message_received), MODULE_SERIALCOM, FUNCTION_init);
 	return SUCCESS;
 }
 
@@ -112,6 +112,16 @@ uint8_t SerialCOM_get_free_space()
 	return UART0_get_space();
 }
 
+void SerialCOM_serializeFloat(float* Value, uint8_t* startptr)
+{
+	uint32_t NumValue;
+	memcpy(&NumValue, Value, 4);
+	startptr[0] = (NumValue & 0xFF000000) >> 24;
+	startptr[1] = (NumValue & 0x00FF0000) >> 16;
+	startptr[2] = (NumValue & 0x0000FF00) >> 8;
+	startptr[3] =  NumValue & 0x000000FF;
+}
+
 ErrorCode SerialCOM_print_debug(const char *fmt, ...)
 {
 	char buffer[SERIALCOM_MAX_PRINT_CHARS];
@@ -133,3 +143,4 @@ ErrorCode SerialCOM_print_error(const char *fmt, ...)
 	ErrorCode rt = ErrorHandling_set_top_level(SerialCOM_put_error(buffer), MODULE_SERIALCOM, FUNCTION_print_error);
 	return rt;
 }
+

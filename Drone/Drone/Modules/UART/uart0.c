@@ -22,9 +22,9 @@ ErrorCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
-		return MODULE_UART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_UART0 | FUNCTION_init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength), MODULE_UART0, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(UART0_set_receiver_length(RecvLength), MODULE_UART0, FUNCTION_init);
 	
 	PMC->PMC_PCER0 = 1 << ID_UART;
 	// Set pin in peripheral mode
@@ -46,13 +46,14 @@ ErrorCode UART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	UART->UART_IER = UART_IER_RXRDY;//| UART_IER_TXRDY;
 	//UART->UART_IDR = UART_IDR_ENDRX|UART_IDR_ENDTX|UART_IDR_TXBUFE|UART_IDR_TXEMPTY|UART_IDR_TXRDY;
 	// Enable UART Interrupt Handling in NVIC
+	NVIC_SetPriority(UART_IRQn, ISR_PRIORITY_UART0);
 	NVIC_EnableIRQ(UART_IRQn);
 	// Enable Peripheral DMA Controller Transmission
 	UART->UART_PTCR = UART_PTCR_TXTEN | UART_PTCR_RXTEN;
 	
 	uart0SendQueue = queue_new(UART0_QUEUE_MAX_ITEMS);
 	if(uart0SendQueue == NULL)
-		return MODULE_UART0 | FUNCTION_Init | ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_UART0 | FUNCTION_init | ERROR_MALLOC_RETURNED_NULL;
 	return SUCCESS;
 }
 
@@ -178,31 +179,15 @@ ErrorCode UART0_register_received_callback(UART_RECV_CALLBACK callBack)
 	return SUCCESS;
 }
 
-uint32_t uart0_calculateTicks(uint32_t start, uint32_t stop)
-{
-	if(stop > start) // no overflow
-		return (stop - start);
-	else if(stop < start) // overflow
-		return (stop + (4294967295 - start));
-	else if(stop == start) // perfect overflow
-		return 4294967295;
-	return 0;
-}
-
-uint32_t uart0_getTicks()
-{
-	return TC0->TC_CHANNEL[0].TC_CV;
-}
-
 void Uart0_check_for_timeout()
 {
 	static uint32_t RCR_old = 0;
-	static uint32_t time_old = 0;
+	static float time_old = 0;
 	if(RCR_old != UART->UART_RCR)
 	{
 		RCR_old = UART->UART_RCR;
-		time_old = uart0_getTicks();
-	} else if(uart0_calculateTicks(time_old, uart0_getTicks()) >= 16800000)
+		time_old = GPT_GetPreciseTime();
+	} else if(GPT_GetPreciseTime() - time_old >= 300)
 	{
 		//Timeout Error
 		//TODO: fire UART_error callback

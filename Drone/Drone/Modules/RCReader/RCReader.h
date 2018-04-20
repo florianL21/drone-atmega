@@ -10,9 +10,9 @@
 #define RCREADER_H_
 
 #include "sam.h"
-#include "config.h"
+#include "../../config.h"
 #include <stdbool.h>
-#include "HelperFunctions.h"
+#include "../HelperFunctions/HelperFunctions.h"
 
 struct RemoteControlValues
 {
@@ -36,5 +36,6 @@ void rc_init();
  *	Returns the last measured PWM input of throttle
  */
 RemoteControlValues rc_read_values();
+
 
 #endif /* RCREADER_H_ */

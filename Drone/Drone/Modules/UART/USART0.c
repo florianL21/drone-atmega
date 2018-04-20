@@ -9,7 +9,7 @@
 #define MIN_BAUD_RATE	9600
 #define MAX_BAUD_RATE	1843200
 
-uint8_t USART0TXBUFFER[270]; // UART PDC Transmit buffer
+uint8_t USART0TXBUFFER[300]; // UART PDC Transmit buffer
 USART_RECV_CALLBACK usart_reciveCallBack = NULL;
 uint32_t usart0_ReceiveLength = 1;
 uint8_t *usart0_ReceivePtr = NULL;
@@ -22,9 +22,9 @@ ErrorCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 {
 	if(BaudRate < MIN_BAUD_RATE || BaudRate > MAX_BAUD_RATE)
 	{
-		return MODULE_USART0 | FUNCTION_Init | ERROR_ARGUMENT_OUT_OF_RANGE;
+		return MODULE_USART0 | FUNCTION_init | ERROR_ARGUMENT_OUT_OF_RANGE;
 	}
-	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength), MODULE_USART0, FUNCTION_Init);
+	DEFAULT_ERROR_HANDLER(USART0_set_receiver_length(RecvLength), MODULE_USART0, FUNCTION_init);
 	
 	// Enable Clock for UART
 	PMC->PMC_PCER0 = 1 << ID_USART0;
@@ -49,12 +49,13 @@ ErrorCode USART0_init(uint32_t BaudRate, uint32_t RecvLength)
 	// Enable UART interrupt
 	USART0->US_IER = US_IER_ENDRX;
 	// Enable UART Interrupt Handling in NVIC
+	NVIC_SetPriority(USART0_IRQn, ISR_PRIORITY_USART0);
 	NVIC_EnableIRQ(USART0_IRQn);
 	// Enable Peripheral DMA Controller Transmission
 	USART0->US_PTCR = US_PTCR_TXTEN | US_PTCR_RXTEN;
 	usart0SendQueue = queue_new(USART0_QUEUE_MAX_ITEMS);
 	if(usart0SendQueue == NULL)
-		return MODULE_USART0 | FUNCTION_Init | ERROR_MALLOC_RETURNED_NULL;
+		return MODULE_USART0 | FUNCTION_init | ERROR_MALLOC_RETURNED_NULL;
 	return SUCCESS;
 }
 
@@ -144,10 +145,9 @@ void USART0_Handler(void)
 	
 	if (USART0->US_CSR & US_CSR_ENDRX)
 	{
-		
 		if(usart_reciveCallBack != NULL)
 		{
-			usart_reciveCallBack(usart0_ReceivePtr,usart0_ReceiveLength);
+			usart_reciveCallBack(usart0_ReceivePtr, usart0_ReceiveLength);
 		}
 		
 		USART0->US_RCR = usart0_ReceiveLength;

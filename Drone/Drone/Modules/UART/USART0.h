@@ -12,9 +12,9 @@
 #include "sam.h"
 #include <stdlib.h>
 #include <stdbool.h>
-#include "HelperFunctions.h"
-#include "config.h"
-#include "ErrorHandling.h"
+#include "../HelperFunctions/HelperFunctions.h"
+#include "../../config.h"
+#include "../ErrorHandling/ErrorHandling.h"
 
 typedef void (*USART_RECV_CALLBACK)(uint8_t* startPtr, uint16_t Length);
 
