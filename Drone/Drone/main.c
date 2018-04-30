@@ -70,8 +70,11 @@ void BNO_Error(ErrorCode Error)
 {
 	if(BNO055_IsCalibrating() == false)
 	{
-		ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
 		ErrorHandling_throw(BNO_MEASURE);																//restart measurement
+		if((Error & 0xFF) != ERROR_BUS_OVER_RUN)
+		{
+			ErrorHandling_throw(ErrorHandling_set_top_level(Error, MODULE_MAIN, FUNCTION_error));				//throw the error
+		}
 	}
 }
 
