@@ -50,14 +50,6 @@ BNO055_ERROR_CALLBACK bno_error_callback = NULL;
 
 void bno055_data_received_callback(uint8_t* startPtr, uint16_t Length);
 
-typedef struct Quaternion
-{
-	double w;
-	double x;
-	double y;
-	double z;
-}Quaternion;
-
 ErrorCode BNO055_init(BNO_INIT_CALIB PerformCalib)
 {
 	DEFAULT_ERROR_HANDLER(USART0_init(115200,2), MODULE_BNO055, FUNCTION_init);
@@ -158,12 +150,51 @@ bool BNO055_IsReady()
 	return bno055_isReady;
 }
 
-BNO055_Data ConvertQuaToYPR(uint8_t* startPtr)
+BNO055_Quat BNO055_GetQuat(uint8_t* startPtr)
+{
+	BNO055_Quat quat;
+	int16_t x, y, z, w;
+	x = y = z = w = 0;
+	const double scale = (1.0 / (1<<14));
+	
+	w = ((uint16_t)startPtr[0]) | (((uint16_t)startPtr[1]) << 8);
+	x = ((uint16_t)startPtr[2]) | (((uint16_t)startPtr[3]) << 8);
+	y = ((uint16_t)startPtr[4]) | (((uint16_t)startPtr[5]) << 8);
+	z = ((uint16_t)startPtr[6]) | (((uint16_t)startPtr[7]) << 8);
+	quat.w = w * scale;
+	quat.x = x * scale;
+	quat.y = y * scale;
+	quat.z = z * scale;
+	return quat;
+}
+
+BNO055_Data ConvertQuaToYPR(BNO055_Quat quat)
+{
+	BNO055_Data YPRData;
+	
+	/* Create Roll Pitch Yaw Angles from Quaternions */
+	double q2sqr = quat.y * quat.y;
+	double t0 = -2.0 * (q2sqr + quat.z * quat.z) + 1.0;
+	double t1 = +2.0 * (quat.x * quat.y + quat.w * quat.z);
+	double t2 = -2.0 * (quat.x * quat.z - quat.w * quat.y);
+	double t3 = +2.0 * (quat.y * quat.z + quat.w * quat.x);
+	double t4 = -2.0 * (quat.x * quat.x + q2sqr) + 1.0;
+
+	t2 = t2 > 1.0 ? 1.0 : t2;
+	t2 = t2 < -1.0 ? -1.0 : t2;
+
+	YPRData.Pitch = ((float) 57.2958 * asin(t2));
+	YPRData.Roll = ((float) 57.2958 * atan2(t3, t4));
+	YPRData.Yaw = ((float) 57.2958 * atan2(t1, t0));
+	return YPRData;
+}
+
+BNO055_Data BNO055_ConvertQuaToYPR(uint8_t* startPtr)
 {
 	BNO055_Data YPRData;
 	int16_t x, y, z, w;
 	x = y = z = w = 0;
-	Quaternion quat;
+	BNO055_Quat quat;
 	const double scale = (1.0 / (1<<14));
 	//double rm[3][3];
 	

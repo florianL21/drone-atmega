@@ -29,12 +29,13 @@ PIOB->PIO_CODR = PIO_PB27;
 #include "Modules/WDT/WDT.h"
 #include "Modules/GPT/GPT.h"
 
-#define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W, 14)
+#define BNO_MEASURE BNO055_read(BNO_REG_QUA_DATA_W, 8)	//request 14 for acc data; 8 for quaternions only
 #define SERIALCOM_SEND_INTERVALL_MS 20
 
 //Init variables for the drone programm
-BNO055_Data LastSensorMeasurement;
-BNO055_Data CorrectedValues;
+BNO055_Quat LastSensorMeasurement;
+BNO055_Quat CorrectedValues;
+BNO055_Data YPR_Angles;
 RemoteControlValues RemoteValues;
 float PosX = 0, PosY = 0, PosZ = 0;
 int16_t Motor_speeds[4] = {0};
@@ -45,15 +46,18 @@ Timer Wdt_resetTimer;
 
 
 //PID Config:
-float PID_PitchInput = 0,	PID_PitchOutput = 0,	PID_PitchSetPoint = 0;
-float PID_RollInput = 0,	PID_RollOutput = 0,		PID_RollSetPoint = 0;
-float PID_YawInput = 0,		PID_YawOutput = 0,		PID_YawSetPoint = 0;
-float PitchKp = 1.3,  PitchKi = 0.2,    PitchKd = 1.2;
-float RollKp = 0.8,  RollKi = 0.1,    RollKd = 0.7;
-float YawKp = 0,    YawKi = 0,    YawKd = 0;
-pidData PitchPid;
-pidData RollPid;
-pidData YawPid;
+float PID_XInput = 0,	PID_XOutput = 0,	PID_XSetPoint = 0;
+float PID_YInput = 0,	PID_YOutput = 0,		PID_YSetPoint = 0;
+float PID_ZInput = 0,		PID_ZOutput = 0,		PID_ZSetPoint = 0;
+float PID_WInput = 0,		PID_WOutput = 0,		PID_WSetPoint = 0;
+float PID_XKp = 1.3,  PID_XKi = 0.2,    PID_XKd = 1.2;
+float PID_YKp = 1.3,  PID_YKi = 0.2,    PID_YKd = 1.2;
+float PID_ZKp = 1.3,  PID_ZKi = 0.2,    PID_ZKd = 1.2;
+float PID_WKp = 1.3,  PID_WKi = 0.2,    PID_WKd = 1.2;
+pidData XPid; //PitchPid
+pidData YPid; //RollPid
+pidData ZPid; //YawPid
+pidData WPid;
 
 //sonsor offsetValues:
 float sensorOffsetPitch = 0;
@@ -102,23 +106,23 @@ void ErrorHandling_print()
 void SaveValuesToFlash(uint8_t type)
 {
 	if(type == 0x00 || type == 0x01)
-		ErrorHandling_throw(FlashStorage_write_float(4, RollKp));
+		ErrorHandling_throw(FlashStorage_write_float(4, PID_YKp));
 	if(type == 0x00 || type == 0x02)
-		ErrorHandling_throw(FlashStorage_write_float(8, RollKi));
+		ErrorHandling_throw(FlashStorage_write_float(8, PID_YKi));
 	if(type == 0x00 || type == 0x03)
-		ErrorHandling_throw(FlashStorage_write_float(12, RollKd));
+		ErrorHandling_throw(FlashStorage_write_float(12, PID_YKd));
 	if(type == 0x00 || type == 0x04)
-		ErrorHandling_throw(FlashStorage_write_float(16, PitchKp));
+		ErrorHandling_throw(FlashStorage_write_float(16, PID_XKp));
 	if(type == 0x00 || type == 0x05)
-		ErrorHandling_throw(FlashStorage_write_float(20, PitchKi));
+		ErrorHandling_throw(FlashStorage_write_float(20, PID_XKi));
 	if(type == 0x00 || type == 0x06)
-		ErrorHandling_throw(FlashStorage_write_float(24, PitchKd));
+		ErrorHandling_throw(FlashStorage_write_float(24, PID_XKd));
 	if(type == 0x00 || type == 0x07)
-		ErrorHandling_throw(FlashStorage_write_float(28, YawKp));
+		ErrorHandling_throw(FlashStorage_write_float(28, PID_ZKp));
 	if(type == 0x00 || type == 0x08)
-		ErrorHandling_throw(FlashStorage_write_float(32, YawKi));
+		ErrorHandling_throw(FlashStorage_write_float(32, PID_ZKi));
 	if(type == 0x00 || type == 0x09)
-		ErrorHandling_throw(FlashStorage_write_float(36, YawKd));
+		ErrorHandling_throw(FlashStorage_write_float(36, PID_ZKd));
 	if(type == 0x00 || type == 0x0A)
 		ErrorHandling_throw(FlashStorage_write_float(40, sensorOffsetRoll));
 	if(type == 0x00 || type == 0x0B)
@@ -127,15 +131,15 @@ void SaveValuesToFlash(uint8_t type)
 
 void LoadValuesFromFlash()
 {
-	RollKp = FlashStorage_read_float(4);
-	RollKi = FlashStorage_read_float(8);
-	RollKd = FlashStorage_read_float(12);
-	PitchKp = FlashStorage_read_float(16);
-	PitchKi = FlashStorage_read_float(20);
-	PitchKd = FlashStorage_read_float(24);
-	YawKp = FlashStorage_read_float(28);
-	YawKi = FlashStorage_read_float(32);
-	YawKd = FlashStorage_read_float(36);
+	PID_YKp = FlashStorage_read_float(4);
+	PID_YKi = FlashStorage_read_float(8);
+	PID_YKd = FlashStorage_read_float(12);
+	PID_XKp = FlashStorage_read_float(16);
+	PID_XKi = FlashStorage_read_float(20);
+	PID_XKd = FlashStorage_read_float(24);
+	PID_ZKp = FlashStorage_read_float(28);
+	PID_ZKi = FlashStorage_read_float(32);
+	PID_ZKd = FlashStorage_read_float(36);
 	sensorOffsetRoll = FlashStorage_read_float(40);
 	sensorOffsetPitch = FlashStorage_read_float(44);
 }
@@ -176,15 +180,7 @@ void DataReady(uint8_t Data[], uint8_t Length)
 	}
 	else
 	{
-		LastSensorMeasurement = ConvertQuaToYPR(Data);
-
-		if(Length >= 14)
-		{
-			//unit: 1m/s^2
-			LastSensorMeasurement.AccX = ((uint16_t)Data[8])  | (((uint16_t)Data[9] ) << 8);
-			LastSensorMeasurement.AccY = ((uint16_t)Data[10]) | (((uint16_t)Data[11]) << 8);
-			LastSensorMeasurement.AccZ = ((uint16_t)Data[12]) | (((uint16_t)Data[13]) << 8);
-		}
+		LastSensorMeasurement = BNO055_GetQuat(Data);
 	}
 	timeOfLastMeasurement = GPT_GetPreciseTime();
 	
@@ -241,13 +237,13 @@ void SendLogData()
 			uint8_t buffer[15] = {0};
 			
 			buffer[0] = 'R';
-			SerialCOM_serializeFloat(&CorrectedValues.Roll, &buffer[1]);
+			SerialCOM_serializeFloat(&YPR_Angles.Roll, &buffer[1]);
 			
 			buffer[5] = 'P';
-			SerialCOM_serializeFloat(&CorrectedValues.Pitch, &buffer[6]);
+			SerialCOM_serializeFloat(&YPR_Angles.Pitch, &buffer[6]);
 			
 			buffer[10] = 'Y';
-			SerialCOM_serializeFloat(&CorrectedValues.Yaw, &buffer[11]);
+			SerialCOM_serializeFloat(&YPR_Angles.Yaw, &buffer[11]);
 			
 			ErrorHandling_throw(SerialCOM_put_message(buffer, 0x03, 15));
 		}
@@ -271,29 +267,30 @@ void sendPIDValuesToPC(uint8_t PIDIdentifier, float kp, float ki, float kd)
 	ErrorHandling_throw(SerialCOM_put_message(buffer, 0x04, 16));
 }
 
-//Receive:
-//0x01: Motor
-//0x02: RC
-//0x03: Sensor
-//0x04: Commands:
-//				  - S: Set current values as Sensor offset
-//				  - R: Reset Arduino
-//0x05: Send PID Values to PC
-//0x06: Get Value from PC
-//0x07: Save Values to Flash
-
-//Send:
-//0x00: Debug message
-//0x01: Motor Values
-//0x02: RC Values
-//0x03: Sensor Values
-//0x04: PID Values
-//0x05: Reset GUI
-//0x06: ACK
-//0x07: calib status
-//0x64: Error Message
 void message_from_PC(uint8_t* message, uint8_t Type)
 {
+	//Receive:
+	//0x01: Motor
+	//0x02: RC
+	//0x03: Sensor
+	//0x04: Commands:
+	//				  - S: Set current values as Sensor offset
+	//				  - R: Reset Arduino
+	//0x05: Send PID Values to PC
+	//0x06: Get Value from PC
+	//0x07: Save Values to Flash
+
+	//Send:
+	//0x00: Debug message
+	//0x01: Motor Values
+	//0x02: RC Values
+	//0x03: Sensor Values
+	//0x04: PID Values
+	//0x05: Reset GUI
+	//0x06: ACK
+	//0x07: calib status
+	//0x64: Error Message
+	
 	//error_handler_in(SerialCOM_put_debug("GR"));
 	float kp, ki, kd;
 	uint32_t Value;
@@ -321,13 +318,13 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 			switch(message[0])
 			{
 				case 'S':
-					sensorOffsetRoll = LastSensorMeasurement.Roll;
-					sensorOffsetPitch = LastSensorMeasurement.Pitch;
-					sensorOffsetYaw = LastSensorMeasurement.Yaw;
+					//sensorOffsetRoll = LastSensorMeasurement.Roll;
+					//sensorOffsetPitch = LastSensorMeasurement.Pitch;
+					//sensorOffsetYaw = LastSensorMeasurement.Yaw;
 					
-					PID_Reset(&RollPid);
-					PID_Reset(&PitchPid);
-					PID_Reset(&YawPid);
+					PID_Reset(&YPid);
+					PID_Reset(&XPid);
+					PID_Reset(&ZPid);
 				break;
 				case 'R':
 					if(ArmMotors == false)
@@ -343,13 +340,13 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 		case 0x05:
 			if(message[0] == 'R')
 			{
-				sendPIDValuesToPC('R', RollKp, RollKi, RollKd);
+				sendPIDValuesToPC('R', PID_YKp, PID_YKi, PID_YKd);
 			} else if(message[0] == 'P')
 			{
-				sendPIDValuesToPC('P', PitchKp, PitchKi, PitchKd);
+				sendPIDValuesToPC('P', PID_XKp, PID_XKi, PID_XKd);
 			} else if(message[0] == 'Y')
 			{
-				sendPIDValuesToPC('Y', YawKp, YawKi, YawKd);
+				sendPIDValuesToPC('Y', PID_ZKp, PID_ZKi, PID_ZKd);
 			}
 			else
 			{
@@ -377,28 +374,28 @@ void message_from_PC(uint8_t* message, uint8_t Type)
 				switch(message[0])
 				{
 					case 'P':
-						PitchKd = kd;
-						PitchKi = ki;
-						PitchKp = kp;
-						PID_SetTunings(&PitchPid, PitchKd, PitchKi, PitchKp);
+						PID_XKd = kd;
+						PID_XKi = ki;
+						PID_XKp = kp;
+						PID_SetTunings(&XPid, PID_XKd, PID_XKi, PID_XKp);
 						SaveValuesToFlash(0x04);
 						SaveValuesToFlash(0x05);
 						SaveValuesToFlash(0x06);
 					break;
 					case 'R':
-						RollKd = kd;
-						RollKi = ki;
-						RollKp = kp;
-						PID_SetTunings(&RollPid, RollKd, RollKi, RollKp);
+						PID_YKd = kd;
+						PID_YKi = ki;
+						PID_YKp = kp;
+						PID_SetTunings(&YPid, PID_YKd, PID_YKi, PID_YKp);
 						SaveValuesToFlash(0x01);
 						SaveValuesToFlash(0x02);
 						SaveValuesToFlash(0x03);
 					break;
 					case 'Y':
-						YawKd = kd;
-						YawKi = ki;
-						YawKp = kp;
-						PID_SetTunings(&YawPid, YawKd, YawKi, YawKp);
+						PID_ZKd = kd;
+						PID_ZKi = ki;
+						PID_ZKp = kp;
+						PID_SetTunings(&ZPid, PID_ZKd, PID_ZKi, PID_ZKp);
 						SaveValuesToFlash(0x07);
 						SaveValuesToFlash(0x08);
 						SaveValuesToFlash(0x09);
@@ -482,9 +479,10 @@ void Init()
 	
 	//Config PID controllers:
 	PID_Init();
-	ErrorHandling_throw(PID_Initialize(&PitchPid, &PID_PitchInput, &PID_PitchOutput, &PID_PitchSetPoint, PitchKp, PitchKi, PitchKd, -1000, 1000, 4));
-	ErrorHandling_throw(PID_Initialize(&RollPid, &PID_RollInput, &PID_RollOutput, &PID_RollSetPoint, RollKp, RollKi, RollKd, -1000, 1000, 4));
-	//ErrorHandling_throw(PID_Initialize(&YawPid, &PID_YawInput, &PID_YawOutput, &PID_YawSetPoint, YawKp, YawKi, YawKd, -360, 360, 4));
+	ErrorHandling_throw(PID_Initialize(&XPid, &PID_XInput, &PID_XOutput, &PID_XSetPoint, PID_XKp, PID_XKi, PID_XKd, -1000, 1000, 4));
+	ErrorHandling_throw(PID_Initialize(&YPid, &PID_YInput, &PID_YOutput, &PID_YSetPoint, PID_YKp, PID_YKi, PID_YKd, -1000, 1000, 4));
+	ErrorHandling_throw(PID_Initialize(&ZPid, &PID_ZInput, &PID_ZOutput, &PID_ZSetPoint, PID_ZKp, PID_ZKi, PID_ZKd, -1000, 1000, 4));
+	ErrorHandling_throw(PID_Initialize(&WPid, &PID_WInput, &PID_WOutput, &PID_WSetPoint, PID_WKp, PID_WKi, PID_WKd, -1000, 1000, 4));
 	
 	bno_contionous_measurement_active = true;
 	if(BNOErrors == SUCCESS)	//Start the first BNO055 measurement if init was sucessful
@@ -494,36 +492,28 @@ void Init()
 }
 
 
-
 //calculate PID Controllers and positions, also send serial data
 void Dont()
 {
-	//Relative Position calculation:
-	/* - Not needed for now
-	float LinAccX = ((float)LastSensorMeasurement.AccX);
-	float LinAccY = ((float)LastSensorMeasurement.AccY);
-	
-	float timePassed = (GPT_GetPreciseTime() - timeOfLastMeasurement) / 1000.0;
-	float timePassedPower2 = timePassed * timePassed;
-	
-	PosX += timePassedPower2*LinAccX;
-	PosY += timePassedPower2*LinAccY;
-	*/
 	
 	//BNO data calculation:
 	
-	CorrectedValues.Roll	= -CorrectSensorOffsets(LastSensorMeasurement.Roll, sensorOffsetRoll, 180);
-	CorrectedValues.Pitch	= _CorrectSensorOffsets(LastSensorMeasurement.Pitch, sensorOffsetPitch, 90);
-	CorrectedValues.Yaw		= CorrectSensorOffsets(LastSensorMeasurement.Yaw, sensorOffsetYaw, 180);
+	//calculate sensor offsets:
+	CorrectedValues.x	= LastSensorMeasurement.x;
+	CorrectedValues.y	= LastSensorMeasurement.y;
+	CorrectedValues.z	= LastSensorMeasurement.z;
+	CorrectedValues.w	= LastSensorMeasurement.w;
 	
-	PID_PitchInput			= CorrectedValues.Pitch;
-	PID_RollInput			= CorrectedValues.Roll;
-	PID_YawInput			= CorrectedValues.Yaw;
+	PID_XInput			= CorrectedValues.x;
+	PID_YInput			= CorrectedValues.y;
+	PID_ZInput			= CorrectedValues.z;
+	PID_WInput			= CorrectedValues.w;
 	
-	//a full range of stick movement represents a +- 20 degree tilt
-	PID_PitchSetPoint		= map_float(RemoteValues.Pitch, 0, 2200, -20, 20);
-	PID_RollSetPoint		= map_float(RemoteValues.Roll, 0, 2200, -20, 20);
-	PID_YawSetPoint			= 0;// TODO: Yaw Logic
+	//for now there is no remote control...
+	PID_XSetPoint		= 0;
+	PID_YSetPoint		= 0.7071067812;
+	PID_ZSetPoint		= 0;
+	PID_WSetPoint		= 0.7071067812;
 	
 	static bool GearStateOld = false;
 	RemoteValues = rc_read_values();
@@ -532,28 +522,34 @@ void Dont()
 		GearStateOld = true;
 		ArmMotors = true;
 		//reset PID Controllers
-		PID_Reset(&PitchPid);
-		PID_Reset(&RollPid);
-		PID_Reset(&YawPid);
+		PID_Reset(&XPid);
+		PID_Reset(&YPid);
+		PID_Reset(&ZPid);
+		PID_Reset(&WPid);
 	} else if(RemoteValues.Gear == false)
 	{
 		ArmMotors = false;
 		GearStateOld = false;
 	}
 	// Compute new PID output value
-	ErrorHandling_throw(PID_Compute(&PitchPid));
-	ErrorHandling_throw(PID_Compute(&RollPid));
-	//ErrorHandling_throw(PID_Compute(&YawPid));
+	ErrorHandling_throw(PID_Compute(&XPid));
+	ErrorHandling_throw(PID_Compute(&YPid));
+	ErrorHandling_throw(PID_Compute(&ZPid));
+	ErrorHandling_throw(PID_Compute(&WPid));
 	//adjust output values to the current thrust:
-	float PitchAdjust, RollAdjust;
-	PitchAdjust = map_float(PID_PitchOutput,-1000,1000,-RemoteValues.Throttle, RemoteValues.Throttle);
-	RollAdjust = map_float(PID_RollOutput,-1000,1000,-RemoteValues.Throttle, RemoteValues.Throttle);
+	BNO055_Quat Adjustments;
+	Adjustments.x = map_float(PID_XOutput,-1000,1000,-1, 1);
+	Adjustments.y = map_float(PID_YOutput,-1000,1000,-1, 1);
+	Adjustments.z = map_float(PID_ZOutput,-1000,1000,-1, 1);
+	Adjustments.w = map_float(PID_WOutput,-1000,1000,-1, 1);
 	
+	YPR_Angles = ConvertQuaToYPR(Adjustments);
+
 	//calculate motor speeds:
-	Motor_speeds[0] = RemoteValues.Throttle - PitchAdjust - RollAdjust;// - MappedYaw;
-	Motor_speeds[1] = RemoteValues.Throttle - PitchAdjust + RollAdjust;// + MappedYaw;
-	Motor_speeds[2] = RemoteValues.Throttle + PitchAdjust - RollAdjust;// - MappedYaw;
-	Motor_speeds[3] = RemoteValues.Throttle + PitchAdjust + RollAdjust;// + MappedYaw;
+	Motor_speeds[0] = RemoteValues.Throttle - YPR_Angles.Pitch - YPR_Angles.Roll;// - MappedYaw;
+	Motor_speeds[1] = RemoteValues.Throttle - YPR_Angles.Pitch + YPR_Angles.Roll;// + MappedYaw;
+	Motor_speeds[2] = RemoteValues.Throttle + YPR_Angles.Pitch - YPR_Angles.Roll;// - MappedYaw;
+	Motor_speeds[3] = RemoteValues.Throttle + YPR_Angles.Pitch + YPR_Angles.Roll;// + MappedYaw;
 	
 	//-----Data Logging:
 	SendLogData();
@@ -561,10 +557,16 @@ void Dont()
 	//Set motor speeds:
 	if(ArmMotors == true && RemoteValues.error != true)
 	{
+		/*
 		ErrorHandling_throw(esc_set(1, Motor_speeds[0]));
 		ErrorHandling_throw(esc_set(2, Motor_speeds[1]));
 		ErrorHandling_throw(esc_set(3, Motor_speeds[2]));
 		ErrorHandling_throw(esc_set(4, Motor_speeds[3]));
+		*/
+		ErrorHandling_throw(esc_set(1, 0));
+		ErrorHandling_throw(esc_set(2, 0));
+		ErrorHandling_throw(esc_set(3, 0));
+		ErrorHandling_throw(esc_set(4, 0));
 	}
 	else
 	{
@@ -577,10 +579,11 @@ void Dont()
 
 bool aboutToCrash()
 {
-	bool needComputePitch = PID_need_compute(&PitchPid);
-	bool needComputeRoll = PID_need_compute(&RollPid);
-	//bool needComputeYaw = PID_need_compute(&YawPid);
-	return needComputeRoll == true || needComputePitch == true; //|| needComputeYaw == true
+	bool needComputeX = PID_need_compute(&XPid);
+	bool needComputeY = PID_need_compute(&YPid);
+	bool needComputeZ = PID_need_compute(&ZPid);
+	bool needComputeW = PID_need_compute(&WPid);
+	return needComputeY == true || needComputeX == true || needComputeZ == true || needComputeW == true;
 }
 
 int main(void)

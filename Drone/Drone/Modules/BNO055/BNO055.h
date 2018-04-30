@@ -20,6 +20,15 @@
 //TODO: Remove after testing done:
 #include "../SerialCOM/SerialCOM.h"
 
+struct BNO055_Quat
+{
+	double x;
+	double y;
+	double z;
+	double w;
+};
+typedef struct BNO055_Quat BNO055_Quat;
+
 struct BNO055_Data
 {
 	float Roll;
@@ -60,7 +69,11 @@ ErrorCode BNO055_register_error_callback(BNO055_ERROR_CALLBACK callback);
 
 //the start pointer has to point to a preinitialised field with a minimum length of 8,
 //where the quaternion data begins at the defined pointer position!
-BNO055_Data ConvertQuaToYPR(uint8_t* startPtr);
+BNO055_Data BNO055_ConvertQuaToYPR(uint8_t* startPtr);
+
+BNO055_Quat BNO055_GetQuat(uint8_t* startPtr);
+
+BNO055_Data ConvertQuaToYPR(BNO055_Quat quat);
 
 
 #endif /* BNO_055_H_ */
